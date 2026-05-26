@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: pandora-postgres
     ports:
-      - "5432:5432"
+      - "5434:5432"
     environment:
       POSTGRES_DB: pandora
       POSTGRES_USER: pandora
