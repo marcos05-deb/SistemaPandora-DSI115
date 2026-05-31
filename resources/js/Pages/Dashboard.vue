@@ -1,5 +1,5 @@
 <script setup>
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 defineOptions({ layout: AuthenticatedLayout });
@@ -16,8 +16,21 @@ defineProps({
     <Head title="Dashboard" />
 
     <div class="max-w-4xl mx-auto py-8 px-4">
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">Panel Principal</h1>
-        <p class="text-gray-500 mb-8">Bienvenido al Sistema de Gestión Clínica PANDORA.</p>
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 mb-2">Panel Principal</h1>
+                <p class="text-gray-500">Bienvenido al Sistema de Gestión Clínica PANDORA.</p>
+            </div>
+            
+            <Link 
+                href="/logout" 
+                method="post" 
+                as="button" 
+                class="px-4 py-2 bg-red-600 text-white font-semibold rounded hover:bg-red-700 transition-colors"
+            >
+                Cerrar Sesión
+            </Link>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">

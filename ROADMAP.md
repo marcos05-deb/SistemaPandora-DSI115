@@ -323,13 +323,13 @@ public function derive(string $password, string $salt): string
 
 #### Criterios de Aceptación
 
-- [ ] `POST /login` con credenciales válidas retorna redirección Inertia y sesión activa.
-- [ ] `POST /login` con credenciales inválidas retorna `HTTP 422` con mensaje genérico (no revelar si el email existe o no).
-- [ ] Después del login, `session()->get('_sym_key')` contiene la clave derivada en Base64.
-- [ ] La clave derivada tiene exactamente 32 bytes al decodificar.
-- [ ] Tras 5 intentos fallidos, el 6° intento retorna `HTTP 429`.
-- [ ] El bloqueo se levanta automáticamente a los 15 minutos.
-- [ ] Test feature cubre: login exitoso, credenciales inválidas, rate limit.
+- [x] `POST /login` con credenciales válidas retorna redirección Inertia y sesión activa.
+- [x] `POST /login` con credenciales inválidas retorna `HTTP 422` con mensaje genérico (no revelar si el email existe o no).
+- [x] Después del login, `session()->get('_sym_key')` contiene la clave derivada en Base64.
+- [x] La clave derivada tiene exactamente 32 bytes al decodificar.
+- [x] Tras 5 intentos fallidos, el 6° intento retorna `HTTP 429`.
+- [x] El bloqueo se levanta automáticamente a los 15 minutos.
+- [x] Test feature cubre: login exitoso, credenciales inválidas, rate limit.
 
 ---
 
@@ -360,11 +360,11 @@ public function derive(string $password, string $salt): string
 
 #### Criterios de Aceptación
 
-- [ ] `POST /logout` retorna redirección a `/login`.
-- [ ] Tras el logout, cualquier request autenticado retorna `HTTP 401` o redirección a `/login`.
-- [ ] `session()->has('_sym_key')` retorna `false` tras el logout.
-- [ ] La cookie de sesión anterior no sirve para re-autenticar (el ID de sesión fue regenerado).
-- [ ] Test feature cubre: logout exitoso, request post-logout rechazado.
+- [x] `POST /logout` retorna redirección a `/login`.
+- [x] Tras el logout, cualquier request autenticado retorna `HTTP 401` o redirección a `/login`.
+- [x] `session()->has('_sym_key')` retorna `false` tras el logout.
+- [x] La cookie de sesión anterior no sirve para re-autenticar (el ID de sesión fue regenerado).
+- [x] Test feature cubre: logout exitoso, request post-logout rechazado.
 
 ---
 

@@ -80,3 +80,12 @@
   - Se redondeó también el botón de inicio de sesión (`rounded-xl`).
   - Se tradujo toda la interfaz al español (ej: "Sign in" a "Iniciar sesión", "Password" a "Contraseña").
   - Se eliminó el botón de "Create Account" en la tarjeta inferior, reemplazando el texto por "Desarrollado por EquipoDeTrabajo".
+
+### [2026-05-31] Implementación de HU-02 (Cierre de Sesión)
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se requiere implementar el cierre de sesión seguro siguiendo la HU-02 del Roadmap, garantizando la destrucción del material criptográfico y de la sesión del Especialista.
+- **Cambios realizados:**
+  - Se modificó `App\Http\Controllers\Auth\LogoutController` para incluir la instrucción `Auth::guard('web')->logout()`, necesaria para desvincular al usuario autenticado a nivel del guard de Laravel, manteniendo el borrado previo de la clave `_sym_key` de la sesión.
+  - Se agregó un botón de "Cerrar Sesión" en `resources/js/Pages/Dashboard.vue` utilizando el componente `<Link>` de Inertia con el método `POST` para probar la funcionalidad de la historia de usuario.
+  - Se crearon las pruebas automatizadas (Feature Tests) en `tests/Feature/HU02/LogoutTest.php` comprobando la destrucción de la sesión, redirección al login y prevención de acceso a rutas protegidas pos-cierre de sesión.
+  - Se actualizó el archivo `ROADMAP.md` marcando como completados todos los criterios de aceptación de la HU-02.
