@@ -384,37 +384,29 @@ public function derive(string $password, string $salt): string
 
 > **Regla crítica:** El rol `sysadmin` tiene acceso cero a datos clínicos. El acceso administrativo y el acceso clínico son mutuamente excluyentes por diseño.
 
-#### Estructura de Tablas
+#### Estructura de Tablas (Esquema Real)
 
-```sql
--- Tabla roles
-CREATE TABLE roles (
-    id       SMALLINT PRIMARY KEY,
-    nombre   VARCHAR(60) NOT NULL,
-    slug     VARCHAR(30) NOT NULL UNIQUE,
-    nivel    SMALLINT NOT NULL
-);
+El sistema utiliza las tablas existentes y la tabla pivote de profesionales para la gestión de acceso, en lugar de una tabla combinada genérica:
 
--- Relación Especialista <-> Rol <-> Área
--- Un especialista puede tener un rol por área (ej. Coordinador en Psicología, Especialista en Fisioterapia)
-CREATE TABLE especialista_rol_area (
-    especialista_id UUID     REFERENCES especialistas(id),
-    rol_id          SMALLINT REFERENCES roles(id),
-    area_id         SMALLINT REFERENCES areas(id),
-    PRIMARY KEY (especialista_id, area_id)
-);
-```
+- **`users`**: Tabla principal de especialistas.
+- **`roles`**: Contiene `id` (BIGINT), `nombre`, `slug` y `nivel`.
+- **`role_user`**: Tabla pivote global que asigna un rol a un usuario (`user_id`, `role_id`). Los roles son globales para el usuario.
+- **`profesionales`**: Relaciona a un `user_id` con un `area_id`. Permite que un usuario pertenezca a múltiples áreas de atención.
 
-#### Relación `areas()` en el Modelo — C-04
+#### Relación `areas()` y `roles()` en el Modelo — C-04
 
-Para que el scope pueda consultar todas las áreas autorizadas de un especialista, el modelo debe exponer esta relación:
+Para que el scope pueda consultar todas las áreas autorizadas de un especialista, el modelo debe exponer esta relación a través de la tabla `profesionales` y sus roles a través de `role_user`:
 
 ```php
 // app/Models/Especialista.php
 public function areas(): BelongsToMany
 {
-    return $this->belongsToMany(Area::class, 'especialista_rol_area')
-                ->withPivot('rol_id');
+    return $this->belongsToMany(Area::class, 'profesionales', 'user_id', 'area_id');
+}
+
+public function roles(): BelongsToMany
+{
+    return $this->belongsToMany(Role::class, 'role_user', 'user_id', 'role_id');
 }
 
 public function hasRole(string $slug): bool
@@ -463,11 +455,11 @@ Registrar en `bootstrap/app.php` y aplicar al grupo de rutas `expedientes.*`.
 
 #### Criterios de Aceptación
 
-- [ ] Un Especialista de Área A que solicita el UUID de un expediente de Área B recibe `HTTP 403`.
-- [ ] El Global Scope está activo en todas las consultas de `Expediente` y no puede desactivarse desde una request HTTP.
-- [ ] El rol `sysadmin` no puede acceder a ninguna ruta de expedientes clínicos.
-- [ ] Un especialista con roles en múltiples áreas puede ver expedientes de **todas** sus áreas autorizadas.
-- [ ] Tests cubren: acceso a propio scope (éxito), acceso fuera de scope (403), acceso de sysadmin a ruta clínica (403), especialista multi-área (éxito en ambas).
+- [x] Un Especialista de Área A que solicita el UUID de un expediente de Área B recibe `HTTP 403` (o 404 por el scope).
+- [x] El Global Scope está activo en todas las consultas de `Expediente` y no puede desactivarse desde una request HTTP.
+- [x] El rol `sysadmin` no puede acceder a ninguna ruta de expedientes clínicos.
+- [x] Un especialista con roles en múltiples áreas puede ver expedientes de **todas** sus áreas autorizadas.
+- [x] Tests cubren: acceso a propio scope (éxito), acceso fuera de scope (403/404), acceso de sysadmin a ruta clínica (403), especialista multi-área (éxito en ambas).
 
 ---
 

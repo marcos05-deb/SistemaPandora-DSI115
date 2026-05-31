@@ -89,3 +89,12 @@
   - Se agregó un botón de "Cerrar Sesión" en `resources/js/Pages/Dashboard.vue` utilizando el componente `<Link>` de Inertia con el método `POST` para probar la funcionalidad de la historia de usuario.
   - Se crearon las pruebas automatizadas (Feature Tests) en `tests/Feature/HU02/LogoutTest.php` comprobando la destrucción de la sesión, redirección al login y prevención de acceso a rutas protegidas pos-cierre de sesión.
   - Se actualizó el archivo `ROADMAP.md` marcando como completados todos los criterios de aceptación de la HU-02.
+
+### [2026-05-31] Implementación de HU-03 (Roles y Segmentación Estricta RBAC)
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se requiere implementar el control de acceso basado en roles y áreas clínicas (RBAC) para aislar los expedientes de los pacientes de acuerdo a la especialidad del profesional, previniendo accesos no autorizados.
+- **Cambios realizados:**
+  - **Modelos:** Se creó el modelo `Expediente` utilizando UUID y SoftDeletes. Se actualizó el modelo `Especialista` incorporando los métodos `roles()`, `areas()` y `hasRole()` operando sobre las tablas `role_user` y `profesionales`. Se verificó que los modelos `Role` y `Area` ya existían y estaban correctos.
+  - **Global Scope:** Se implementó `App\Models\Scopes\AreaScope` para filtrar automáticamente las consultas a `Expediente`, validando mediante `whereIn('area_id', ...)` que el especialista sólo pueda interactuar con registros pertenecientes a sus áreas designadas.
+  - **Middleware:** Se creó y registró en `bootstrap/app.php` el middleware `EnforceAreaScope` (`enforce_area_scope`), el cual previene que el rol `sysadmin` consuma rutas clínicas y valida a nivel de capa HTTP que las solicitudes directas a un expediente estén autorizadas, retornando `HTTP 403` o `404` en caso de violación de acceso.
+  - **Pruebas y Verificación:** Se diseñó la suite de pruebas `tests/Feature/HU03/AreaScopeTest.php`. Se creó de forma temporal la base de datos `testing` dentro de PostgreSQL y se configuró `phpunit.xml` para correr las validaciones exitosamente, confirmando los aislamientos de seguridad del RBAC.

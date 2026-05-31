@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Alias para uso en rutas
         $middleware->alias([
             'validate.sym_key' => \App\Http\Middleware\ValidateSymmetricKey::class,
+            'enforce_area_scope' => \App\Http\Middleware\EnforceAreaScope::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

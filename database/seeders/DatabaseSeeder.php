@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Especialista;
 
+use App\Models\Role;
+
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -12,9 +14,19 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        Especialista::firstOrCreate(
+        $this->call([
+            RoleSeeder::class,
+            AreaSeeder::class,
+        ]);
+
+        $admin = Especialista::firstOrCreate(
             ['email' => 'admin@pandora.com'],
             ['password' => 'password_segura']
         );
+
+        $sysadminRole = Role::where('slug', 'sysadmin')->first();
+        if ($sysadminRole && !$admin->roles()->where('role_id', $sysadminRole->id)->exists()) {
+            $admin->roles()->attach($sysadminRole);
+        }
     }
 }
