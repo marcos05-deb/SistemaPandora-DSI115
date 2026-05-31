@@ -10,7 +10,7 @@ return [
     'timezone' => 'America/El_Salvador',
     'locale' => 'es',
     'fallback_locale' => 'en',
-    'faker_locale' => 'es_ES',
+    'faker_locale' => 'es_SV',
     'cipher' => 'AES-256-CBC',
     'key' => env('APP_KEY'),
     'previous_keys' => [

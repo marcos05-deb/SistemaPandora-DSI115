@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * Modelo Area — Roadmap §1.
+ *
+ * Especialidad clínica (Psicología, Medicina General, Fisioterapia, Nutrición).
+ * Define el scope de acceso para RBAC en HU-03.
+ */
+class Area extends Model
+{
+    public $timestamps = false;
+
+    protected $fillable = [
+        'nombre',
+        'requiere_aprobacion_estricta',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'requiere_aprobacion_estricta' => 'boolean',
+        ];
+    }
+}

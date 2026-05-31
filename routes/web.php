@@ -1,28 +1,36 @@
 <?php
 
-use App\Http\Controllers\Mockup\LoginMockupController;
-use App\Http\Controllers\Mockup\PatientRegistrationMockupController;
-use App\Http\Controllers\Mockup\PrivacyCodesMockupController;
-use App\Http\Controllers\Mockup\SecureSearchMockupController;
-use App\Http\Controllers\Mockup\SessionLogoutMockupController;
-use App\Http\Controllers\Mockup\UsersMockupController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\LogoutController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes — Sprint 1
+|--------------------------------------------------------------------------
+|
+| Roadmap §HU-01: POST /login con rate limiting.
+| Roadmap §HU-02: POST /logout con destrucción de sesión.
+| Rutas protegidas requieren middleware 'auth'.
+|
+*/
+
+// --- Rutas públicas (Guest) ---
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'show'])->name('login');
+    Route::post('/login', [LoginController::class, 'store'])
+        ->middleware('throttle:login')
+        ->name('login.store');
+});
 
 Route::redirect('/', '/login');
 
-Route::get('/login', [LoginMockupController::class, 'show'])->name('login');
-Route::post('/login', [LoginMockupController::class, 'store'])->name('login.store');
+// --- Rutas protegidas (Auth) ---
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->name('dashboard');
 
-Route::get('/usuarios', [UsersMockupController::class, 'index'])->name('usuarios');
-Route::get('/codigos-privacidad', [PrivacyCodesMockupController::class, 'index'])->name('codigos-privacidad');
-Route::get('/registro-paciente', [PatientRegistrationMockupController::class, 'create'])->name('registro-paciente');
-Route::post('/registro-paciente', [PatientRegistrationMockupController::class, 'store'])->name('registro-paciente.store');
-Route::get('/busqueda-segura', [SecureSearchMockupController::class, 'index'])->name('busqueda-segura');
-Route::post('/busqueda-segura', [SecureSearchMockupController::class, 'search'])->name('busqueda-segura.search');
-Route::get('/cierre-sesion', [SessionLogoutMockupController::class, 'show'])->name('cierre-sesion');
-
-Route::redirect('/mockups/usuarios', '/usuarios');
-Route::redirect('/mockups/codigos-privacidad', '/codigos-privacidad');
-Route::redirect('/mockups/registro-paciente', '/registro-paciente');
-Route::redirect('/mockups/busqueda-segura', '/busqueda-segura');
-Route::redirect('/mockups/cierre-sesion', '/cierre-sesion');
+    Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout');
+});

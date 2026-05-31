@@ -1,8 +1,10 @@
 <?php
 
+use App\Exceptions\DecryptionException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,7 +16,22 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
+
+        // Alias para uso en rutas
+        $middleware->alias([
+            'validate.sym_key' => \App\Http\Middleware\ValidateSymmetricKey::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Roadmap §HU-05: Manejar DecryptionException con redirección al login
+        $exceptions->render(function (DecryptionException $e, Request $request) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'message' => 'Sesión expirada. Por favor, inicie sesión nuevamente.',
+                ], 401);
+            }
+            return redirect()->route('login')->withErrors([
+                'session' => 'Su sesión expiró durante la operación.',
+            ]);
+        });
     })->create();
