@@ -60,3 +60,23 @@
   - Se actualizaron todas las dependencias mediante `npm-check-updates`.
   - Se actualizó a **Vue 3.5.35**, **Vite 8.0.14** e **Inertia.js v3.3.0**.
   - **Migración Tailwind CSS v4:** El paquete `tailwindcss` se actualizó a la versión 4 (major upgrade). Esto requirió el uso de la herramienta de actualización `@tailwindcss/upgrade` y la instalación de `@tailwindcss/postcss` para adaptar la configuración de PostCSS, reemplazando la forma anterior y compilando los assets exitosamente (`npm run build`).
+
+### [2026-05-31] Rediseño de Interfaz de Login (Estilo Oracle)
+- **Agente:** Antigravity (IA)
+- **Contexto:** El usuario solicitó cambiar la estética de la pantalla de inicio de sesión (`Login.vue`) para que se inspire en el diseño corporativo de Oracle.
+- **Cambios realizados:**
+  - Se modificó `resources/js/Pages/Auth/Login.vue` eliminando el uso de `GuestLayout` para tener control total sobre la estructura y el fondo.
+  - Se implementó un fondo beige claro (`#F0EBE1`) con un patrón vectorial SVG de líneas concéntricas que simula la textura topográfica de Oracle.
+  - Se reorganizó la interfaz en dos tarjetas blancas apiladas: una principal para el inicio de sesión y otra secundaria para la creación de cuenta.
+  - Se estilizaron los inputs del formulario, eliminando bordes laterales y superiores, conservando únicamente un borde inferior minimalista.
+  - Los botones fueron rediseñados con esquinas rectas, usando color carbón oscuro (`#2F2B28`) para la acción primaria y blanco con borde oscuro para la secundaria.
+
+### [2026-05-31] Refinamiento de Interfaz Login Estilo Oracle
+- **Agente:** Antigravity (IA)
+- **Contexto:** Ajustes adicionales sobre el rediseño anterior basados en el feedback del usuario: esquinas redondeadas, integración de imagen estática para el fondo y traducción al español.
+- **Cambios realizados:**
+  - Se eliminó el SVG topográfico del código y se integró un estilo `background-image: url('/images/background.png')` para utilizar una imagen de fondo definida por el usuario.
+  - Los contenedores blancos ("Cards") pasaron a tener bordes redondeados pronunciados (`rounded-2xl`) y una sombra más profunda (`shadow-lg`).
+  - Se redondeó también el botón de inicio de sesión (`rounded-xl`).
+  - Se tradujo toda la interfaz al español (ej: "Sign in" a "Iniciar sesión", "Password" a "Contraseña").
+  - Se eliminó el botón de "Create Account" en la tarjeta inferior, reemplazando el texto por "Desarrollado por EquipoDeTrabajo".
