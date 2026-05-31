@@ -92,6 +92,21 @@ class UserController extends Controller
     {
         $user = Especialista::with('profesional')->findOrFail($id);
 
+        // Si el usuario que se está editando es un sysadmin, solo permitimos actualizar nombre y correo
+        if ($user->hasRole('sysadmin')) {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            ]);
+
+            $user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+            ]);
+
+            return redirect()->back()->with('message', 'Perfil de administrador actualizado.')->with('variant', 'success');
+        }
+
         $sysadminRole = Role::where('slug', 'sysadmin')->first();
 
         $validated = $request->validate([
