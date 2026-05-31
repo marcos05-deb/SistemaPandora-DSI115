@@ -98,3 +98,22 @@
   - **Global Scope:** Se implementó `App\Models\Scopes\AreaScope` para filtrar automáticamente las consultas a `Expediente`, validando mediante `whereIn('area_id', ...)` que el especialista sólo pueda interactuar con registros pertenecientes a sus áreas designadas.
   - **Middleware:** Se creó y registró en `bootstrap/app.php` el middleware `EnforceAreaScope` (`enforce_area_scope`), el cual previene que el rol `sysadmin` consuma rutas clínicas y valida a nivel de capa HTTP que las solicitudes directas a un expediente estén autorizadas, retornando `HTTP 403` o `404` en caso de violación de acceso.
   - **Pruebas y Verificación:** Se diseñó la suite de pruebas `tests/Feature/HU03/AreaScopeTest.php`. Se creó de forma temporal la base de datos `testing` dentro de PostgreSQL y se configuró `phpunit.xml` para correr las validaciones exitosamente, confirmando los aislamientos de seguridad del RBAC.
+
+### [2026-05-31] Implementación de Dashboard de Administrador y Gestión de Usuarios (UI/UX)
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se requiere implementar un dashboard específico para el administrador (`sysadmin`) que permita visualizar y crear usuarios del sistema, adoptando la misma estética "Oracle" del login y asegurando una buena UI/UX.
+- **Cambios realizados:**
+  - **Base de Datos:** Se creó la migración `2026_05_31_154920_add_name_to_users_table.php` para añadir la columna `name` a la tabla `users` permitiendo una mejor identificación visual en la interfaz. Se actualizó `Especialista` y `DatabaseSeeder`.
+  - **Enrutamiento y Middlewares:** Se creó `EnsureIsSysadmin` para proteger el grupo de rutas `/admin/*`. Se modificó `routes/web.php` separando el dashboard clínico (`/dashboard`) del administrativo (`/admin/dashboard`). Se actualizó `LoginController` para redirigir según el rol.
+  - **Controladores:** Se crearon `Admin\DashboardController` (para la vista principal del dashboard) y `Admin\UserController` (para manejar el CRUD de usuarios, generación de `kdf_salt`, hash Argon2id, asignación de roles y creación del perfil en `profesionales`).
+  - **Frontend (UI/UX):** Se diseñó `AdminLayout.vue` con la estética corporativa (fondo beige, tarjetas blancas redondeadas). Se implementaron las vistas `Admin/Dashboard.vue` y `Admin/Users/Index.vue` con una tabla limpia de usuarios y un formulario dinámico que solicita los datos necesarios según el rol seleccionado.
+  - **Pruebas:** Se ejecutó `php artisan test` validando que la integración de estos cambios no afectara la autenticación base, el cierre de sesión ni las reglas estrictas de RBAC (HU-01, HU-02, HU-03).
+
+### [2026-05-31] Implementación de Edición de Personal (Full CRUD)
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se requiere completar el ciclo CRUD para la gestión de usuarios, permitiendo al administrador editar detalles y reasignar roles, manteniendo la restricción estricta de no alterar contraseñas para preservar la criptografía de los historiales clínicos. Además, se solicitó invertir el orden visual de Área y Especialidad en la tabla.
+- **Cambios realizados:**
+  - **Lógica de Edición:** Se implementó el método `update` en `UserController` que permite sincronizar los datos básicos, los roles y manejar la lógica condicional para el perfil profesional (crear, actualizar o eliminar la relación en `profesionales` dependiendo de si el rol seleccionado es clínico o `sysadmin`).
+  - **Ajustes de UI (Frontend):** En `Index.vue` se agregó un estado dinámico que transforma el formulario de creación en uno de edición al pulsar el botón "Editar". Se ocultó el botón "Eliminar" para el propio usuario en sesión.
+  - **Bloqueo de Contraseña:** Se desactivó el campo de contraseña en el modo edición, mostrando un mensaje de advertencia fundamentado en la Deuda Técnica del Sprint 3 (HU-05) para prevenir la corrupción de la clave derivada `_sym_key`.
+  - **Diseño de Tabla:** Se ajustó la renderización de la tabla para mostrar el "Área" como texto principal oscuro, y la "Especialidad" como un subtexto gris, facilitando la identificación visual de departamentos.

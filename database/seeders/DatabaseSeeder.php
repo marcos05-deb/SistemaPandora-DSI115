@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
 
         $admin = Especialista::firstOrCreate(
             ['email' => 'admin@pandora.com'],
-            ['password' => 'password_segura']
+            ['name' => 'Administrador', 'password' => 'password_segura']
         );
 
         $sysadminRole = Role::where('slug', 'sysadmin')->first();

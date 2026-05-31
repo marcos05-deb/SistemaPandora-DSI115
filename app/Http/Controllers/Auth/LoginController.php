@@ -88,6 +88,10 @@ class LoginController extends Controller
         // Limpiar contraseña de memoria
         sodium_memzero($password);
 
+        if ($especialista->hasRole('sysadmin')) {
+            return redirect()->intended('/admin/dashboard');
+        }
+
         return redirect()->intended('/dashboard');
     }
 }

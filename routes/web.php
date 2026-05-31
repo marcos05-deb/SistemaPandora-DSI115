@@ -28,9 +28,24 @@ Route::redirect('/', '/login');
 
 // --- Rutas protegidas (Auth) ---
 Route::middleware('auth')->group(function () {
+    // Clinical Dashboard
     Route::get('/dashboard', function () {
+        if (auth()->user()->hasRole('sysadmin')) {
+            return redirect()->route('admin.dashboard');
+        }
         return Inertia::render('Dashboard');
     })->name('dashboard');
+
+    // Admin Routes
+    Route::middleware('sysadmin')->prefix('admin')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.dashboard');
+        
+        // User management
+        Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
+        Route::post('/users', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('admin.users.store');
+        Route::put('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('admin.users.update');
+        Route::delete('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('admin.users.destroy');
+    });
 
     Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout');
 });
