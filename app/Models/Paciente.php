@@ -24,6 +24,8 @@ class Paciente extends Model
         'creado_por_profesional_id',
         'sexo',
         'estado_civil',
+        'nombre_completo',
+        'direccion',
         'fecha_nacimiento',
         'profesion_ocupacion',
         'fecha_primera_consulta',
@@ -32,6 +34,8 @@ class Paciente extends Model
     ];
 
     protected $casts = [
+        'nombre_completo' => EncryptedFieldCast::class,
+        'direccion' => EncryptedFieldCast::class,
         'fecha_nacimiento' => EncryptedFieldCast::class,
         'profesion_ocupacion' => EncryptedFieldCast::class,
         'referido_por' => EncryptedFieldCast::class,
@@ -46,5 +50,10 @@ class Paciente extends Model
     public function contactos(): HasMany
     {
         return $this->hasMany(ContactoPaciente::class, 'paciente_id', 'codigo');
+    }
+
+    public function carrera(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Carrera::class, 'carrera_id', 'id');
     }
 }

@@ -104,7 +104,7 @@ function clearGeneratedPassword() {
     </div>
 
     <!-- Metrics Cards -->
-    <div class="grid grid-cols-3 gap-[10px]">
+    <div class="grid grid-cols-4 gap-[10px]">
         <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
             <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Usuarios totales</div>
             <div class="text-[22px] font-medium text-[var(--nord0)]">{{ metrics.total }}</div>
@@ -114,8 +114,12 @@ function clearGeneratedPassword() {
             <div class="text-[22px] font-medium text-[var(--aurora-green)]">{{ metrics.active }}</div>
         </div>
         <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
-            <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Coordinadores de Área</div>
+            <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Coordinadores</div>
             <div class="text-[22px] font-medium text-[var(--frost4)]">{{ metrics.coordinators_ratio }}</div>
+        </div>
+        <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
+            <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Ref. Psicosociales</div>
+            <div class="text-[22px] font-medium text-[var(--nord10)]">{{ metrics.psychosocial_referents }}</div>
         </div>
     </div>
 

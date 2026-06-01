@@ -37,8 +37,49 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         if (auth()->user()->hasRole('sysadmin')) {
             return redirect()->route('admin.dashboard');
         }
-        return Inertia::render('Dashboard');
+
+        $user = auth()->user();
+        $pacientes = [];
+        $stats = [
+            'total' => 0,
+            'activos' => 0,
+        ];
+
+        // Solo el referente psicosocial ve los pacientes (y únicamente los que él registró)
+        if ($user->hasRole('psychosocial_referent')) {
+            $profesionalId = $user->profesional->id;
+
+            $pacientes = \App\Models\Paciente::with('expedientes')
+                ->where('creado_por_profesional_id', $profesionalId)
+                ->orderBy('created_at', 'desc')
+                ->take(10)
+                ->get()
+                ->map(function ($paciente) {
+                    return [
+                        'carnet' => $paciente->carnet,
+                        'nombre_completo' => $paciente->nombre_completo,
+                        'created_at' => $paciente->created_at->format('Y-m-d H:i'),
+                    ];
+                });
+
+            $stats = [
+                'total' => \App\Models\Paciente::where('creado_por_profesional_id', $profesionalId)->count(),
+                'activos' => \App\Models\Expediente::whereHas('paciente', function ($q) use ($profesionalId) {
+                    $q->where('creado_por_profesional_id', $profesionalId);
+                })->count(),
+            ];
+        }
+
+        return Inertia::render('Dashboard', [
+            'pacientes' => $pacientes,
+            'stats' => $stats,
+        ]);
     })->name('dashboard');
+
+    // Clinical Routes
+    Route::get('/pacientes/create', [\App\Http\Controllers\PacienteController::class, 'create'])->name('pacientes.create');
+    Route::post('/pacientes', [\App\Http\Controllers\PacienteController::class, 'store'])->name('pacientes.store');
+    Route::get('/pacientes/{paciente:carnet}', [\App\Http\Controllers\PacienteController::class, 'show'])->name('pacientes.show');
 
     // Admin Routes
     Route::middleware('sysadmin')->prefix('admin')->group(function () {
@@ -51,6 +92,9 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         Route::get('/users/{id}/edit', [\App\Http\Controllers\Admin\UserController::class, 'edit'])->name('admin.users.edit');
         Route::put('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('admin.users.update');
         Route::delete('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('admin.users.destroy');
+
+        // Patients audit
+        Route::get('/pacientes', [\App\Http\Controllers\Admin\PacienteController::class, 'index'])->name('admin.pacientes.index');
     });
 
     Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout');

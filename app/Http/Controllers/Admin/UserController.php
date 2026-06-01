@@ -55,6 +55,9 @@ class UserController extends Controller
             'coordinators_ratio' => Especialista::whereHas('roles', function($q) {
                 $q->where('slug', 'area_coordinator');
             })->count() . ' / ' . Area::count(),
+            'psychosocial_referents' => Especialista::whereHas('roles', function($q) {
+                $q->where('slug', 'psychosocial_referent');
+            })->count(),
         ];
 
         return Inertia::render('Admin/Users/Index', [

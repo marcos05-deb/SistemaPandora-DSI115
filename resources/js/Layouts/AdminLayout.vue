@@ -55,17 +55,37 @@ watch(() => page.props.flash?.message, (newMsg) => {
             <aside class="w-[180px] bg-[var(--nord1)] shadow-xl shrink-0 z-10 flex flex-col">
                 <nav class="flex-1 py-4">
                     <Link
-                        v-for="item in navigation"
-                        :key="item.href + item.label"
-                        :href="item.href"
-                        :class="[
-                            'block px-6 py-2.5 text-[13px] transition-colors border-l-2',
-                            $page.url.startsWith(item.href) && (item.href !== '/admin/dashboard' || $page.url === '/admin/dashboard')
-                                ? 'bg-[rgba(136,192,208,0.07)] text-[var(--frost2)] border-[var(--frost2)] font-medium'
-                                : 'text-[var(--nord4)] border-transparent hover:bg-[var(--nord2)]'
-                        ]"
+                        href="/admin/dashboard"
+                        class="group flex items-center px-4 py-2.5 text-[14px] font-medium rounded-[8px] transition-all duration-200"
+                        :class="$page.url === '/admin/dashboard' ? 'bg-[var(--nord3)] text-white shadow-sm' : 'text-[var(--nord4)] hover:bg-[var(--nord2)] hover:text-white'"
                     >
-                        {{ item.label }}
+                        <svg class="mr-3 h-5 w-5 flex-shrink-0 transition-colors" :class="$page.url === '/admin/dashboard' ? 'text-white' : 'text-[var(--nord4)] group-hover:text-[var(--nord11)]'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                        Dashboard
+                    </Link>
+
+                    <Link
+                        href="/admin/users"
+                        class="group flex items-center px-4 py-2.5 text-[14px] font-medium rounded-[8px] transition-all duration-200"
+                        :class="$page.url.startsWith('/admin/users') ? 'bg-[var(--nord3)] text-white shadow-sm' : 'text-[var(--nord4)] hover:bg-[var(--nord2)] hover:text-white'"
+                    >
+                        <svg class="mr-3 h-5 w-5 flex-shrink-0 transition-colors" :class="$page.url.startsWith('/admin/users') ? 'text-white' : 'text-[var(--nord4)] group-hover:text-[var(--nord13)]'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        Personal del Sistema
+                    </Link>
+                    
+                    <!-- Auditoría de Pacientes -->
+                    <Link
+                        href="/admin/pacientes"
+                        class="group flex items-center px-4 py-2.5 text-[14px] font-medium rounded-[8px] transition-all duration-200"
+                        :class="$page.url.startsWith('/admin/pacientes') ? 'bg-[var(--nord3)] text-white shadow-sm' : 'text-[var(--nord4)] hover:bg-[var(--nord2)] hover:text-white'"
+                    >
+                        <svg class="mr-3 h-5 w-5 flex-shrink-0 transition-colors" :class="$page.url.startsWith('/admin/pacientes') ? 'text-white' : 'text-[var(--nord4)] group-hover:text-[var(--nord10)]'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Auditoría de Pacientes
                     </Link>
                 </nav>
             </aside>

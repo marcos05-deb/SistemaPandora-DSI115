@@ -188,3 +188,44 @@
   - **Modelado:** Se crearon los modelos faltantes `Paciente` y `ContactoPaciente` y se modificó `Expediente` integrando sus respectivas relaciones, aplicando `EncryptedFieldCast` a todos sus campos que contienen Información Protegida de Salud (PHI) (ej: `motivo_consulta`, `diagnostico`, `notas_clinicas`, `nombre_completo`).
   - **Manejo de Excepciones:** Se confirmó que `bootstrap/app.php` maneje silenciosamente la `DecryptionException`, expulsando al usuario con un `HTTP 401` o redirigiéndolo al Login ante cualquier acceso anómalo.
   - **Pruebas:** Se creó `EncryptionTest.php` validando la consistencia e integridad del cifrado y decodificación. Las pruebas pasaron exitosamente.
+
+### [2026-06-01] Adición de Rol: Referente Psicosocial
+- **Agente:** Antigravity (IA)
+- **Contexto:** A solicitud del usuario, se requirió agregar un nuevo rol intermedio dentro del sistema de Control de Acceso Basado en Roles (RBAC).
+- **Cambios realizados:**
+  - Se modificó `database/seeders/RoleSeeder.php` agregando el rol "Referente Psicosocial" con el slug `psychosocial_referent` y nivel `20` (intermedio entre Especialista y Coordinador).
+### [2026-06-01] Refactorización de Dashboard Clínico y Restricción de Roles
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se solicitó estandarizar el dashboard de los especialistas clínicos utilizando la estética del Sistema de Diseño Nord (previamente aplicada al panel admin) y añadir una restricción en la que únicamente el `Referente Psicosocial` pueda registrar pacientes.
+- **Cambios realizados:**
+  - **Inyección Global de Roles:** Se modificó `app/Http/Middleware/HandleInertiaRequests.php` para incluir en las variables globales de sesión (`page.props.auth.user.roles`) los identificadores de rol del usuario, permitiendo el control de acceso desde el Frontend (Vue/Inertia).
+  - **Nuevo Layout:** Se creó `resources/js/Layouts/ClinicalLayout.vue` heredando todas las directrices UI/UX, tokens CSS (colores `--nord`) y estructura general de `AdminLayout.vue` pero con un contexto de navegación clínico.
+  - **Rediseño de Dashboard:** Se reemplazó completamente el componente `resources/js/Pages/Dashboard.vue` por una interfaz limpia con tarjetas métricas ("Total Pacientes" y "Expedientes Activos") y una tabla responsiva de "Pacientes Recientes".
+  - **Control de UI por Roles:** Se encapsuló el botón "Registrar Paciente" dentro de un condicional reactivo (`v-if="canCreatePatient"`) que valida si el usuario cuenta con el rol `psychosocial_referent`.
+  - **Lógica Backend:** Se actualizó la clausura del endpoint `/dashboard` en `routes/web.php` para retornar los datos reales utilizando Eloquent (`Paciente::with('expedientes')` y `Paciente::count()`).
+
+### [2026-06-01] Automatización de Perfiles Clínicos en Seeder
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se solicitó poblar la base de datos automáticamente con usuarios de prueba para todos los roles clínicos, evitando la necesidad de crearlos manualmente desde el panel de administrador.
+- **Cambios realizados:**
+  - Se modificó `database/seeders/DatabaseSeeder.php` incorporando la creación de tres perfiles de prueba fijos: Coordinador de Área, Referente Psicosocial y Especialista.
+  - Se implementó la instanciación de `KeyDerivationService` dentro del seeder para asegurar que los usuarios de prueba cuenten con un `kdf_salt` válido, permitiendo que la derivación de contraseñas y el cifrado XSalsa20-Poly1305 funcionen correctamente durante sus sesiones.
+  - Se automatizó la creación de los registros obligatorios en la tabla `profesionales` vinculándolos al `Área General` con sus respectivas especialidades.
+
+### [2026-06-01] Implementación del Flujo de Registro de Pacientes
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se solicitó desarrollar la vista y la lógica subyacente para permitir el registro de nuevos pacientes en el sistema, asegurando que la estética "Nord" se mantenga y cumpliendo las restricciones de acceso establecidas en la HU-03/HU-05.
+- **Cambios realizados:**
+  - **Lógica de Controlador y Enrutamiento:** Se creó `PacienteController.php` con métodos `create` y `store`. Se inyectó una verificación dura (`abort(403)`) para bloquear cualquier solicitud POST o GET proveniente de usuarios que no posean el rol `psychosocial_referent`.
+  - **Transacción Atómica (BD):** Se implementó `DB::transaction` en el método `store` para insertar de forma segura los datos en la tabla `pacientes` y luego en `contactos_paciente`, previniendo datos huérfanos en caso de fallos. El `código` (UUID) se hereda automáticamente.
+  - **Cifrado Transparente:** Al usar los modelos de Eloquent configurados previamente con `EncryptedFieldCast`, toda la Información de Salud Protegida (PHI) como la fecha de nacimiento o el nombre del contacto de emergencia viajan y se almacenan automáticamente cifrados.
+  - **Frontend / UX:** Se diseñó `resources/js/Pages/Pacientes/Create.vue` como un formulario a dos columnas integrado a `ClinicalLayout.vue`. Cuenta con selectores dinámicos para Facultades/Carreras y maneja reactividad de errores nativamente con `useForm` de Inertia.js.
+
+### [2026-06-01] Segmentación Estricta de Datos en el Dashboard Clínico (RBAC)
+- **Agente:** Antigravity (IA)
+- **Contexto:** Aplicación del Control de Acceso Basado en Roles (RBAC) directamente sobre las consultas que pueblan el Dashboard de los especialistas, asegurando la privacidad de la información incluso en listas de pacientes "recientes".
+- **Cambios realizados:**
+  - **Lógica de Filtro por Creador:** Se modificó la clausura de la ruta `/dashboard` en `routes/web.php`. Ahora, cuando un `psychosocial_referent` ingresa, la consulta `Paciente::with('expedientes')` se filtra automáticamente por `creado_por_profesional_id`, limitándolo a ver estrictamente sus propios registros y bloqueando el acceso a pacientes creados por otros Referentes.
+  - **Métricas Aisladas:** Las estadísticas de la parte superior del Dashboard (`$stats['total']` y `$stats['activos']`) ahora calculan valores locales en lugar de globales.
+  - **Bloqueo a otros Especialistas:** Cualquier usuario con un rol diferente (Ej. `specialist` o `area_coordinator`) recibirá colecciones vacías (`[]` y `0`), ya que por regla de negocio actual, no tienen permitido visualizar ningún expediente a menos que el administrador se lo asigne explícitamente (Funcionalidad pendiente para el próximo sprint).
+\n### Sprint 1 - Mejoras a HU-05 (Datos Ampliados y Multicontacto)\n* **Esquema de Base de Datos:** Se inyectaron `nombre_completo` y `direccion` (cifrados) a la tabla `pacientes`.\n* **Contactos Condicionales:** Se rediseñó el backend y frontend para soportar hasta 3 perfiles simultáneos: Padre, Madre y Responsable Legal. `PacienteController@store` implementa validación dinámica según la selección del responsable, obligando a proveer dirección y teléfono del responsable legal designado.\n* **Auditoría (Admin):** Se implementó `Admin\PacienteController@index` y la ruta `/admin/pacientes` que expone exclusivamente la tabla de códigos UUID y fechas de ingreso de los pacientes.\n* **RBAC Dashboard:** La ruta protegida del dashboard para el `psychosocial_referent` se modificó para enviar y renderizar en su tabla el `carnet` y el `nombre_completo` del paciente (dejando atrás el opaco `codigo`).\n
