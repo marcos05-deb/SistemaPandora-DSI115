@@ -20,6 +20,12 @@ class Expediente extends Model
         'diagnostico',
     ];
 
+    protected $casts = [
+        'motivo_consulta' => \App\Models\Casts\EncryptedFieldCast::class,
+        'notas_clinicas'  => \App\Models\Casts\EncryptedFieldCast::class,
+        'diagnostico'     => \App\Models\Casts\EncryptedFieldCast::class,
+    ];
+
     protected static function booted(): void
     {
         static::addGlobalScope(new AreaScope());

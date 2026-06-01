@@ -142,3 +142,49 @@
   - **Estructura DB:** Se introdujo la bandera booleana `must_change_password` en la tabla `users` (activa por defecto). El seeder del sysadmin la desactiva por defecto para la cuenta raíz.
   - **Middleware (`RequirePasswordChange`):** Intercepta todas las rutas bajo el grupo `auth` y si la bandera está activa, fuerza la redirección al flujo de configuración de contraseña.
   - **Lógica Criptográfica (`PasswordSetupController`):** Al establecer la nueva clave, el controlador regenera el `kdf_salt` en la base de datos y **re-deriva la clave maestra `_sym_key`** de la sesión utilizando el nuevo hash, garantizando que el usuario esté habilitado inmediatamente para usar el sistema sin corromper la criptografía.
+
+### [2026-06-01] Aseguramiento de Reglas de Negocio (RBAC Estricto)
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se detectó una falla en la lógica de negocio donde el sistema permitía registrar múltiples especialistas con el rol de `area_coordinator` dentro de una misma Área Clínica.
+- **Cambios realizados:**
+  - Se inyectó una **Closure de validación** (regla personalizada) en los métodos `store` y `update` de `UserController.php` para el campo `area_id`.
+  - Esta regla detecta si se está intentando asignar el rol de coordinador y verifica, vía Eloquent (`whereHas('especialista.roles')`), si ya existe un perfil activo con ese cargo en el departamento clínico especificado.
+  - En modo edición, la consulta inteligentemente ignora al propio usuario (`where('user_id', '!=', $user->id)`) para evitar falsos positivos.
+
+### [2026-06-01] Refactorización UI/UX - Sistema de Diseño "Nord"
+- **Agente:** Antigravity (IA)
+- **Contexto:** Implementación de un sistema de diseño institucional, austero y eficiente basado en la paleta semántica "Nord", mejorando drásticamente la jerarquía visual y la ergonomía del módulo de administración. Adicionalmente se requirió adaptar el esquema de base de datos para soportar nuevos campos requeridos en el diseño.
+- **Cambios realizados:**
+  - **Base de Datos:** Se creó la migración `add_phone_and_is_active_to_users_table.php` para inyectar `phone` (string) y `is_active` (boolean) a la tabla `users` preservando los datos existentes. Se actualizó el modelo `Especialista` y el array `$fillable`.
+  - **CSS Nativo:** Se declararon los tokens oficiales en `resources/css/app.css` (`--nord0`, `--frost4`, `--aurora-red`, etc.) y se erradicó el uso de colores arbitrarios.
+  - **Layout Principal:** `AdminLayout.vue` fue adaptado a la estética Nord, con una cabecera rígida de 44px en color `--nord0`, una barra lateral con identificadores `--frost2` para la página activa, y un fondo de confort visual en `--nord6`.
+  - **Gestión de Usuarios (Index):**
+    - Se incluyó un bloque analítico de tres tarjetas que exponen métricas procesadas desde el backend (Total, Activos, Ratio Coordinadores/Áreas).
+    - La tabla fue rediseñada usando encapsulamiento estricto ("pill badges") para roles, incluyendo sub-estados condicionales ("Activo/Inactivo") bajo el nombre de los especialistas.
+    - Se implementaron Estados Vacíos (Empty States) ilustrados y guiados para cuando no hay información o las búsquedas fallan.
+  - **Formulario (Form.vue):**
+    - Se reestructuró la arquitectura de información en un modelo balanceado de 2 columnas (Info Básica y Roles/Perfil).
+    - Se mejoró la ergonomía marcando los campos requeridos con asteriscos de color `--aurora-red` y leyendas explícitas.
+    - El bloque de notificación criptográfica fue transformado en una discreta alerta estilizada con `--frost3`.
+
+### [2026-06-01] Refinamientos Finales de Traducción y Datos Base
+- **Agente:** Antigravity (IA)
+- **Contexto:** Ajustes finales sobre el flujo de seguridad, correcciones de idioma, modificaciones del seeder y refactorización del cálculo de métricas en el panel.
+- **Cambios realizados:**
+  - **Traducción de Validación:** En el `PasswordSetupController`, se inyectó un diccionario personalizado en la función `validate()` asegurando que todas las violaciones a la complejidad de contraseña (mix de casos, números, longitud, símbolos) se presenten estrictamente en español.
+  - **Métricas:** Se refactorizó la tarjeta "Administradores" por "Coordinadores de Área", inyectando la métrica como un ratio dinámico (`$coordinadores / $totalAreas`).
+  - **Actualización de Seeder:** Se incorporó "Trabajo Social" al catálogo oficial del `AreaSeeder.php` para integrarla operativamente dentro del nuevo flujo.
+
+### [2026-06-01] Implementación de HU-04 y HU-05 (Cifrado de Datos y Código de Privacidad)
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se requiere implementar el cifrado de datos de registros clínicos en reposo utilizando `sodium_crypto_secretbox` (XSalsa20-Poly1305) y asignar un código único anonimizado para pacientes, manteniendo compatibilidad estricta con el esquema final de base de datos y la normativa HIPAA / ISO 27001.
+- **Cambios realizados:**
+  - **Decisión de Negocio (HU-04):** A solicitud expresa, no se implementó un código PND externo. El identificador anónimo de búsqueda e integración será nativamente el UUID autogenerado (`codigo`) de la tabla `pacientes`, garantizando entropía y unicidad sin alterar el esquema existente ni crear índices ciegos (Blind Index) que no son necesarios para UUIDs.
+  - **Migración Incremental:** Se creó `2026_05_31_202108_modify_columns_for_encryption_in_patients_tables.php` para cambiar los tipos de columnas que debían cifrarse a `TEXT`. Esto afectó `fecha_nacimiento` en `pacientes`, y `telefono_personal` y `telefono_casa` en `contactos_paciente`, previniendo errores de longitud (Base64) y de tipo estricto (`DATE`) en PostgreSQL.
+  - **Servicios Criptográficos:**
+    - `DecryptionException.php`: Excepción para fallos de integridad o falta de sesión.
+    - `EncryptionContextService.php`: Abstracción inyectable para acceder a la `_sym_key` almacenada en la sesión y mantener el código testeable y seguro.
+  - **Casts de Eloquent:** Se implementó `EncryptedFieldCast` que cifra y descifra automáticamente atributos al vuelo usando la clave derivada de la contraseña del especialista autenticado.
+  - **Modelado:** Se crearon los modelos faltantes `Paciente` y `ContactoPaciente` y se modificó `Expediente` integrando sus respectivas relaciones, aplicando `EncryptedFieldCast` a todos sus campos que contienen Información Protegida de Salud (PHI) (ej: `motivo_consulta`, `diagnostico`, `notas_clinicas`, `nombre_completo`).
+  - **Manejo de Excepciones:** Se confirmó que `bootstrap/app.php` maneje silenciosamente la `DecryptionException`, expulsando al usuario con un `HTTP 401` o redirigiéndolo al Login ante cualquier acceso anómalo.
+  - **Pruebas:** Se creó `EncryptionTest.php` validando la consistencia e integridad del cifrado y decodificación. Las pruebas pasaron exitosamente.
