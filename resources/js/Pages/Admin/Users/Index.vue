@@ -1,364 +1,270 @@
 <script setup>
-import { ref } from "vue";
-import { Head, useForm, router } from "@inertiajs/vue3";
+import { ref, watch } from "vue";
+import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import AdminLayout from "@/Layouts/AdminLayout.vue";
 
 defineOptions({ layout: AdminLayout });
 
 const props = defineProps({
-  users: Array,
+  users: Object,
   roles: Array,
   areas: Array,
+  filters: Object,
+  metrics: Object,
 });
 
-const showForm = ref(false);
-const editMode = ref(false);
-const editId = ref(null);
-const isEditingSysadmin = ref(false);
+const page = usePage();
 
-const form = useForm({
-  name: "",
-  email: "",
-  password: "",
-  role_id: "",
-  area_id: "",
-  especialidad: "",
-  numero_registro: "",
+const search = ref(props.filters.search || '');
+const roleFilter = ref(props.filters.role || '');
+const copied = ref(false);
+
+watch([search, roleFilter], ([newSearch, newRole]) => {
+  router.get('/admin/users', { search: newSearch, role: newRole }, {
+    preserveState: true,
+    preserveScroll: true,
+    replace: true,
+  });
 });
 
-const isSysadminSelected = ref(false);
-
-function onRoleChange() {
-  const selectedRole = props.roles.find((r) => r.id === form.role_id);
-  isSysadminSelected.value = selectedRole?.slug === "sysadmin";
-  if (isSysadminSelected.value) {
-    form.area_id = "";
-    form.especialidad = "";
-    form.numero_registro = "";
-  }
-}
-
-function submitUser() {
-  if (editMode.value) {
-    form.put(`/admin/users/${editId.value}`, {
-      preserveScroll: true,
-      onSuccess: () => {
-        form.reset();
-        showForm.value = false;
-        editMode.value = false;
-        editId.value = null;
-      },
-    });
-  } else {
-    form.post("/admin/users", {
-      preserveScroll: true,
-      onSuccess: () => {
-        form.reset();
-        showForm.value = false;
-      },
-    });
-  }
-}
-
-function editUser(user) {
-  editMode.value = true;
-  editId.value = user.id;
-  isEditingSysadmin.value = user.roles.some((r) => r.slug === "sysadmin");
-
-  form.name = user.name;
-  form.email = user.email;
-  form.password = ""; // Cannot edit password
-  form.role_id = user.roles[0]?.id || "";
-
-  onRoleChange();
-
-  if (user.profesional && !isSysadminSelected.value) {
-    form.area_id = user.profesional.area_id || "";
-    form.especialidad = user.profesional.especialidad || "";
-    form.numero_registro = user.profesional.numero_registro || "";
-  } else {
-    form.area_id = "";
-    form.especialidad = "";
-    form.numero_registro = "";
-  }
-
-  showForm.value = true;
-  // Scroll to form
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function cancelForm() {
-  showForm.value = false;
-  editMode.value = false;
-  editId.value = null;
-  isEditingSysadmin.value = false;
-  form.reset();
-}
-
-function deleteUser(id) {
+function deleteUser(id, name) {
   if (
-    confirm("¿Estás seguro de que deseas eliminar este usuario del sistema?")
+    confirm(`¿Eliminar a ${name}?\nEsta acción no se puede deshacer.`)
   ) {
     router.delete(`/admin/users/${id}`, { preserveScroll: true });
   }
+}
+
+function copyPassword(password) {
+  navigator.clipboard.writeText(password).then(() => {
+    copied.value = true;
+    setTimeout(() => {
+      clearGeneratedPassword();
+    }, 5000);
+  }).catch(err => {
+    console.error('Failed to copy text: ', err);
+    alert('Error al copiar al portapapeles. Selecciónalo y cópialo manualmente.');
+  });
+}
+
+function clearGeneratedPassword() {
+  page.props.flash.generated_password = null;
+  copied.value = false;
 }
 </script>
 
 <template>
   <Head title="Gestión de Personal" />
 
-  <div class="space-y-6">
+  <div class="space-y-[14px]">
     <!-- Header Section -->
     <div
-      class="flex justify-between items-center bg-white p-6 shadow-lg rounded-2xl"
+      class="flex justify-between items-center bg-white py-[14px] px-[18px] shadow-sm border border-[var(--nord4)] rounded-[10px]"
     >
       <div>
-        <h2 class="text-[22px] font-semibold text-[#1A1816] tracking-tight">
+        <h2 class="text-[16px] font-medium text-[var(--nord0)] tracking-tight">
           Gestión de Personal
         </h2>
-        <p class="text-sm text-gray-500 mt-1">
+        <p class="text-[12px] text-[var(--nord3)] mt-0.5">
           Administra los accesos y perfiles del sistema PANDORA.
         </p>
       </div>
-      <button
-        @click="showForm ? cancelForm() : (showForm = true)"
-        class="bg-[#2F2B28] text-white py-2.5 px-5 rounded-xl text-[15px] font-medium hover:bg-[#1A1816] transition-colors"
+      <Link
+        href="/admin/users/create"
+        class="bg-[var(--frost4)] text-white py-2 px-4 rounded-[7px] text-[13px] font-medium hover:bg-[#4C6A8D] transition-colors flex items-center gap-2"
       >
-        {{ showForm ? "Cancelar" : "Nuevo Usuario" }}
-      </button>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+        Nuevo Usuario
+      </Link>
     </div>
 
-    <!-- Form Section -->
-    <div
-      v-if="showForm"
-      class="bg-white p-8 shadow-lg rounded-2xl border-t-4 border-[#1A1816]"
-    >
-      <h3 class="text-lg font-medium text-[#1A1816] mb-6">
-        {{ editMode ? "Editar Usuario" : "Datos del Nuevo Usuario" }}
-      </h3>
+    <!-- Alert for Generated Password -->
+    <div v-if="$page.props.flash.generated_password" class="bg-emerald-50 border border-[var(--aurora-green)] rounded-[10px] p-6 relative">
+        <button @click="clearGeneratedPassword" class="absolute top-4 right-4 text-emerald-600 hover:text-emerald-800">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <h4 class="text-emerald-800 font-medium mb-2 flex items-center gap-2 text-[14px]">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Usuario Creado Exitosamente
+        </h4>
+        <p class="text-[12px] text-emerald-700 mb-4">El sistema ha generado una contraseña segura temporal para este usuario. Cópiala y compártela a través de un canal seguro.</p>
+        <div class="bg-white px-4 py-3 rounded border border-emerald-200 flex items-center justify-between">
+            <code class="text-[16px] font-mono text-[var(--nord0)]">{{ $page.props.flash.generated_password }}</code>
+            <button 
+                @click="copyPassword($page.props.flash.generated_password)" 
+                :class="['text-[12px] font-medium transition-colors px-3 py-1.5 rounded-[7px]', copied ? 'bg-emerald-100 text-emerald-800' : 'bg-[var(--frost4)] text-white hover:bg-[#4C6A8D]']"
+            >
+                <span v-if="copied" class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    ¡Copiada!
+                </span>
+                <span v-else>Copiar</span>
+            </button>
+        </div>
+    </div>
 
-      <form @submit.prevent="submitUser" class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- Basic Info -->
-          <div class="space-y-6">
+    <!-- Metrics Cards -->
+    <div class="grid grid-cols-3 gap-[10px]">
+        <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
+            <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Usuarios totales</div>
+            <div class="text-[22px] font-medium text-[var(--nord0)]">{{ metrics.total }}</div>
+        </div>
+        <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
+            <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Activos</div>
+            <div class="text-[22px] font-medium text-[var(--aurora-green)]">{{ metrics.active }}</div>
+        </div>
+        <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
+            <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Coordinadores de Área</div>
+            <div class="text-[22px] font-medium text-[var(--frost4)]">{{ metrics.coordinators_ratio }}</div>
+        </div>
+    </div>
+
+    <!-- Toolbar: Search & Filters -->
+    <div class="flex gap-4 bg-white p-4 rounded-[10px] shadow-sm border border-[var(--nord4)]">
+        <div class="flex-1">
+            <label for="search" class="sr-only">Buscar usuarios</label>
             <div class="relative">
-              <input
-                v-model="form.name"
-                type="text"
-                placeholder="Nombre completo"
-                class="w-full border-0 border-b border-gray-300 px-1 py-2 text-[15px] text-gray-900 focus:border-[#1A1816] focus:ring-0 bg-transparent transition-colors placeholder:text-gray-400"
-              />
-              <p v-if="form.errors.name" class="text-red-500 text-xs mt-1">
-                {{ form.errors.name }}
-              </p>
+                <input 
+                    id="search"
+                    v-model="search" 
+                    type="text" 
+                    placeholder="Buscar por nombre o correo..." 
+                    class="w-full border border-[var(--nord4)] rounded-[7px] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] bg-white transition-colors placeholder-[rgba(76,86,106,0.6)] outline-none" 
+                />
             </div>
-
+        </div>
+        <div class="w-[250px]">
+            <label for="roleFilter" class="sr-only">Filtrar por rol</label>
             <div class="relative">
-              <input
-                v-model="form.email"
-                type="email"
-                placeholder="Correo electrónico"
-                class="w-full border-0 border-b border-gray-300 px-1 py-2 text-[15px] text-gray-900 focus:border-[#1A1816] focus:ring-0 bg-transparent transition-colors placeholder:text-gray-400"
-              />
-              <p v-if="form.errors.email" class="text-red-500 text-xs mt-1">
-                {{ form.errors.email }}
-              </p>
-            </div>
-
-            <div class="relative">
-              <input
-                v-model="form.password"
-                type="password"
-                :disabled="editMode"
-                :placeholder="
-                  editMode
-                    ? 'Contraseña bloqueada (Deuda Sprint 3)'
-                    : 'Contraseña (mínimo 14 caracteres, 1 mayúscula, 1 número, 1 símbolo)'
-                "
-                :class="[
-                  'w-full border-0 border-b border-gray-300 px-1 py-2 text-[15px] focus:border-[#1A1816] focus:ring-0 bg-transparent transition-colors placeholder:text-gray-400',
-                  editMode
-                    ? 'text-gray-400 cursor-not-allowed bg-gray-50'
-                    : 'text-gray-900',
-                ]"
-              />
-              <p
-                v-if="editMode"
-                class="text-[11px] text-gray-500 mt-2 bg-gray-50 p-2 rounded border border-gray-200"
-              >
-                🔒 El cambio de contraseña está deshabilitado temporalmente
-                (Deuda técnica Sprint 3) para proteger la integridad de los
-                datos cifrados.
-              </p>
-              <p v-if="form.errors.password" class="text-red-500 text-xs mt-1">
-                {{ form.errors.password }}
-              </p>
-            </div>
-          </div>
-
-          <!-- Role & Professional Info -->
-          <div v-if="!isEditingSysadmin" class="space-y-6">
-            <div class="relative">
-              <select
-                v-model="form.role_id"
-                @change="onRoleChange"
-                class="w-full border-0 border-b border-gray-300 px-1 py-2 text-[15px] text-gray-900 focus:border-[#1A1816] focus:ring-0 bg-transparent transition-colors"
-              >
-                <option value="" disabled>Seleccionar Rol...</option>
-                <option v-for="role in roles" :key="role.id" :value="role.id">
-                  {{ role.nombre }}
-                </option>
-              </select>
-              <p v-if="form.errors.role_id" class="text-red-500 text-xs mt-1">
-                {{ form.errors.role_id }}
-              </p>
-            </div>
-
-            <!-- Conditionally shown for non-sysadmin -->
-            <template v-if="form.role_id && !isSysadminSelected">
-              <div class="relative">
-                <select
-                  v-model="form.area_id"
-                  class="w-full border-0 border-b border-gray-300 px-1 py-2 text-[15px] text-gray-900 focus:border-[#1A1816] focus:ring-0 bg-transparent transition-colors"
+                <select 
+                    id="roleFilter"
+                    v-model="roleFilter" 
+                    class="w-full border border-[var(--nord4)] rounded-[7px] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] bg-white transition-colors outline-none"
                 >
-                  <option value="" disabled>Seleccionar Área Clínica...</option>
-                  <option v-for="area in areas" :key="area.id" :value="area.id">
-                    {{ area.nombre }}
-                  </option>
+                    <option value="">Todos los roles</option>
+                    <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.nombre }}</option>
                 </select>
-                <p v-if="form.errors.area_id" class="text-red-500 text-xs mt-1">
-                  {{ form.errors.area_id }}
-                </p>
-              </div>
-
-              <div class="relative">
-                <input
-                  v-model="form.especialidad"
-                  type="text"
-                  placeholder="Especialidad (Ej: Psicología Clínica)"
-                  class="w-full border-0 border-b border-gray-300 px-1 py-2 text-[15px] text-gray-900 focus:border-[#1A1816] focus:ring-0 bg-transparent transition-colors placeholder:text-gray-400"
-                />
-                <p
-                  v-if="form.errors.especialidad"
-                  class="text-red-500 text-xs mt-1"
-                >
-                  {{ form.errors.especialidad }}
-                </p>
-              </div>
-
-              <div class="relative">
-                <input
-                  v-model="form.numero_registro"
-                  type="text"
-                  placeholder="Número de Registro / Colegiado"
-                  class="w-full border-0 border-b border-gray-300 px-1 py-2 text-[15px] text-gray-900 focus:border-[#1A1816] focus:ring-0 bg-transparent transition-colors placeholder:text-gray-400"
-                />
-                <p
-                  v-if="form.errors.numero_registro"
-                  class="text-red-500 text-xs mt-1"
-                >
-                  {{ form.errors.numero_registro }}
-                </p>
-              </div>
-            </template>
-          </div>
-          <div
-            v-else
-            class="space-y-6 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-200"
-          >
-            <div class="text-center p-6">
-              <h4 class="text-gray-900 font-medium text-[15px]">
-                Rol de Administrador
-              </h4>
-              <p class="text-xs text-gray-500 mt-2">
-                Los administradores no requieren área clínica ni especialidad.
-                Su rol no puede ser degradado desde aquí.
-              </p>
             </div>
-          </div>
         </div>
-
-        <div class="flex justify-end pt-4">
-          <button
-            type="submit"
-            :disabled="form.processing"
-            class="bg-[#2F2B28] text-white py-2.5 px-8 rounded-xl text-[15px] font-medium hover:bg-[#1A1816] transition-colors disabled:opacity-70"
-          >
-            {{ editMode ? "Actualizar Usuario" : "Guardar Usuario" }}
-          </button>
-        </div>
-      </form>
     </div>
 
     <!-- Users Table -->
-    <div class="bg-white shadow-lg rounded-2xl overflow-hidden">
+    <div class="bg-white shadow-sm border border-[var(--nord4)] rounded-[10px] overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-[14px]">
-          <thead
-            class="bg-gray-50 border-b border-gray-100 text-gray-600 font-medium"
-          >
+        <table class="w-full text-left">
+          <thead class="bg-[var(--nord5)] text-[var(--nord3)] font-medium">
             <tr>
-              <th class="py-4 px-6">Nombre</th>
-              <th class="py-4 px-6">Correo</th>
-              <th class="py-4 px-6">Rol</th>
-              <th class="py-4 px-6">Área / Especialidad</th>
-              <th class="py-4 px-6 text-right">Acciones</th>
+              <th class="py-[11px] px-[16px] text-[11px] uppercase tracking-[0.05em] font-medium">Nombre</th>
+              <th class="py-[11px] px-[16px] text-[11px] uppercase tracking-[0.05em] font-medium">Correo</th>
+              <th class="py-[11px] px-[16px] text-[11px] uppercase tracking-[0.05em] font-medium">Rol</th>
+              <th class="py-[11px] px-[16px] text-[11px] uppercase tracking-[0.05em] font-medium">Área / Especialidad</th>
+              <th class="py-[11px] px-[16px] text-[11px] uppercase tracking-[0.05em] font-medium text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
+          <tbody class="divide-y divide-[var(--nord5)]">
             <tr
-              v-for="user in users"
+              v-for="user in users.data"
               :key="user.id"
-              class="hover:bg-gray-50/50 transition-colors"
+              class="bg-white hover:bg-[var(--nord6)] transition-colors"
             >
-              <td class="py-4 px-6 font-medium text-gray-900">
-                {{ user.name || "-" }}
+              <td class="py-[11px] px-[16px]">
+                <div class="text-[13px] font-medium text-[var(--nord0)]">
+                    {{ user.name || "-" }}
+                </div>
+                <div class="text-[11px] mt-0.5" :class="user.is_active ? 'text-[var(--aurora-green)]' : 'text-[var(--aurora-red)]'">
+                    {{ user.is_active ? 'Activo' : 'Inactivo' }}
+                </div>
               </td>
-              <td class="py-4 px-6 text-gray-600">{{ user.email }}</td>
-              <td class="py-4 px-6">
+              <td class="py-[11px] px-[16px] text-[12px] text-[var(--nord3)]">{{ user.email }}</td>
+              <td class="py-[11px] px-[16px]">
                 <span
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                  v-if="user.roles[0]?.slug === 'sysadmin'"
+                  class="inline-flex items-center px-[9px] py-[3px] rounded-[99px] text-[11px] font-medium bg-[var(--nord5)] text-[var(--nord3)]"
                 >
-                  {{ user.roles[0]?.nombre || "Sin rol" }}
+                  Admin sistema
+                </span>
+                <span
+                  v-else
+                  class="inline-flex items-center px-[9px] py-[3px] rounded-[99px] text-[11px] font-medium bg-[rgba(180,142,173,0.15)] text-[#7d5c78]"
+                >
+                  {{ user.roles[0]?.nombre || "Especialista" }}
                 </span>
               </td>
-              <td class="py-4 px-6 text-gray-500">
+              <td class="py-[11px] px-[16px] text-[12px] text-[var(--nord3)]">
                 <template v-if="user.profesional">
-                  <div class="text-gray-900">
+                  <div class="text-[13px] text-[var(--nord0)]">
                     {{ user.areas[0]?.nombre || "Sin área asignada" }}
                   </div>
-                  <div class="text-xs text-gray-500">
+                  <div class="text-[11px] text-[var(--nord3)]">
                     {{ user.profesional.especialidad }}
                   </div>
                 </template>
-                <span v-else class="text-xs italic text-gray-400">N/A</span>
+                <span v-else class="text-[11px] italic text-[var(--nord3)]">N/A</span>
               </td>
-              <td class="py-4 px-6 text-right space-x-3">
-                <button
-                  @click="editUser(user)"
-                  class="text-blue-500 hover:text-blue-700 transition-colors text-sm font-medium"
-                >
-                  Editar
-                </button>
-                <button
-                  v-if="user.id !== $page.props.auth.user.id"
-                  @click="deleteUser(user.id)"
-                  class="text-red-500 hover:text-red-700 transition-colors text-sm font-medium"
-                >
-                  Eliminar
-                </button>
-                <span v-else class="text-gray-400 text-sm font-medium italic"
-                  >Tú</span
-                >
+              <td class="py-[11px] px-[16px] text-right space-x-3">
+                <template v-if="user.id !== $page.props.auth.user.id">
+                    <Link
+                    :href="`/admin/users/${user.id}/edit`"
+                    class="text-[var(--frost4)] hover:text-[#4C6A8D] transition-colors text-[12px] font-medium inline-flex items-center gap-1"
+                    >
+                    Editar
+                    </Link>
+                    <button
+                    @click="deleteUser(user.id, user.name)"
+                    class="text-[var(--aurora-red)] hover:text-[#a05058] transition-colors text-[12px] font-medium inline-flex items-center gap-1"
+                    >
+                    Eliminar
+                    </button>
+                </template>
+                <div v-else class="text-[var(--nord3)] text-[12px] font-medium inline-flex items-center gap-1 justify-end w-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z" /><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" /><path d="M8 11v-4a4 4 0 1 1 8 0v4" /></svg>
+                  Tu usuario
+                </div>
               </td>
             </tr>
-            <tr v-if="users.length === 0">
-              <td colspan="5" class="py-8 text-center text-gray-500">
-                No hay personal registrado en el sistema.
+            <!-- Empty State - Filter -->
+            <tr v-if="users.data.length === 0 && (search || roleFilter)">
+              <td colspan="5" class="py-16 text-center text-[var(--nord3)]">
+                <div class="flex flex-col items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-[var(--nord4)] mb-2" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
+                    <div class="text-[13px] font-medium">No se encontraron usuarios con ese criterio.</div>
+                    <div class="text-[12px] mt-1">Intenta con otro nombre, correo o rol.</div>
+                </div>
+              </td>
+            </tr>
+            <!-- Empty State - No Data -->
+            <tr v-if="users.data.length === 0 && !search && !roleFilter">
+              <td colspan="5" class="py-16 text-center text-[var(--nord3)]">
+                <div class="flex flex-col items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-[var(--nord4)] mb-3" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1" /><path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M17 10h2a2 2 0 0 1 2 2v1" /><path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M3 13v-1a2 2 0 0 1 2 -2h2" /></svg>
+                    <div class="text-[13px] font-medium">No hay usuarios registrados en el sistema.</div>
+                    <div class="mt-4">
+                        <Link
+                            href="/admin/users/create"
+                            class="bg-[var(--frost4)] text-white py-1.5 px-3 rounded-[7px] text-[12px] font-medium hover:bg-[#4C6A8D] transition-colors inline-flex items-center gap-1"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" /></svg>
+                            Crear primer usuario
+                        </Link>
+                    </div>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+      
+      <!-- Pagination -->
+      <div v-if="users.links && users.links.length > 3" class="px-4 py-3 border-t border-[var(--nord5)] flex justify-center bg-[var(--nord6)]">
+        <div class="flex flex-wrap gap-1">
+            <template v-for="(link, p) in users.links" :key="p">
+                <div v-if="link.url === null" class="mr-1 mb-1 px-3 py-1.5 text-[12px] border border-[var(--nord4)] rounded-[7px] text-[var(--nord4)]" v-html="link.label" />
+                <Link v-else
+                    class="mr-1 mb-1 px-3 py-1.5 text-[12px] border rounded-[7px] hover:bg-[var(--nord5)] focus:border-[var(--frost3)] transition-colors"
+                    :class="{ 'bg-[var(--frost4)] text-white border-[var(--frost4)] font-medium': link.active, 'border-[var(--nord4)] text-[var(--nord3)]': !link.active }"
+                    :href="link.url" v-html="link.label" />
+            </template>
+        </div>
       </div>
     </div>
   </div>

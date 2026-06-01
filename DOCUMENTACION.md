@@ -117,3 +117,28 @@
   - **Ajustes de UI (Frontend):** En `Index.vue` se agregó un estado dinámico que transforma el formulario de creación en uno de edición al pulsar el botón "Editar". Se ocultó el botón "Eliminar" para el propio usuario en sesión.
   - **Bloqueo de Contraseña:** Se desactivó el campo de contraseña en el modo edición, mostrando un mensaje de advertencia fundamentado en la Deuda Técnica del Sprint 3 (HU-05) para prevenir la corrupción de la clave derivada `_sym_key`.
   - **Diseño de Tabla:** Se ajustó la renderización de la tabla para mostrar el "Área" como texto principal oscuro, y la "Especialidad" como un subtexto gris, facilitando la identificación visual de departamentos.
+
+### [2026-05-31] Refactorización UX/UI del Dashboard Administrativo
+- **Agente:** Antigravity (IA)
+- **Contexto:** Las críticas de usabilidad señalaron que la estética con textura, los formularios en línea y la falta de paginación restaban eficiencia y seriedad al sistema. Se solicitó rediseñar la vista para soportar mejor la carga cognitiva y escalar con grandes volúmenes de usuarios.
+- **Cambios realizados:**
+  - **Limpieza Estética:** Se eliminó el fondo texturizado y se aplicó un color gris institucional sólido (`#F4F6F8`) en `AdminLayout.vue`.
+  - **Paginación y Filtros:** Se modificó `UserController.php@index` para usar paginación en lugar de colección entera y se implementó lógica de filtrado (`search` y `roleFilter`). En el frontend se añadió una barra de búsqueda y selectores interactivos.
+  - **Arquitectura Modal:** El formulario de Creación/Edición se migró a un componente flotante (`Modal.vue`), evitando alterar el flujo visual de la tabla principal. Se reemplazaron placeholders por etiquetas de accesibilidad (`<label>`).
+  - **Contraseñas Seguras Automatizadas:** Se eliminó el campo de captura manual de contraseñas. El backend ahora autogenera una cadena segura temporal (`Str::random(16)`) y la retorna en la sesión para ser mostrada una sola vez al administrador de sistema tras la creación de un perfil.
+  - **Mejoras Visuales (Zebra-Striping y Badges):** Se aplicó `even:bg-gray-50` a las tablas y se cambió el indicador del administrador principal por un componente visual destacado (`StatusBadge`).
+
+### [2026-05-31] Extracción de Formulario a Página Dedicada
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se solicitó cambiar el formulario de creación/edición de un Modal flotante a una página dedicada para reducir la carga cognitiva visual. Además, se pidió ajustar los inputs de búsqueda para que empataran con la estética limpia del resto del sistema.
+- **Cambios realizados:**
+  - **Nuevas Rutas y Vista:** Se añadieron rutas de creación y edición (`create` y `edit`) y se extrajo el formulario al nuevo componente de página completa `Form.vue`.
+  - **Ajustes Estéticos de Búsqueda:** Se removieron los bordes cuadrados (`border`) de la barra de búsqueda y selector de rol en `Index.vue`, reemplazándolos por líneas inferiores sutiles (`border-b`) y fondos transparentes para asimilar la estética original "Oracle".
+
+### [2026-05-31] Candado de Seguridad: Cambio de Contraseña Forzado
+- **Agente:** Antigravity (IA)
+- **Contexto:** Las contraseñas temporales generadas automáticamente deben operar como OTPs (One-Time Passwords). Al usarla por primera vez, el sistema debe exigir la configuración de una contraseña definitiva para proteger el acceso.
+- **Cambios realizados:**
+  - **Estructura DB:** Se introdujo la bandera booleana `must_change_password` en la tabla `users` (activa por defecto). El seeder del sysadmin la desactiva por defecto para la cuenta raíz.
+  - **Middleware (`RequirePasswordChange`):** Intercepta todas las rutas bajo el grupo `auth` y si la bandera está activa, fuerza la redirección al flujo de configuración de contraseña.
+  - **Lógica Criptográfica (`PasswordSetupController`):** Al establecer la nueva clave, el controlador regenera el `kdf_salt` en la base de datos y **re-deriva la clave maestra `_sym_key`** de la sesión utilizando el nuevo hash, garantizando que el usuario esté habilitado inmediatamente para usar el sistema sin corromper la criptografía.

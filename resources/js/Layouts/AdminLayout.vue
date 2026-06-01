@@ -28,24 +28,20 @@ watch(() => page.props.flash?.message, (newMsg) => {
 </script>
 
 <template>
-    <!-- Background with Oracle aesthetic -->
-    <div 
-        class="min-h-screen bg-[#F0EBE1] bg-cover bg-center bg-fixed flex flex-col font-sans"
-        style="background-image: url('/images/background.png')"
-    >
+    <div class="min-h-screen bg-[var(--nord6)] flex flex-col font-sans">
         <!-- Topbar -->
-        <header class="bg-[#1A1816] text-white shadow-md z-20">
-            <div class="flex items-center justify-between px-6 py-4">
-                <div class="flex items-center gap-4">
-                    <span class="text-xl font-semibold tracking-tight">PANDORA <span class="font-light text-gray-400">Admin</span></span>
+        <header class="bg-[var(--nord0)] shadow-md z-20 h-[44px]">
+            <div class="flex items-center justify-between px-6 h-full">
+                <div class="flex items-center gap-2">
+                    <span class="text-[16px] font-bold tracking-tight text-[var(--nord6)]">PANDORA <span class="font-normal text-[var(--frost2)] ml-1">Admin</span></span>
                 </div>
-                <div class="flex items-center gap-4 text-sm text-gray-300">
+                <div class="flex items-center gap-4 text-[12px] text-[var(--nord4)]">
                     <span>{{ page.props.auth?.user?.name || page.props.auth?.user?.email }}</span>
                     <Link 
                         href="/logout" 
                         method="post" 
                         as="button" 
-                        class="px-3 py-1.5 bg-[#2F2B28] hover:bg-gray-700 text-white rounded-lg transition-colors border border-gray-600"
+                        class="px-2 py-1 bg-transparent hover:bg-[var(--nord2)] text-[var(--nord4)] rounded transition-colors border border-[var(--nord3)]"
                     >
                         Cerrar Sesión
                     </Link>
@@ -56,17 +52,17 @@ watch(() => page.props.flash?.message, (newMsg) => {
         <!-- Layout Body -->
         <div class="flex flex-1 overflow-hidden">
             <!-- Sidebar -->
-            <aside class="w-64 bg-white/95 backdrop-blur-sm shadow-xl shrink-0 z-10 flex flex-col">
-                <nav class="flex-1 py-6 space-y-1">
+            <aside class="w-[180px] bg-[var(--nord1)] shadow-xl shrink-0 z-10 flex flex-col">
+                <nav class="flex-1 py-4">
                     <Link
                         v-for="item in navigation"
                         :key="item.href + item.label"
                         :href="item.href"
                         :class="[
-                            'block px-6 py-3 text-[15px] font-medium transition-colors border-l-4',
+                            'block px-6 py-2.5 text-[13px] transition-colors border-l-2',
                             $page.url.startsWith(item.href) && (item.href !== '/admin/dashboard' || $page.url === '/admin/dashboard')
-                                ? 'bg-gray-100/80 text-[#1A1816] border-[#1A1816]'
-                                : 'text-gray-600 border-transparent hover:bg-gray-50 hover:text-[#1A1816]'
+                                ? 'bg-[rgba(136,192,208,0.07)] text-[var(--frost2)] border-[var(--frost2)] font-medium'
+                                : 'text-[var(--nord4)] border-transparent hover:bg-[var(--nord2)]'
                         ]"
                     >
                         {{ item.label }}

@@ -13,5 +13,6 @@ class AreaSeeder extends Seeder
         Area::firstOrCreate(['nombre' => 'Medicina General'], ['requiere_aprobacion_estricta' => false]);
         Area::firstOrCreate(['nombre' => 'Fisioterapia'], ['requiere_aprobacion_estricta' => false]);
         Area::firstOrCreate(['nombre' => 'Nutrición'], ['requiere_aprobacion_estricta' => false]);
+        Area::firstOrCreate(['nombre' => 'Trabajo Social'], ['requiere_aprobacion_estricta' => false]);
     }
 }

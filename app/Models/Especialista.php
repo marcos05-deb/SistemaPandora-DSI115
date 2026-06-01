@@ -30,6 +30,8 @@ class Especialista extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
+        'is_active',
         'password',
         'kdf_salt',
     ];

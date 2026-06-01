@@ -27,7 +27,11 @@ Route::middleware('guest')->group(function () {
 Route::redirect('/', '/login');
 
 // --- Rutas protegidas (Auth) ---
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'require_password_change'])->group(function () {
+    // Password Setup (Primer Ingreso)
+    Route::get('/password/setup', [\App\Http\Controllers\Auth\PasswordSetupController::class, 'show'])->name('password.setup')->withoutMiddleware('require_password_change');
+    Route::post('/password/setup', [\App\Http\Controllers\Auth\PasswordSetupController::class, 'update'])->name('password.setup.store')->withoutMiddleware('require_password_change');
+
     // Clinical Dashboard
     Route::get('/dashboard', function () {
         if (auth()->user()->hasRole('sysadmin')) {
@@ -42,7 +46,9 @@ Route::middleware('auth')->group(function () {
         
         // User management
         Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
+        Route::get('/users/create', [\App\Http\Controllers\Admin\UserController::class, 'create'])->name('admin.users.create');
         Route::post('/users', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('admin.users.store');
+        Route::get('/users/{id}/edit', [\App\Http\Controllers\Admin\UserController::class, 'edit'])->name('admin.users.edit');
         Route::put('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('admin.users.update');
         Route::delete('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('admin.users.destroy');
     });

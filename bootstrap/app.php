@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'validate.sym_key' => \App\Http\Middleware\ValidateSymmetricKey::class,
             'enforce_area_scope' => \App\Http\Middleware\EnforceAreaScope::class,
             'sysadmin' => \App\Http\Middleware\EnsureIsSysadmin::class,
+            'require_password_change' => \App\Http\Middleware\RequirePasswordChange::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
