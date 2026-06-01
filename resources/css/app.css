@@ -86,3 +86,21 @@
   color: #D8DEE9 !important; /* Maps to original --nord4 */
 }
 
+/* Custom Role Pills */
+.pill-aurora {
+  background-color: rgba(180, 142, 173, 0.15);
+  color: #7d5c78;
+}
+.dark .pill-aurora {
+  background-color: rgba(180, 142, 173, 0.25);
+  color: #B48EAD; /* --aurora-purple */
+}
+
+.pill-admin {
+  background-color: #E5E9F0; /* original --nord5 */
+  color: #4C566A; /* original --nord3 */
+}
+.dark .pill-admin {
+  background-color: #434C5E; /* original --nord2, provides contrast against #3B4252 table bg */
+  color: #ECEFF4; /* original --nord6 */
+}

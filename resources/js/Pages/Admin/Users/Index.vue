@@ -183,13 +183,13 @@ function clearGeneratedPassword() {
               <td class="py-[11px] px-[16px]">
                 <span
                   v-if="user.roles[0]?.slug === 'sysadmin'"
-                  class="inline-flex items-center px-[9px] py-[3px] rounded-[99px] text-[11px] font-medium bg-[var(--nord11)] text-white shadow-sm"
+                  class="inline-flex items-center px-[9px] py-[3px] rounded-[99px] text-[11px] font-medium pill-admin"
                 >
                   Admin sistema
                 </span>
                 <span
                   v-else
-                  class="inline-flex items-center px-[9px] py-[3px] rounded-[99px] text-[11px] font-medium bg-[var(--nord15)] text-white shadow-sm"
+                  class="inline-flex items-center px-[9px] py-[3px] rounded-[99px] text-[11px] font-medium pill-aurora"
                 >
                   {{ user.roles[0]?.nombre || "Especialista" }}
                 </span>

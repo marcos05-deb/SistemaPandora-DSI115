@@ -16,10 +16,15 @@ return [
     ],
 
     'argon' => [
-        'memory'  => 65536, // 64 MB
-        'threads' => 1,
-        'time'    => 4,
+        'memory'  => env('HASH_ARGON_MEMORY', 65536), // 64 MB
+        'threads' => env('HASH_ARGON_THREADS', 1),
+        'time'    => env('HASH_ARGON_TIME', 4),
         'verify'  => true,
+    ],
+
+    'kdf' => [
+        'opslimit' => env('KDF_OPSLIMIT', SODIUM_CRYPTO_PWHASH_OPSLIMIT_INTERACTIVE),
+        'memlimit' => env('KDF_MEMLIMIT', SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE),
     ],
 
     'rehash_on_login' => true,

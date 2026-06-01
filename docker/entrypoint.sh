@@ -18,6 +18,9 @@ fi
 mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs database
 chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
+# Limpiar caché obsoleta (especialmente config cache) que pueda causar conflictos con SQLite antiguo
+php artisan optimize:clear 2>/dev/null || true
+
 if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ]; then
     echo "Esperando PostgreSQL..."
     i=0

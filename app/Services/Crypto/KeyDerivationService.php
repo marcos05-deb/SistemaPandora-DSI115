@@ -27,8 +27,8 @@ class KeyDerivationService
             SODIUM_CRYPTO_SECRETBOX_KEYBYTES, // 32 bytes
             $password,
             $salt,                            // 16 bytes — decodificada de Base64
-            SODIUM_CRYPTO_PWHASH_OPSLIMIT_INTERACTIVE,
-            SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE,
+            config('hashing.kdf.opslimit', SODIUM_CRYPTO_PWHASH_OPSLIMIT_INTERACTIVE),
+            config('hashing.kdf.memlimit', SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE),
             SODIUM_CRYPTO_PWHASH_ALG_ARGON2ID13
         );
     }
