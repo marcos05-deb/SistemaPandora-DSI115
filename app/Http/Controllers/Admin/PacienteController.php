@@ -12,22 +12,26 @@ class PacienteController extends Controller
     /**
      * Muestra la lista de todos los pacientes para el sysadmin (solo auditoría, sin datos personales).
      */
-    public function index(): Response
+    public function index(\Illuminate\Http\Request $request): Response
     {
         $pacientes = Paciente::select('codigo', 'created_at', 'carnet')
+            ->when($request->search, function ($query, $search) {
+                // Since codigo is a UUID in Postgres, we cast to text for a safe partial search
+                $query->whereRaw('codigo::text ILIKE ?', ["%{$search}%"]);
+            })
             ->orderBy('created_at', 'desc')
             ->paginate(15)
+            ->withQueryString()
             ->through(function ($paciente) {
                 return [
                     'codigo' => $paciente->codigo,
-                    // Dejamos el carnet o no? El admin general no debe ver datos de pacientes. 
-                    // El requerimiento decía "solo el código puede ver, los datos personales no".
                     'created_at' => $paciente->created_at->format('Y-m-d H:i:s'),
                 ];
             });
 
         return Inertia::render('Admin/Pacientes/Index', [
-            'pacientes' => $pacientes
+            'pacientes' => $pacientes,
+            'filters' => $request->only(['search'])
         ]);
     }
 }

@@ -77,9 +77,10 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
     })->name('dashboard');
 
     // Clinical Routes
+    Route::get('/pacientes', [\App\Http\Controllers\PacienteController::class, 'index'])->name('pacientes.index');
     Route::get('/pacientes/create', [\App\Http\Controllers\PacienteController::class, 'create'])->name('pacientes.create');
     Route::post('/pacientes', [\App\Http\Controllers\PacienteController::class, 'store'])->name('pacientes.store');
-    Route::get('/pacientes/{paciente:carnet}', [\App\Http\Controllers\PacienteController::class, 'show'])->name('pacientes.show');
+    Route::get('/pacientes/{carnet}', [\App\Http\Controllers\PacienteController::class, 'show'])->name('pacientes.show');
 
     // Admin Routes
     Route::middleware('sysadmin')->prefix('admin')->group(function () {

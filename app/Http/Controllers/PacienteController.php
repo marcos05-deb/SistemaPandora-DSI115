@@ -14,6 +14,40 @@ use Inertia\Response;
 class PacienteController extends Controller
 {
     /**
+     * Display the search interface and handle search requests.
+     */
+    public function index(Request $request): Response|\Illuminate\Http\RedirectResponse
+    {
+        if ($request->has('carnet')) {
+            $validated = $request->validate([
+                'carnet' => 'required|string|size:7'
+            ]);
+
+            // Blind index search: Exact match on non-encrypted field
+            $paciente = Paciente::where('carnet', strtoupper($validated['carnet']))
+                ->where(function ($query) {
+                    if (auth()->user()->hasRole('psychosocial_referent')) {
+                        $query->where('creado_por_profesional_id', auth()->user()->profesional->id);
+                    } else {
+                        // TODO: Implemented assigned patients logic here in future sprints
+                        $query->whereRaw('1 = 0'); // Returns nothing for now
+                    }
+                })
+                ->first();
+
+            if ($paciente) {
+                return redirect()->route('pacientes.show', $paciente->carnet);
+            }
+
+            return redirect()->route('pacientes.index')->withErrors([
+                'carnet' => 'Expediente no encontrado o no tienes permisos para acceder a él.'
+            ]);
+        }
+
+        return Inertia::render('Pacientes/Index');
+    }
+
+    /**
      * Show the form for creating a new patient.
      */
     public function create(): Response
@@ -138,17 +172,18 @@ class PacienteController extends Controller
      */
     public function show($carnet): Response
     {
-        if (!auth()->user()->hasRole('psychosocial_referent')) {
-            abort(403, 'Solo el Referente Psicosocial puede ver el expediente de un paciente.');
-        }
-
         $paciente = Paciente::with(['contactos', 'carrera.facultad'])
             ->where('carnet', $carnet)
             ->firstOrFail();
 
-        // RBAC: Verify the psychosocial referent created this patient
-        if ($paciente->creado_por_profesional_id !== auth()->user()->profesional->id) {
-            abort(403, 'No tienes permiso para ver los datos de este paciente.');
+        // RBAC: Verify the psychosocial referent created this patient OR other employee has assignment
+        if (auth()->user()->hasRole('psychosocial_referent')) {
+            if ($paciente->creado_por_profesional_id !== auth()->user()->profesional->id) {
+                abort(403, 'No tienes permiso para ver los datos de este paciente.');
+            }
+        } else {
+            // TODO: Implement assignment check for other roles
+            abort(403, 'Este paciente no está asignado a tu perfil.');
         }
 
         return Inertia::render('Pacientes/Show', [

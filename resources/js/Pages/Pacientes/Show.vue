@@ -140,7 +140,7 @@ const formatDate = (dateString) => {
                                         <h3 class="text-[13px] font-bold text-[var(--nord0)]">{{ contacto.parentesco }}</h3>
                                         <p class="text-[14px] text-[var(--nord3)] mt-1 font-medium">{{ contacto.nombre_completo }}</p>
                                     </div>
-                                    <div v-if="contacto.es_responsable" class="flex items-center gap-1 text-[10px] bg-[var(--aurora-orange)] bg-opacity-10 text-[var(--aurora-orange)] px-2 py-0.5 rounded font-medium">
+                                    <div v-if="contacto.es_responsable" class="flex items-center gap-1 text-[10px] border border-[var(--aurora-orange)] text-[var(--aurora-orange)] px-2 py-0.5 rounded font-medium">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-[10px] w-[10px]" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                         </svg>
