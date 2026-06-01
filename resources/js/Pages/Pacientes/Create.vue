@@ -290,7 +290,7 @@ function submit() {
                 <button 
                     type="submit" 
                     :disabled="form.processing"
-                    class="bg-[var(--nord0)] hover:bg-[var(--nord1)] text-white font-medium py-2.5 px-8 rounded-lg shadow-sm transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    class="bg-[var(--nord10)] hover:bg-[var(--nord9)] text-white font-medium py-2.5 px-8 rounded-lg shadow-sm transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                     <span v-if="form.processing" class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
                     Guardar y Cifrar Expediente

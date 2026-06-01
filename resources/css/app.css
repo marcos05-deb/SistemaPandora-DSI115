@@ -17,6 +17,10 @@
   --aurora-yellow: #EBCB8B;
   --aurora-green: #A3BE8C;
   --aurora-purple: #B48EAD;
+  --nord7: #8FBCBB;
+  --nord8: #88C0D0;
+  --nord9: #81A1C1;
+  --nord10: #5E81AC;
 }
 
 :root {
@@ -36,4 +40,49 @@
   --aurora-yellow: #EBCB8B;
   --aurora-green: #A3BE8C;
   --aurora-purple: #B48EAD;
+
+  /* Aliases for Frost colors used in the project */
+  --nord7: #8FBCBB;
+  --nord8: #88C0D0;
+  --nord9: #81A1C1;
+  --nord10: #5E81AC;
 }
+
+/* Dark Mode Integration */
+.dark {
+  /* Invert Polar Night and Snow Storm */
+  --nord0: #ECEFF4; /* Was Dark, now Light */
+  --nord1: #E5E9F0;
+  --nord2: #D8DEE9;
+  --nord3: #D8DEE9; /* Used for muted text, should be light in dark mode */
+  
+  --nord4: #434C5E; /* Was Light, now Dark (Borders/Dividers) */
+  --nord5: #3B4252;
+  --nord6: #2E3440; /* Was Light, now Dark (Page Background) */
+}
+
+/* Base text color in dark mode to catch elements not explicitly using Nord variables */
+.dark body {
+  color: var(--nord0);
+  background-color: var(--nord6);
+}
+
+/* Override standard white cards in dark mode */
+.dark .bg-white {
+  background-color: #3B4252 !important; /* Maps to original --nord1 */
+  border-color: #434C5E !important; /* Maps to original --nord2 */
+}
+
+/* Make sure text inside explicitly white components adapts */
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: #ECEFF4 !important; /* Maps to original --nord6 */
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: #D8DEE9 !important; /* Maps to original --nord4 */
+}
+

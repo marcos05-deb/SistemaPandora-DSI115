@@ -133,7 +133,7 @@ function clearGeneratedPassword() {
                     v-model="search" 
                     type="text" 
                     placeholder="Buscar por nombre o correo..." 
-                    class="w-full border border-[var(--nord4)] rounded-[7px] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] bg-white transition-colors placeholder-[rgba(76,86,106,0.6)] outline-none" 
+                    class="w-full border border-[var(--nord4)] rounded-[7px] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] bg-white transition-colors placeholder-[var(--nord3)] outline-none" 
                 />
             </div>
         </div>
@@ -183,13 +183,13 @@ function clearGeneratedPassword() {
               <td class="py-[11px] px-[16px]">
                 <span
                   v-if="user.roles[0]?.slug === 'sysadmin'"
-                  class="inline-flex items-center px-[9px] py-[3px] rounded-[99px] text-[11px] font-medium bg-[var(--nord5)] text-[var(--nord3)]"
+                  class="inline-flex items-center px-[9px] py-[3px] rounded-[99px] text-[11px] font-medium bg-[var(--nord11)] text-white shadow-sm"
                 >
                   Admin sistema
                 </span>
                 <span
                   v-else
-                  class="inline-flex items-center px-[9px] py-[3px] rounded-[99px] text-[11px] font-medium bg-[rgba(180,142,173,0.15)] text-[#7d5c78]"
+                  class="inline-flex items-center px-[9px] py-[3px] rounded-[99px] text-[11px] font-medium bg-[var(--nord15)] text-white shadow-sm"
                 >
                   {{ user.roles[0]?.nombre || "Especialista" }}
                 </span>

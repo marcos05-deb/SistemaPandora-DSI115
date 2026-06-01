@@ -2,9 +2,6 @@
 import { ref, computed } from "vue";
 import { Head, useForm } from "@inertiajs/vue3";
 
-// Layout removido para diseño a pantalla completa personalizado
-// defineOptions({ layout: GuestLayout });
-
 const showPassword = ref(false);
 
 const form = useForm({
@@ -31,16 +28,15 @@ function submitLogin() {
 <template>
   <Head title="Iniciar Sesión" />
 
-  <!-- Oracle-style background -->
   <div
-    class="min-h-screen bg-[#F0EBE1] bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans"
-    style="background-image: url(&quot;/images/background.png&quot;)"
+    class="min-h-screen bg-[var(--nord6)] bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans"
+    style="background-image: url('/images/background.png')"
   >
     <div class="w-full max-w-[400px] z-10 space-y-4">
       <!-- Card 1: Login Form -->
-      <div class="bg-white p-8 pb-7 shadow-lg rounded-2xl">
+      <div class="bg-white p-8 pb-7 shadow-lg rounded-2xl border border-[var(--nord4)]">
         <h2
-          class="text-[22px] font-semibold text-[#1A1816] text-center mb-8 tracking-tight"
+          class="text-[22px] font-bold text-[var(--nord0)] text-center mb-8 tracking-tight"
         >
           Iniciar sesión en PANDORA
         </h2>
@@ -48,16 +44,22 @@ function submitLogin() {
         <!-- Error general de sesión -->
         <div
           v-if="form.errors.session"
-          class="mb-6 bg-red-50 px-4 py-3 text-sm text-red-700 border-l-4 border-red-500 rounded-r-md"
+          class="mb-6 bg-transparent px-4 py-3 text-sm text-[var(--aurora-red)] border border-[var(--aurora-red)] rounded-md flex items-center gap-2"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
           {{ form.errors.session }}
         </div>
 
         <!-- Aviso de rate limiting -->
         <div
           v-if="form.errors.throttle"
-          class="mb-6 bg-orange-50 px-4 py-3 text-sm text-orange-700 border-l-4 border-orange-500 rounded-r-md"
+          class="mb-6 bg-transparent px-4 py-3 text-sm text-[var(--aurora-orange)] border border-[var(--aurora-orange)] rounded-md flex items-center gap-2"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           {{ form.errors.throttle }}
         </div>
 
@@ -70,10 +72,10 @@ function submitLogin() {
               type="email"
               autocomplete="email"
               placeholder="Correo electrónico"
-              class="w-full border-0 border-b border-gray-300 px-1 py-2 text-[15px] text-gray-900 focus:border-[#1A1816] focus:ring-0 bg-transparent transition-colors placeholder:text-gray-400"
-              :class="{ 'border-red-500': form.errors.email }"
+              class="w-full border-0 border-b-2 border-[var(--nord4)] px-1 py-2 text-[15px] text-[var(--nord0)] focus:border-[var(--nord10)] focus:ring-0 bg-transparent transition-colors placeholder:text-[var(--nord3)]"
+              :class="{ 'border-[var(--aurora-red)] focus:border-[var(--aurora-red)]': form.errors.email }"
             />
-            <p v-if="form.errors.email" class="mt-1 text-xs text-red-600">
+            <p v-if="form.errors.email" class="mt-1 text-xs text-[var(--aurora-red)]">
               {{ form.errors.email }}
             </p>
           </div>
@@ -86,12 +88,12 @@ function submitLogin() {
               :type="showPassword ? 'text' : 'password'"
               autocomplete="current-password"
               placeholder="Contraseña"
-              class="w-full border-0 border-b border-gray-300 px-1 py-2 pr-10 text-[15px] text-gray-900 focus:border-[#1A1816] focus:ring-0 bg-transparent transition-colors placeholder:text-gray-400"
-              :class="{ 'border-red-500': form.errors.password }"
+              class="w-full border-0 border-b-2 border-[var(--nord4)] px-1 py-2 pr-10 text-[15px] text-[var(--nord0)] focus:border-[var(--nord10)] focus:ring-0 bg-transparent transition-colors placeholder:text-[var(--nord3)]"
+              :class="{ 'border-[var(--aurora-red)] focus:border-[var(--aurora-red)]': form.errors.password }"
             />
             <button
               type="button"
-              class="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-700 transition-colors"
+              class="absolute inset-y-0 right-0 flex items-center pr-2 text-[var(--nord3)] hover:text-[var(--nord0)] transition-colors"
               @click="showPassword = !showPassword"
             >
               <svg
@@ -129,7 +131,7 @@ function submitLogin() {
                 />
               </svg>
             </button>
-            <p v-if="form.errors.password" class="mt-1 text-xs text-red-600">
+            <p v-if="form.errors.password" class="mt-1 text-xs text-[var(--aurora-red)]">
               {{ form.errors.password }}
             </p>
           </div>
@@ -138,10 +140,10 @@ function submitLogin() {
             <button
               type="submit"
               :disabled="form.processing"
-              class="w-full bg-[#2F2B28] text-white py-2.5 px-4 rounded-xl text-[15px] font-medium hover:bg-[#1A1816] transition-colors disabled:opacity-70 flex justify-center items-center"
+              class="w-full bg-[var(--nord10)] text-white py-2.5 px-4 rounded-xl text-[15px] font-medium hover:bg-[var(--nord9)] transition-colors disabled:opacity-70 flex justify-center items-center shadow-sm"
             >
               <span v-if="form.processing" class="flex items-center gap-2">
-                <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
                   <circle
                     class="opacity-25"
                     cx="12"
@@ -159,34 +161,34 @@ function submitLogin() {
                 </svg>
                 Autenticando...
               </span>
-              <span v-else>Siguiente</span>
+              <span v-else>Iniciar Sesión</span>
             </button>
           </div>
 
           <div class="text-center">
             <a
               href="#"
-              class="text-[13px] text-[#00758F] hover:underline font-medium"
-              >¿Olvidó su usuario o contraseña?</a
+              class="text-[13px] text-[var(--nord10)] hover:text-[var(--nord8)] hover:underline font-medium transition-colors"
+              >¿Olvidó su contraseña?</a
             >
           </div>
         </form>
       </div>
 
       <!-- Card 2: Footer / Info -->
-      <div class="bg-white p-6 shadow-lg rounded-2xl text-center">
-        <h3 class="text-[15px] font-medium text-gray-700 mb-1 tracking-tight">
+      <div class="bg-white p-6 shadow-lg rounded-2xl text-center border border-[var(--nord4)]">
+        <h3 class="text-[14px] font-semibold text-[var(--nord0)] mb-1 tracking-tight">
           Desarrollado por Camilo, Eduardo y Marcos
         </h3>
 
         <div
-          class="mt-4 flex flex-wrap items-center justify-center gap-x-3 text-[11px] text-gray-500"
+          class="mt-4 flex flex-wrap items-center justify-center gap-x-3 text-[11px] text-[var(--nord3)]"
         >
           <span>© PANDORA</span>
           <span>|</span>
-          <a href="#" class="hover:underline">GitHub</a>
+          <a href="#" class="hover:text-[var(--nord0)] hover:underline transition-colors">GitHub</a>
           <span>|</span>
-          <a href="#" class="hover:underline">Licencia</a>
+          <a href="#" class="hover:text-[var(--nord0)] hover:underline transition-colors">Licencia</a>
         </div>
       </div>
     </div>

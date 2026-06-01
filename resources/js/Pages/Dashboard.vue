@@ -43,7 +43,7 @@ defineProps({
             <div v-if="canCreatePatient">
                 <Link 
                     href="/pacientes/create" 
-                    class="px-4 py-2 bg-[var(--nord0)] hover:bg-[var(--nord1)] text-white font-medium rounded-lg shadow-sm transition-colors text-sm flex items-center gap-2"
+                    class="px-4 py-2 bg-[var(--nord10)] hover:bg-[var(--nord9)] text-white font-medium rounded-lg shadow-sm transition-colors text-sm flex items-center gap-2"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
