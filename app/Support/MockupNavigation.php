@@ -58,7 +58,7 @@ class MockupNavigation
         return [
             ['label' => 'Inicio', 'href' => '/busqueda-segura'],
             ['label' => 'Identidad y Privacidad', 'href' => '/codigos-privacidad'],
-            ['label' => 'Búsqueda Segura', 'href' => '/busqueda-segura'],
+            ['label' => 'Busqueda Segura', 'href' => '/busqueda-segura'],
             ['label' => 'Expedientes', 'href' => '#'],
             ['label' => 'Mi Agenda', 'href' => '#'],
         ];

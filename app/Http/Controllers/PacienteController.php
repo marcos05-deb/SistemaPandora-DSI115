@@ -24,16 +24,18 @@ class PacienteController extends Controller
             ]);
 
             // Blind index search: Exact match on non-encrypted field
-            $paciente = Paciente::where('carnet', strtoupper($validated['carnet']))
-                ->where(function ($query) {
-                    if (auth()->user()->hasRole('psychosocial_referent')) {
-                        $query->where('creado_por_profesional_id', auth()->user()->profesional->id);
-                    } else {
-                        // TODO: Implemented assigned patients logic here in future sprints
-                        $query->whereRaw('1 = 0'); // Returns nothing for now
-                    }
-                })
-                ->first();
+            $user = auth()->user();
+            $query = Paciente::where('carnet', strtoupper($validated['carnet']));
+
+            if ($user->hasRole('psychosocial_referent')) {
+                $query->where('creado_por_profesional_id', $user->profesional->id);
+            } elseif ($user->hasRole('specialist') || $user->hasRole('area_coordinator')) {
+                $query->whereHas('expedientes');
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+
+            $paciente = $query->first();
 
             if ($paciente) {
                 return redirect()->route('pacientes.show', $paciente->carnet);
@@ -176,14 +178,19 @@ class PacienteController extends Controller
             ->where('carnet', $carnet)
             ->firstOrFail();
 
-        // RBAC: Verify the psychosocial referent created this patient OR other employee has assignment
-        if (auth()->user()->hasRole('psychosocial_referent')) {
-            if ($paciente->creado_por_profesional_id !== auth()->user()->profesional->id) {
+        $user = auth()->user();
+
+        if ($user->hasRole('psychosocial_referent')) {
+            if ($paciente->creado_por_profesional_id !== $user->profesional->id) {
                 abort(403, 'No tienes permiso para ver los datos de este paciente.');
             }
+        } elseif ($user->hasRole('specialist') || $user->hasRole('area_coordinator')) {
+            $tieneExpedienteEnArea = $paciente->expedientes()->exists();
+            if (!$tieneExpedienteEnArea) {
+                abort(403, 'Este paciente no tiene expedientes en tus areas autorizadas.');
+            }
         } else {
-            // TODO: Implement assignment check for other roles
-            abort(403, 'Este paciente no está asignado a tu perfil.');
+            abort(403, 'No tienes permiso para ver los datos de este paciente.');
         }
 
         return Inertia::render('Pacientes/Show', [

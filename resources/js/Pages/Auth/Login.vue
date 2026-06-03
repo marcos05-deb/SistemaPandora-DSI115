@@ -29,14 +29,14 @@ function submitLogin() {
   <Head title="Iniciar Sesión" />
 
   <div
-    class="min-h-screen bg-[var(--nord6)] bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans"
+    class="min-h-screen bg-[var(--nord6)] bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 relative overflow-hidden font-sans"
     style="background-image: url('/images/background.png')"
   >
-    <div class="w-full max-w-[400px] z-10 space-y-4">
+    <div class="w-full max-w-[400px] sm:max-w-[420px] md:max-w-[440px] z-10 space-y-4">
       <!-- Card 1: Login Form -->
-      <div class="bg-white p-8 pb-7 shadow-lg rounded-2xl border border-[var(--nord4)]">
+      <div class="bg-white p-6 sm:p-8 pb-6 sm:pb-7 shadow-lg rounded-2xl border border-[var(--nord4)]">
         <h2
-          class="text-[22px] font-bold text-[var(--nord0)] text-center mb-8 tracking-tight"
+          class="text-xl sm:text-[22px] font-bold text-[var(--nord0)] text-center mb-6 sm:mb-8 tracking-tight"
         >
           Iniciar sesión en PANDORA
         </h2>
@@ -176,13 +176,13 @@ function submitLogin() {
       </div>
 
       <!-- Card 2: Footer / Info -->
-      <div class="bg-white p-6 shadow-lg rounded-2xl text-center border border-[var(--nord4)]">
-        <h3 class="text-[14px] font-semibold text-[var(--nord0)] mb-1 tracking-tight">
+      <div class="bg-white p-4 sm:p-6 shadow-lg rounded-2xl text-center border border-[var(--nord4)]">
+        <h3 class="text-[13px] sm:text-[14px] font-semibold text-[var(--nord0)] mb-1 tracking-tight">
           Desarrollado por Camilo, Eduardo y Marcos
         </h3>
 
         <div
-          class="mt-4 flex flex-wrap items-center justify-center gap-x-3 text-[11px] text-[var(--nord3)]"
+          class="mt-3 sm:mt-4 flex flex-wrap items-center justify-center gap-x-3 text-[10px] sm:text-[11px] text-[var(--nord3)]"
         >
           <span>© PANDORA</span>
           <span>|</span>

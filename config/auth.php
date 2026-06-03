@@ -7,7 +7,8 @@
  * sobre la tabla 'users' existente. Esto mantiene la compatibilidad
  * con la DB original mientras se usa la nomenclatura del roadmap.
  *
- * Guard: session (Sanctum modo SPA). Prohibido JWT (Roadmap §4).
+ * Guard: jwt mediante cookie HttpOnly (token JWT exp. 8h).
+ * HU-01: Autenticación mediante token JWT con expiración de 8 horas.
  */
 return [
     'defaults' => [
@@ -17,6 +18,10 @@ return [
 
     'guards' => [
         'web' => [
+            'driver'   => 'session',
+            'provider' => 'users',
+        ],
+        'jwt' => [
             'driver'   => 'session',
             'provider' => 'users',
         ],

@@ -2,6 +2,8 @@
 
 use App\Services\Crypto\KeyDerivationService;
 
+uses(Tests\TestCase::class);
+
 /**
  * Tests unitarios del KeyDerivationService — HU-01.
  */

@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { useTheme } from '@/Composables/useTheme';
+import { useAutoLogout } from '@/Composables/useAutoLogout';
 
 defineProps({
     navigation: { 
@@ -15,6 +16,7 @@ defineProps({
 
 const page = usePage();
 const { isDark, toggleTheme } = useTheme();
+useAutoLogout();
 
 const showFlash = ref(true);
 

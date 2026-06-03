@@ -34,6 +34,8 @@ class Especialista extends Authenticatable
         'is_active',
         'password',
         'kdf_salt',
+        'failed_login_attempts',
+        'locked_until',
     ];
 
     protected $hidden = [
@@ -46,6 +48,7 @@ class Especialista extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'locked_until' => 'datetime',
         ];
     }
 

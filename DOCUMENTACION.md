@@ -248,3 +248,15 @@
   - **Mejora de UX en Búsqueda:** Se implementó un evento reactivo (`@input`) en el buscador de pacientes que borra dinámicamente los errores (`form.clearErrors()`) devolviendo la interfaz a su estado limpio instantáneamente al teclear.
   - **Ampliación de Búsqueda Clínica:** Se removió el bloqueo estricto (403) que impedía a otros roles clínicos acceder a la vista de búsqueda `/pacientes`. El backend fue ajustado para forzar un resultado vacío temporal (`1 = 0`) para roles no psicosociales hasta que se implemente la asignación de expedientes en el Sprint 2. El botón de "Nuevo Paciente" fue restringido visualmente en la misma vista usando los atributos Reactivos de sesión (`canCreatePatient`).
   - **Búsqueda Administrativa en Tiempo Real (UUID):** Se implementó un buscador interactivo en la vista `Admin/Pacientes/Index.vue`. Utilizando `lodash/debounce` nativo (300ms) y llamadas `router.get` preservando el estado, el administrador puede escribir parcial o totalmente un código UUID y filtrar dinámicamente la tabla. El backend en `Admin/PacienteController.php` captura el parámetro y emplea una cláusula `ILIKE` sobre la columna castada a texto `codigo::text`.
+
+### [2026-06-03] Correccion HU-06: Busqueda Segura para Especialista
+- **Agente:** Antigravity (IA)
+- **Contexto:** La HU-06 requeria que el rol Especialista pudiera buscar expedientes por codigo unico sin comprometer identidad. Se detecto que la funcionalidad no estaba implementada: el especialista estaba bloqueado (`whereRaw('1 = 0')`), no existia ruta `/busqueda-segura`, la vista `SecureSearch/Index.vue` era un mockup sin backend, y `PacienteController@show` rechazaba a todos los roles no-referentes con 403.
+- **Cambios realizados:**
+  - **Nuevo Controlador:** `app/Http/Controllers/SecureSearchController.php` con `index()` (renderiza pagina) y `search()` (busca por UUID exacto, aplica filtro de area via `whereHas('expedientes')` para specialist/coordinator, y `creado_por_profesional_id` para referentes).
+  - **Nuevas Rutas:** `GET /busqueda-segura` y `POST /busqueda-segura` en `routes/web.php`.
+  - **Correccion RBAC en PacienteController@show:** Se reemplazo el `abort(403)` generico por verificacion de area para specialist/coordinator (`$paciente->expedientes()->exists()` aprovechando el AreaScope global).
+  - **Correccion RBAC en PacienteController@index:** Se reemplazo `whereRaw('1 = 0')` por `whereHas('expedientes')` para specialist/coordinator, permitiendoles buscar por carnet cuando tengan expedientes en su area.
+  - **Frontend SecureSearch/Index.vue:** Reescribio con diseno Nord (alineado a Pacientes/Index.vue), input para UUID con validacion de formato, resultados anonimizados mostrando solo el codigo encontrado + botones "Ver Expediente" y "Historial de Citas".
+  - **Navegacion:** Actualizado `MockupNavigation::specialist()` con rutas funcionales.
+  - **Tests:** Creado `tests/Feature/HU06/SecureSearchTest.php` con 8 pruebas cubriendo busqueda por UUID, filtro cross-area, validacion de formato, y acceso a detalle de paciente.

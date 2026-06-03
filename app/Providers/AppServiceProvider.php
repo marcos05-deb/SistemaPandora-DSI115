@@ -18,9 +18,8 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      *
-     * Rate Limiting configurado según Roadmap §HU-01d, C-03:
-     * - 5 intentos fallidos por IP + email en ventana de 10 minutos.
-     * - Al superar: bloqueo de 15 minutos, HTTP 429.
+     * Rate Limiting: capa secundaria de protección (10 intentos por IP+email).
+     * El bloqueo principal de cuenta es a 3 intentos (ver LoginController).
      */
     public function boot(): void
     {
@@ -32,7 +31,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request) {
             $key = Str::lower($request->input('email')) . '|' . $request->ip();
 
-            return Limit::perMinutes(10, 5)
+            return Limit::perMinutes(10, 10)
                 ->by($key)
                 ->response(function (Request $request, array $headers) {
                     $retryAfter = $headers['Retry-After'] ?? 900;

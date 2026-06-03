@@ -4,25 +4,30 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Especialista;
+use App\Services\Auth\JwtService;
 use App\Services\Crypto\KeyDerivationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * LoginController — Roadmap §HU-01.
+ * LoginController — HU-01.
  *
  * Maneja la autenticación de Especialistas:
  * - Validación de credenciales contra la tabla users.
  * - Derivación de clave simétrica (Argon2id KDF) y almacenamiento en sesión.
- * - Rate limiting: 5 intentos / 10 min / bloqueo 15 min.
+ * - Bloqueo de cuenta tras 3 intentos fallidos (15 min).
+ * - Emisión de token JWT (exp. 8h) en cookie HttpOnly.
  * - Mensajes genéricos que no revelan si el email existe.
  */
 class LoginController extends Controller
 {
     public function __construct(
         private readonly KeyDerivationService $kdfService,
+        private readonly JwtService $jwt,
     ) {}
 
     /**
@@ -36,19 +41,46 @@ class LoginController extends Controller
     /**
      * Procesa el intento de login.
      *
-     * Flujo (Roadmap §HU-01):
-     * 1. Validar credenciales (email + password).
-     * 2. Autenticar con Auth::attempt().
-     * 3. Derivar clave simétrica con sodium_crypto_pwhash (Argon2id).
-     * 4. Almacenar clave en sesión como Base64.
-     * 5. Limpiar contraseña de memoria con sodium_memzero().
-     * 6. Regenerar sesión para prevenir session fixation.
+     * Flujo (HU-01):
+     * 1. Verificar bloqueo de cuenta (3 intentos fallidos = 15 min).
+     * 2. Validar credenciales (email + password).
+     * 3. Autenticar con Auth::attempt().
+     * 4. Resetear contador de intentos fallidos.
+     * 5. Emitir token JWT (exp. 8h) en cookie HttpOnly.
+     * 6. Derivar clave simétrica con sodium_crypto_pwhash (Argon2id).
+     * 7. Almacenar clave en sesión como Base64.
+     * 8. Limpiar contraseña de memoria con sodium_memzero().
+     * 9. Regenerar sesión para prevenir session fixation.
      */
     public function store(LoginRequest $request)
     {
+        $email = Str::lower($request->input('email'));
+
+        $existingUser = Especialista::where('email', $email)->first();
+
+        if ($existingUser && $existingUser->locked_until && $existingUser->locked_until->getTimestamp() > now()->getTimestamp()) {
+            $remaining = $existingUser->locked_until->diffInMinutes(now());
+            return back()->withErrors([
+                'email' => "Cuenta bloqueada. Intente nuevamente en {$remaining} minutos.",
+            ])->onlyInput('email');
+        }
+
         $credentials = $request->only('email', 'password');
 
         if (!Auth::attempt($credentials)) {
+            if ($existingUser) {
+                $existingUser->increment('failed_login_attempts');
+                if ($existingUser->failed_login_attempts >= 3) {
+                    $existingUser->locked_until = now()->utc()->addMinutes(15);
+                    $existingUser->failed_login_attempts = 0;
+                    $existingUser->save();
+
+                    return back()->withErrors([
+                        'email' => 'Cuenta bloqueada por seguridad. Intente nuevamente en 15 minutos.',
+                    ])->onlyInput('email');
+                }
+            }
+
             return back()->withErrors([
                 'email' => 'Las credenciales proporcionadas son incorrectas.',
             ])->onlyInput('email');
@@ -57,8 +89,12 @@ class LoginController extends Controller
         // Regenerar sesión para prevenir session fixation
         $request->session()->regenerate();
 
-        /** @var \App\Models\Especialista $especialista */
+        // Resetear contador de intentos fallidos y desbloquear cuenta tras login exitoso
+        /** @var Especialista $especialista */
         $especialista = Auth::user();
+        $especialista->failed_login_attempts = 0;
+        $especialista->locked_until = null;
+        $especialista->save();
 
         // Derivar clave simétrica si el especialista tiene kdf_salt
         $password = $credentials['password'];
@@ -88,10 +124,24 @@ class LoginController extends Controller
         // Limpiar contraseña de memoria
         sodium_memzero($password);
 
+        // Emitir token JWT (exp. 8h) en cookie HttpOnly
+        $jwtToken = $this->jwt->create($especialista);
+        $jwtCookie = cookie(
+            'pandora_token',
+            $jwtToken,
+            480,
+            null,
+            null,
+            app()->environment('production'),
+            true,
+            false,
+            'Strict'
+        );
+
         if ($especialista->hasRole('sysadmin')) {
-            return redirect()->intended('/admin/dashboard');
+            return redirect()->intended('/admin/dashboard')->withCookie($jwtCookie);
         }
 
-        return redirect()->intended('/dashboard');
+        return redirect()->intended('/dashboard')->withCookie($jwtCookie);
     }
 }

@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import FlashBanner from '@/Components/UI/FlashBanner.vue';
+import { useAutoLogout } from '@/Composables/useAutoLogout';
 
 defineProps({
     userLabel: { type: String, required: true },
@@ -9,6 +10,7 @@ defineProps({
 });
 
 const pendingModule = ref(null);
+useAutoLogout();
 
 function onNavClick(item, event) {
     if (item.href === '#') {

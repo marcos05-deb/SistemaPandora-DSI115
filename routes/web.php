@@ -26,8 +26,8 @@ Route::middleware('guest')->group(function () {
 
 Route::redirect('/', '/login');
 
-// --- Rutas protegidas (Auth) ---
-Route::middleware(['auth', 'require_password_change'])->group(function () {
+// --- Rutas protegidas (Auth con JWT) ---
+Route::middleware(['auth.jwt', 'require_password_change'])->group(function () {
     // Password Setup (Primer Ingreso)
     Route::get('/password/setup', [\App\Http\Controllers\Auth\PasswordSetupController::class, 'show'])->name('password.setup')->withoutMiddleware('require_password_change');
     Route::post('/password/setup', [\App\Http\Controllers\Auth\PasswordSetupController::class, 'update'])->name('password.setup.store')->withoutMiddleware('require_password_change');
@@ -81,6 +81,10 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
     Route::get('/pacientes/create', [\App\Http\Controllers\PacienteController::class, 'create'])->name('pacientes.create');
     Route::post('/pacientes', [\App\Http\Controllers\PacienteController::class, 'store'])->name('pacientes.store');
     Route::get('/pacientes/{carnet}', [\App\Http\Controllers\PacienteController::class, 'show'])->name('pacientes.show');
+
+    // Secure Search Routes (HU-06)
+    Route::get('/busqueda-segura', [\App\Http\Controllers\SecureSearchController::class, 'index'])->name('busqueda-segura');
+    Route::post('/busqueda-segura', [\App\Http\Controllers\SecureSearchController::class, 'search'])->name('busqueda-segura.search');
 
     // Admin Routes
     Route::middleware('sysadmin')->prefix('admin')->group(function () {
