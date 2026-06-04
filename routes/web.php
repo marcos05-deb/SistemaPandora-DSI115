@@ -100,6 +100,9 @@ Route::middleware(['auth.jwt', 'require_password_change'])->group(function () {
 
         // Patients audit
         Route::get('/pacientes', [\App\Http\Controllers\Admin\PacienteController::class, 'index'])->name('admin.pacientes.index');
+
+        // Organigrama
+        Route::get('/organigrama', [\App\Http\Controllers\Admin\OrganigramaController::class, 'index'])->name('admin.organigrama.index');
     });
 
     Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout');

@@ -24,6 +24,7 @@ const form = useForm({
     fecha_primera_consulta: '',
     referido_por: '',
     llevado_por: '',
+    motivo_consulta: '',
     
     // Familiares
     padre_nombre: '',
@@ -100,6 +101,14 @@ function submit() {
                         </label>
                         <textarea id="direccion" v-model="form.direccion" rows="2" class="w-full border border-[var(--nord4)] rounded-[7px] px-[10px] py-[7px] text-[13px] focus:ring-[rgba(129,161,193,0.2)] focus:border-[var(--frost3)] transition-colors outline-none resize-none" required></textarea>
                         <div v-if="form.errors.direccion" class="text-[11px] text-[var(--aurora-red)] mt-1">{{ form.errors.direccion }}</div>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="motivo_consulta" class="block text-[13px] font-medium text-[var(--nord0)] mb-1">
+                            Motivo de Consulta <span class="text-[var(--aurora-red)]">*</span>
+                        </label>
+                        <textarea id="motivo_consulta" v-model="form.motivo_consulta" rows="3" placeholder="Describa el motivo por el cual el estudiante acude a consulta" class="w-full border border-[var(--nord4)] rounded-[7px] px-[10px] py-[7px] text-[13px] focus:ring-[rgba(129,161,193,0.2)] focus:border-[var(--frost3)] transition-colors outline-none resize-none" required></textarea>
+                        <div v-if="form.errors.motivo_consulta" class="text-[11px] text-[var(--aurora-red)] mt-1">{{ form.errors.motivo_consulta }}</div>
                     </div>
 
                     <div>

@@ -27,9 +27,14 @@ class UserController extends Controller
     {
         $search = $request->input('search');
         $roleFilter = $request->input('role');
+        $trashed = $request->input('trashed');
 
         $query = Especialista::with(['roles', 'profesional', 'areas'])
             ->orderBy('id', 'desc');
+
+        if ($trashed) {
+            $query->onlyTrashed();
+        }
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -52,6 +57,7 @@ class UserController extends Controller
         $metrics = [
             'total' => Especialista::count(),
             'active' => Especialista::where('is_active', true)->count(),
+            'inactive' => Especialista::onlyTrashed()->count(),
             'coordinators_ratio' => Especialista::whereHas('roles', function($q) {
                 $q->where('slug', 'area_coordinator');
             })->count() . ' / ' . Area::count(),
@@ -68,6 +74,7 @@ class UserController extends Controller
             'filters' => [
                 'search' => $search,
                 'role' => $roleFilter,
+                'trashed' => $trashed,
             ]
         ]);
     }
@@ -263,7 +270,7 @@ class UserController extends Controller
     }
 
     /**
-     * Delete a user.
+     * Delete (deactivate) a user.
      */
     public function destroy($id)
     {
@@ -271,17 +278,14 @@ class UserController extends Controller
         
         // Prevent deleting oneself
         if ($user->id === auth()->id()) {
-            return redirect()->back()->withErrors(['error' => 'No puedes eliminar tu propia cuenta.']);
+            return redirect()->back()->withErrors(['error' => 'No puedes desactivar tu propia cuenta.']);
         }
 
         DB::transaction(function () use ($user) {
-            $user->roles()->detach();
-            if ($user->profesional) {
-                $user->profesional()->forceDelete(); // Hard delete to prevent FK violation since users table doesn't have SoftDeletes
-            }
-            $user->delete();
+            $user->update(['is_active' => false]);
+            $user->delete(); // Soft delete
         });
 
-        return redirect()->back()->with('message', 'Usuario eliminado.')->with('variant', 'success');
+        return redirect()->back()->with('message', 'Usuario desactivado. Ya no podrá ingresar al sistema.')->with('variant', 'success');
     }
 }

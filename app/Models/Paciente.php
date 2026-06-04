@@ -30,7 +30,8 @@ class Paciente extends Model
         'profesion_ocupacion',
         'fecha_primera_consulta',
         'referido_por',
-        'llevado_por'
+        'llevado_por',
+        'motivo_consulta'
     ];
 
     protected $casts = [
@@ -40,6 +41,7 @@ class Paciente extends Model
         'profesion_ocupacion' => EncryptedFieldCast::class,
         'referido_por' => EncryptedFieldCast::class,
         'llevado_por' => EncryptedFieldCast::class,
+        'motivo_consulta' => EncryptedFieldCast::class,
     ];
 
     public function expedientes(): HasMany

@@ -68,6 +68,10 @@ const formatDate = (dateString) => {
                             <p class="text-[11px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Carnet Estudiantil</p>
                             <p class="text-[14px] text-[var(--nord0)] font-mono">{{ paciente.carnet }}</p>
                         </div>
+                        <div v-if="paciente.motivo_consulta" class="md:col-span-2">
+                            <p class="text-[11px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Motivo de Consulta</p>
+                            <p class="text-[14px] text-[var(--nord0)] whitespace-pre-line">{{ paciente.motivo_consulta }}</p>
+                        </div>
                         <div class="md:col-span-2">
                             <p class="text-[11px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Dirección de Residencia</p>
                             <p class="text-[14px] text-[var(--nord0)]">{{ paciente.direccion }}</p>

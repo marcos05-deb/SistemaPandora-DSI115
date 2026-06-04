@@ -17,19 +17,20 @@ const page = usePage();
 
 const search = ref(props.filters.search || '');
 const roleFilter = ref(props.filters.role || '');
+const trashedFilter = ref(props.filters.trashed || false);
 const copied = ref(false);
 
-watch([search, roleFilter], ([newSearch, newRole]) => {
-  router.get('/admin/users', { search: newSearch, role: newRole }, {
+watch([search, roleFilter, trashedFilter], ([newSearch, newRole, newTrashed]) => {
+  router.get('/admin/users', { search: newSearch, role: newRole, trashed: newTrashed ? 1 : '' }, {
     preserveState: true,
     preserveScroll: true,
     replace: true,
   });
 });
 
-function deleteUser(id, name) {
+function deactivateUser(id, name) {
   if (
-    confirm(`¿Eliminar a ${name}?\nEsta acción no se puede deshacer.`)
+    confirm(`¿Desactivar a ${name}?\nEste usuario ya no podrá ingresar al sistema.`)
   ) {
     router.delete(`/admin/users/${id}`, { preserveScroll: true });
   }
@@ -104,7 +105,7 @@ function clearGeneratedPassword() {
     </div>
 
     <!-- Metrics Cards -->
-    <div class="grid grid-cols-4 gap-[10px]">
+    <div class="grid grid-cols-5 gap-[10px]">
         <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
             <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Usuarios totales</div>
             <div class="text-[22px] font-medium text-[var(--nord0)]">{{ metrics.total }}</div>
@@ -112,6 +113,10 @@ function clearGeneratedPassword() {
         <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
             <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Activos</div>
             <div class="text-[22px] font-medium text-[var(--aurora-green)]">{{ metrics.active }}</div>
+        </div>
+        <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
+            <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Inactivos</div>
+            <div class="text-[22px] font-medium text-[var(--aurora-red)]">{{ metrics.inactive }}</div>
         </div>
         <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
             <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Coordinadores</div>
@@ -137,7 +142,7 @@ function clearGeneratedPassword() {
                 />
             </div>
         </div>
-        <div class="w-[250px]">
+        <div class="w-[200px]">
             <label for="roleFilter" class="sr-only">Filtrar por rol</label>
             <div class="relative">
                 <select 
@@ -149,6 +154,12 @@ function clearGeneratedPassword() {
                     <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.nombre }}</option>
                 </select>
             </div>
+        </div>
+        <div class="flex items-center">
+            <label class="flex items-center gap-2 cursor-pointer text-[12px] text-[var(--nord3)] select-none">
+                <input type="checkbox" v-model="trashedFilter" class="rounded border-[var(--nord4)] text-[var(--frost4)] focus:ring-[var(--frost3)]" />
+                Mostrar inactivos
+            </label>
         </div>
     </div>
 
@@ -214,10 +225,10 @@ function clearGeneratedPassword() {
                     Editar
                     </Link>
                     <button
-                    @click="deleteUser(user.id, user.name)"
+                    @click="deactivateUser(user.id, user.name)"
                     class="text-[var(--aurora-red)] hover:text-[#a05058] transition-colors text-[12px] font-medium inline-flex items-center gap-1"
                     >
-                    Eliminar
+                    Desactivar
                     </button>
                 </template>
                 <div v-else class="text-[var(--nord3)] text-[12px] font-medium inline-flex items-center gap-1 justify-end w-full">

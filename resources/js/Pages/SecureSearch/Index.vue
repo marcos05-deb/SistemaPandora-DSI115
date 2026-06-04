@@ -1,14 +1,14 @@
 <script setup>
 import { ref } from 'vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import PrimaryButton from '@/Components/UI/PrimaryButton.vue';
-import SecondaryButton from '@/Components/UI/SecondaryButton.vue';
+import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Modal from '@/Components/UI/Modal.vue';
 
+const STORAGE_KEY = 'pandora_uuid_history';
+
+defineOptions({ layout: ClinicalLayout });
+
 const props = defineProps({
-    userLabel: String,
-    navigation: Array,
     searchCode: { type: String, default: '' },
     results: { type: Object, default: null },
 });
@@ -17,22 +17,40 @@ const form = useForm({
     code: props.searchCode || '',
 });
 
-const showExpedienteOptions = ref(false);
 const showHistorial = ref(false);
+const searchHistory = ref([]);
+
+function loadHistory() {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        searchHistory.value = stored ? JSON.parse(stored) : [];
+    } catch {
+        searchHistory.value = [];
+    }
+}
+
+function saveToHistory(code) {
+    if (!code) return;
+    const filtered = searchHistory.value.filter(h => h !== code);
+    filtered.unshift(code);
+    const sliced = filtered.slice(0, 10);
+    searchHistory.value = sliced;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sliced));
+}
 
 function submitSearch() {
+    saveToHistory(form.code);
     form.post('/busqueda-segura', {
         preserveScroll: true,
     });
 }
 
-defineOptions({
-    layout: (h, page) =>
-        h(AuthenticatedLayout, {
-            userLabel: page.props.userLabel,
-            navigation: page.props.navigation,
-        }, () => page),
-});
+function autofill(value) {
+    form.code = value;
+    form.clearErrors('code');
+}
+
+loadHistory();
 </script>
 
 <template>
@@ -45,8 +63,11 @@ defineOptions({
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[var(--nord10)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    Busqueda Segura de Expedientes
+                    Búsqueda por UUID
                 </h2>
+                <Link href="/pacientes" class="text-[12px] text-[var(--nord10)] hover:text-[var(--nord8)] transition-colors">
+                    Buscar por Carnet →
+                </Link>
             </div>
 
             <div class="p-8">
@@ -70,11 +91,16 @@ defineOptions({
                             @input="form.clearErrors('code')"
                             type="text"
                             placeholder="Ej: a3f7c9e1-b2d4-4f5a-8c6e-1d2f3a4b5c6d"
+                            list="uuid-history"
+                            autocomplete="off"
                             class="w-full border-2 rounded-full pl-6 pr-14 py-3.5 text-[13px] font-mono focus:ring-0 focus:outline-none transition-colors"
                             :class="form.errors.code ? 'border-[var(--aurora-red)] text-[var(--aurora-red)] focus:border-[var(--aurora-red)]' : 'border-[var(--nord4)] text-[var(--nord0)] focus:border-[var(--nord10)]'"
                             required
                             autofocus
                         />
+                        <datalist id="uuid-history">
+                            <option v-for="item in searchHistory" :key="item" :value="item" />
+                        </datalist>
                         <button
                             type="submit"
                             :disabled="form.processing"
@@ -85,6 +111,18 @@ defineOptions({
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                             <span v-else class="inline-block animate-spin w-5 h-5 border-2 border-current border-t-transparent rounded-full"></span>
+                        </button>
+                    </div>
+                    <div v-if="searchHistory.length > 0 && !form.errors.code && !results" class="mt-2 flex flex-wrap gap-1 justify-center">
+                        <button
+                            v-for="item in searchHistory.slice(0, 5)"
+                            :key="item"
+                            type="button"
+                            @click="autofill(item)"
+                            class="text-[11px] px-2 py-0.5 rounded-full border border-[var(--nord4)] text-[var(--nord3)] hover:bg-[var(--nord6)] hover:text-[var(--nord0)] transition-colors font-mono truncate max-w-[200px]"
+                            :title="item"
+                        >
+                            {{ item.substring(0, 8) }}...
                         </button>
                     </div>
                     <div v-if="form.errors.code" class="text-[12px] text-[var(--aurora-red)] mt-3 text-center border border-[var(--aurora-red)] bg-transparent py-2 px-3 rounded-lg flex items-center justify-center gap-2">
@@ -152,9 +190,9 @@ defineOptions({
         </p>
     </div>
 
-    <Modal :show="showHistorial" title="Historial de citas" max-width="max-w-2xl" @close="showHistorial = false">
+    <Modal :show="showHistorial" title="Historial de Citas" max-width="max-w-2xl" @close="showHistorial = false">
         <p class="text-sm text-gray-500 mb-4">
-            El modulo de Citas estara disponible en un proximo sprint.
+            El módulo de Citas estará disponible en un próximo sprint.
         </p>
         <table class="min-w-full text-sm">
             <thead>
@@ -171,7 +209,7 @@ defineOptions({
             </tbody>
         </table>
         <template #footer>
-            <PrimaryButton type="button" @click="showHistorial = false">Cerrar</PrimaryButton>
+            <button type="button" @click="showHistorial = false" class="inline-flex items-center px-5 py-2.5 text-[13px] font-medium rounded-lg bg-[var(--nord10)] text-white hover:bg-[var(--nord9)] transition-colors">Cerrar</button>
         </template>
     </Modal>
 </template>

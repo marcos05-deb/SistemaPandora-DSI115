@@ -65,6 +65,18 @@ class LoginController extends Controller
             ])->onlyInput('email');
         }
 
+        if ($existingUser && !$existingUser->is_active) {
+            return back()->withErrors([
+                'email' => 'Las credenciales proporcionadas son incorrectas.',
+            ])->onlyInput('email');
+        }
+
+        if ($existingUser && $existingUser->trashed()) {
+            return back()->withErrors([
+                'email' => 'Las credenciales proporcionadas son incorrectas.',
+            ])->onlyInput('email');
+        }
+
         $credentials = $request->only('email', 'password');
 
         if (!Auth::attempt($credentials)) {

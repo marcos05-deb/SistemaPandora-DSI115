@@ -99,6 +99,18 @@ watch(() => page.props.flash?.message, (newMsg) => {
                         </svg>
                         Auditoría de Pacientes
                     </Link>
+
+                    <!-- Organigrama -->
+                    <Link
+                        href="/admin/organigrama"
+                        class="group flex items-center px-4 py-2.5 text-[14px] font-medium rounded-[8px] transition-all duration-200"
+                        :class="$page.url.startsWith('/admin/organigrama') ? 'bg-[#4C566A] text-white shadow-sm' : 'text-[#D8DEE9] hover:bg-[#434C5E] hover:text-white'"
+                    >
+                        <svg class="mr-3 h-5 w-5 flex-shrink-0 transition-colors" :class="$page.url.startsWith('/admin/organigrama') ? 'text-white' : 'text-[#D8DEE9] group-hover:text-[var(--nord12)]'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Organigrama
+                    </Link>
                 </nav>
             </aside>
 

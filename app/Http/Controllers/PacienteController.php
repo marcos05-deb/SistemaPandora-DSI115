@@ -29,16 +29,20 @@ class PacienteController extends Controller
 
             if ($user->hasRole('psychosocial_referent')) {
                 $query->where('creado_por_profesional_id', $user->profesional->id);
-            } elseif ($user->hasRole('specialist') || $user->hasRole('area_coordinator')) {
-                $query->whereHas('expedientes');
-            } else {
+            } elseif (!($user->hasRole('specialist') || $user->hasRole('area_coordinator'))) {
                 $query->whereRaw('1 = 0');
             }
 
             $paciente = $query->first();
 
             if ($paciente) {
-                return redirect()->route('pacientes.show', $paciente->carnet);
+                return Inertia::render('Pacientes/Index', [
+                    'results' => [
+                        'found' => true,
+                        'carnet' => $paciente->carnet,
+                        'codigo' => $paciente->codigo,
+                    ],
+                ]);
             }
 
             return redirect()->route('pacientes.index')->withErrors([
@@ -88,6 +92,7 @@ class PacienteController extends Controller
             'fecha_primera_consulta' => 'nullable|date|before_or_equal:today',
             'referido_por' => 'nullable|string|max:255',
             'llevado_por' => 'nullable|string|max:255',
+            'motivo_consulta' => 'required|string',
 
             // Padre / Madre
             'padre_nombre' => 'required_if:responsable_parentesco,Padre|nullable|string|max:255',
@@ -123,6 +128,7 @@ class PacienteController extends Controller
                 'fecha_primera_consulta' => $validated['fecha_primera_consulta'],
                 'referido_por' => $validated['referido_por'],
                 'llevado_por' => $validated['llevado_por'],
+                'motivo_consulta' => $validated['motivo_consulta'],
             ]);
 
             // Crear Padre
@@ -184,12 +190,7 @@ class PacienteController extends Controller
             if ($paciente->creado_por_profesional_id !== $user->profesional->id) {
                 abort(403, 'No tienes permiso para ver los datos de este paciente.');
             }
-        } elseif ($user->hasRole('specialist') || $user->hasRole('area_coordinator')) {
-            $tieneExpedienteEnArea = $paciente->expedientes()->exists();
-            if (!$tieneExpedienteEnArea) {
-                abort(403, 'Este paciente no tiene expedientes en tus areas autorizadas.');
-            }
-        } else {
+        } elseif (!($user->hasRole('specialist') || $user->hasRole('area_coordinator'))) {
             abort(403, 'No tienes permiso para ver los datos de este paciente.');
         }
 
