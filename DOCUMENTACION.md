@@ -259,4 +259,13 @@
   - **Correccion RBAC en PacienteController@index:** Se reemplazo `whereRaw('1 = 0')` por `whereHas('expedientes')` para specialist/coordinator, permitiendoles buscar por carnet cuando tengan expedientes en su area.
   - **Frontend SecureSearch/Index.vue:** Reescribio con diseno Nord (alineado a Pacientes/Index.vue), input para UUID con validacion de formato, resultados anonimizados mostrando solo el codigo encontrado + botones "Ver Expediente" y "Historial de Citas".
   - **Navegacion:** Actualizado `MockupNavigation::specialist()` con rutas funcionales.
-  - **Tests:** Creado `tests/Feature/HU06/SecureSearchTest.php` con 8 pruebas cubriendo busqueda por UUID, filtro cross-area, validacion de formato, y acceso a detalle de paciente.
+   - **Tests:** Creado `tests/Feature/HU06/SecureSearchTest.php` con 8 pruebas cubriendo busqueda por UUID, filtro cross-area, validacion de formato, y acceso a detalle de paciente.
+
+### [2026-06-04] Documentación de Setup y Corrección de Configuración
+- **Agente:** Antigravity (IA)
+- **Contexto:** Un colaborador reportó error `Firebase\JWT\JWT not found` al clonar el repositorio e intentar hacer login. Se detectó que la documentación carecía de pasos de troubleshooting para este escenario y que `.env.example` estaba desincronizado con la configuración real de Docker.
+- **Cambios realizados:**
+  - **README.md — Troubleshooting JWT:** Se agregó entrada en "Resolución de Problemas Comunes" documentando el error `Firebase\JWT\JWT not found`, su causa (`vendor/` git-ignorado) y dos soluciones: con Docker (`docker compose down -v && docker compose up --build`) y sin Docker (`composer install --no-dev --optimize-autoloader && php artisan key:generate`).
+  - **README.md — BLIND_INDEX_SECRET:** Se documentó el comando de generación de la clave de índice ciego, ausente tanto en el `entrypoint.sh` como en la documentación previa. Se agregaron instrucciones para Docker (`docker compose exec app php -r ...`) y para instalación local (`php -r "echo base64_encode(random_bytes(32));"`).
+  - **.env.example — Sincronización con Docker:** Se corrigió `DB_HOST=127.0.0.1` → `DB_HOST=postgres` y `DB_PASSWORD=` → `DB_PASSWORD=pandora` para alinear el archivo de ejemplo con la configuración del contenedor Docker declarada en `docker-compose.yml:34-38` y con lo documentado en el historial [2026-05-31] "Resolución de Conflictos de Entorno".
+- **Nota:** El `entrypoint.sh` no genera `BLIND_INDEX_SECRET`. Se recomienda en el futuro agregar esta generación al script de aprovisionamiento para automatizar completamente el setup.
