@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Modelo Area — Roadmap §1.
@@ -24,5 +25,10 @@ class Area extends Model
         return [
             'requiere_aprobacion_estricta' => 'boolean',
         ];
+    }
+
+    public function profesionales(): HasMany
+    {
+        return $this->hasMany(Profesional::class);
     }
 }
