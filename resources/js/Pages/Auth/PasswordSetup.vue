@@ -24,7 +24,7 @@ function submitSetup() {
 
   <div class="min-h-screen flex font-sans">
     <!-- ===== Left Panel: Branding ===== -->
-    <div class="hidden lg:flex lg:w-[480px] xl:w-[560px] bg-[var(--chrome-topbar)] relative overflow-hidden flex-col justify-between px-12 py-12">
+    <div class="hidden lg:flex lg:w-[480px] xl:w-[560px] bg-[var(--chrome-topbar)] relative overflow-hidden flex-col justify-center items-center px-12 py-12">
       <div class="absolute inset-0 overflow-hidden pointer-events-none">
         <svg class="absolute -top-32 -right-32 w-[600px] h-[600px] opacity-[0.08]" viewBox="0 0 600 600" fill="none">
           <g stroke="white" stroke-width="1">
@@ -40,51 +40,17 @@ function submitSetup() {
         <div class="absolute top-1/2 right-12 w-48 h-48 rounded-full bg-[var(--frost4)] opacity-[0.07] blur-3xl" />
       </div>
 
-      <div class="relative z-10">
-        <div class="flex items-center gap-3 mb-8">
-          <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center border border-white/10">
-            <svg class="w-5 h-5 text-[var(--frost2)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-          </div>
-          <span class="text-[13px] font-medium text-[var(--chrome-text-muted)] tracking-wide">Configuración Inicial</span>
+      <div class="relative z-10 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center mx-auto mb-6 border border-white/10">
+          <svg class="w-8 h-8 text-[var(--frost2)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
         </div>
-
-        <h1 class="text-[42px] font-bold text-white tracking-tight leading-tight">
-          PANDORA
-        </h1>
-        <p class="text-[16px] text-[var(--chrome-text-muted)] mt-3 leading-relaxed max-w-[340px]">
-          Establece tu contraseña segura para comenzar a usar el sistema.
-        </p>
-
-        <div class="mt-10 space-y-4">
-          <div class="flex items-start gap-3">
-            <div class="w-8 h-8 rounded-lg bg-[var(--aurora-green)]/10 flex items-center justify-center shrink-0 mt-0.5">
-              <svg class="w-4 h-4 text-[var(--aurora-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </div>
-            <div>
-              <p class="text-[13px] font-medium text-white">Contraseñas seguras</p>
-              <p class="text-[12px] text-[var(--chrome-text-muted)]">Usamos Argon2id para almacenar tu clave de forma segura</p>
-            </div>
-          </div>
-          <div class="flex items-start gap-3">
-            <div class="w-8 h-8 rounded-lg bg-[var(--frost4)]/10 flex items-center justify-center shrink-0 mt-0.5">
-              <svg class="w-4 h-4 text-[var(--frost2)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-            </div>
-            <div>
-              <p class="text-[13px] font-medium text-white">Acceso inmediato</p>
-              <p class="text-[12px] text-[var(--chrome-text-muted)]">Al configurar tu clave entras directo al panel clínico</p>
-            </div>
-          </div>
-        </div>
+        <h1 class="text-[52px] font-bold text-white tracking-tight">PANDORA</h1>
+        <p class="text-[15px] text-[var(--chrome-text-muted)] mt-3">Configuración de contraseña segura</p>
       </div>
 
-      <div class="relative z-10">
-        <div class="text-[11px] text-[var(--chrome-text-muted)] space-y-1">
-          <p class="font-medium text-white/60">© 2025 PANDORA — v1.0</p>
-          <p>Desarrollado por Camilo, Eduardo y Marcos</p>
-        </div>
-      </div>
+      <p class="absolute bottom-8 text-[11px] text-white/30">v1.0</p>
     </div>
 
     <!-- ===== Mobile Brand Header ===== -->
@@ -229,11 +195,6 @@ function submitSetup() {
             </button>
           </form>
         </div>
-
-        <p class="text-center text-[11px] text-[var(--nord3)]">
-          © 2025 PANDORA · Camilo, Eduardo y Marcos · DSI115
-        </p>
-      </div>
     </div>
   </div>
 </template>
