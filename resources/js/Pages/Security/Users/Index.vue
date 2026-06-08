@@ -132,10 +132,10 @@ defineOptions({
             :class="[
                 'mb-4 rounded-lg border px-4 py-3 text-sm',
                 localNotice.variant === 'warning'
-                    ? 'bg-orange-50 border-orange-200 text-orange-900'
+                    ? 'bg-[var(--aurora-yellow)]/5 border-[var(--aurora-yellow)] text-[var(--aurora-orange)]'
                     : localNotice.variant === 'info'
-                      ? 'bg-blue-50 border-blue-200 text-blue-900'
-                      : 'bg-green-50 border-green-200 text-green-900',
+                      ? 'bg-[var(--frost3)]/5 border-[var(--frost3)] text-[var(--frost4)]'
+                      : 'bg-[var(--aurora-green)]/5 border-[var(--aurora-green)] text-[var(--aurora-green)]',
             ]"
         >
             {{ localNotice.message }}
@@ -143,34 +143,34 @@ defineOptions({
 
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Gestión de Usuarios y Roles</h1>
-                <p class="text-sm text-gray-500 mt-1">
+                <h1 class="text-2xl font-bold text-[var(--nord0)]">Gestión de Usuarios y Roles</h1>
+                <p class="text-sm text-[var(--nord3)] mt-1">
                     Administre los usuarios del sistema y asigne roles según el cargo
                 </p>
             </div>
             <div class="flex items-center gap-4">
                 <PrimaryButton type="button" @click="openCreate">+ Nuevo Usuario</PrimaryButton>
-                <span class="text-sm text-gray-500 whitespace-nowrap">
+                <span class="text-sm text-[var(--nord3)] whitespace-nowrap">
                     Total: {{ totalDisplay }} usuarios
                 </span>
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+        <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
+            <table class="min-w-full">
+                <thead class="bg-[var(--nord5)]">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nombre</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rol</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Estado</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--nord3)] uppercase tracking-wider">Nombre</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--nord3)] uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--nord3)] uppercase tracking-wider">Rol</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--nord3)] uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--nord3)] uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
-                    <tr v-for="user in usersList" :key="user.id" class="hover:bg-gray-50">
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ user.name }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ user.email }}</td>
+                <tbody class="divide-y divide-[var(--nord5)]">
+                    <tr v-for="user in usersList" :key="user.id" class="hover:bg-[var(--nord6)] transition-colors">
+                        <td class="px-6 py-4 text-sm text-[var(--nord0)]">{{ user.name }}</td>
+                        <td class="px-6 py-4 text-sm text-[var(--nord3)]">{{ user.email }}</td>
                         <td class="px-6 py-4">
                             <StatusBadge :label="user.role" :variant="user.roleVariant" />
                         </td>
@@ -178,20 +178,20 @@ defineOptions({
                             <StatusBadge :label="user.status" :variant="user.statusVariant" />
                         </td>
                         <td class="px-6 py-4 text-sm space-x-3">
-                            <button
-                                type="button"
-                                class="text-blue-600 hover:text-blue-800 font-medium"
-                                @click="openEdit(user)"
-                            >
-                                Editar
-                            </button>
-                            <button
-                                type="button"
-                                class="text-red-600 hover:text-red-800 font-medium"
-                                @click="openDelete(user)"
-                            >
-                                Eliminar
-                            </button>
+                    <button
+                        type="button"
+                        class="text-[var(--frost4)] hover:text-[#4C6A8D] font-medium transition-colors"
+                        @click="openEdit(user)"
+                    >
+                        Editar
+                    </button>
+                    <button
+                        type="button"
+                        class="text-[var(--aurora-red)] hover:text-[#A05058] font-medium transition-colors"
+                        @click="openDelete(user)"
+                    >
+                        Eliminar
+                    </button>
                         </td>
                     </tr>
                 </tbody>
@@ -202,23 +202,23 @@ defineOptions({
     <Modal :show="showCreate" title="Nuevo usuario" @close="showCreate = false">
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                <input v-model="userForm.name" type="text" class="w-full rounded-md border-gray-300 text-sm" />
+                <label class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Nombre</label>
+                <input v-model="userForm.name" type="text" class="w-full rounded-[7px] border border-[var(--nord4)] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] outline-none transition-colors" />
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Correo</label>
-                <input v-model="userForm.email" type="email" class="w-full rounded-md border-gray-300 text-sm" />
+                <label class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Correo</label>
+                <input v-model="userForm.email" type="email" class="w-full rounded-[7px] border border-[var(--nord4)] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] outline-none transition-colors" />
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Rol</label>
-                    <select v-model="userForm.role" class="w-full rounded-md border-gray-300 text-sm">
+                    <label class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Rol</label>
+                    <select v-model="userForm.role" class="w-full rounded-[7px] border border-[var(--nord4)] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] outline-none transition-colors">
                         <option v-for="r in roleOptions" :key="r.value" :value="r.value">{{ r.value }}</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                    <select v-model="userForm.status" class="w-full rounded-md border-gray-300 text-sm">
+                    <label class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Estado</label>
+                    <select v-model="userForm.status" class="w-full rounded-[7px] border border-[var(--nord4)] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] outline-none transition-colors">
                         <option value="Activo">Activo</option>
                         <option value="Bloqueado">Bloqueado</option>
                     </select>
@@ -234,23 +234,23 @@ defineOptions({
     <Modal :show="showEdit" title="Editar usuario" @close="showEdit = false">
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                <input v-model="userForm.name" type="text" class="w-full rounded-md border-gray-300 text-sm" />
+                <label class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Nombre</label>
+                <input v-model="userForm.name" type="text" class="w-full rounded-[7px] border border-[var(--nord4)] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] outline-none transition-colors" />
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Correo</label>
-                <input v-model="userForm.email" type="email" class="w-full rounded-md border-gray-300 text-sm" />
+                <label class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Correo</label>
+                <input v-model="userForm.email" type="email" class="w-full rounded-[7px] border border-[var(--nord4)] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] outline-none transition-colors" />
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Rol</label>
-                    <select v-model="userForm.role" class="w-full rounded-md border-gray-300 text-sm">
+                    <label class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Rol</label>
+                    <select v-model="userForm.role" class="w-full rounded-[7px] border border-[var(--nord4)] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] outline-none transition-colors">
                         <option v-for="r in roleOptions" :key="r.value" :value="r.value">{{ r.value }}</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                    <select v-model="userForm.status" class="w-full rounded-md border-gray-300 text-sm">
+                    <label class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Estado</label>
+                    <select v-model="userForm.status" class="w-full rounded-[7px] border border-[var(--nord4)] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] outline-none transition-colors">
                         <option value="Activo">Activo</option>
                         <option value="Bloqueado">Bloqueado</option>
                     </select>
@@ -264,7 +264,7 @@ defineOptions({
     </Modal>
 
     <Modal :show="showDelete" title="Eliminar usuario" @close="showDelete = false">
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-[var(--nord3)]">
             ¿Eliminar a <strong>{{ selectedUser?.name }}</strong>? Acción demostrativa; no afecta la base de datos.
         </p>
         <template #footer>

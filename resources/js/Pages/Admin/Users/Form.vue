@@ -246,7 +246,11 @@ function submitUser() {
             class="space-y-6 flex items-center justify-center bg-[var(--nord6)] rounded-[10px] border border-[var(--nord4)]"
           >
             <div class="text-center p-6">
-              <span class="text-[32px] mb-3 block">👑</span>
+              <div class="w-14 h-14 rounded-full bg-[var(--aurora-purple)]/10 flex items-center justify-center mx-auto mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-[var(--aurora-purple)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
               <h4 class="text-[var(--nord0)] font-medium text-[14px]">
                 Rol de Administrador
               </h4>

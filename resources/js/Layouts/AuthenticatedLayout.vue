@@ -16,40 +16,44 @@ function onNavClick(item, event) {
     if (item.href === '#') {
         event.preventDefault();
         pendingModule.value = item.label;
-        setTimeout(() => {
-            pendingModule.value = null;
-        }, 4000);
+        setTimeout(() => { pendingModule.value = null; }, 4000);
     }
 }
 </script>
 
 <template>
-    <div class="min-h-screen bg-pandora-surface flex flex-col">
-        <header class="bg-pandora-navy text-white shadow-md">
-            <div class="flex items-center justify-between px-6 py-4">
-                <div>
-                    <span class="text-xl font-bold tracking-wider">PANDORA</span>
-                    <span class="text-sm text-blue-200 ml-3 hidden sm:inline">
-                        Sistema de Gestión Clínica
-                    </span>
+    <div class="min-h-screen bg-[var(--nord6)] flex flex-col font-sans">
+        <header class="bg-[var(--chrome-topbar)] text-white shadow-md">
+            <div class="flex items-center justify-between px-6 py-3.5">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-[var(--frost4)] flex items-center justify-center">
+                        <span class="text-[13px] font-bold text-white">P</span>
+                    </div>
+                    <span class="text-[17px] font-bold tracking-tight text-white">PANDORA</span>
+                    <span class="text-[12px] text-[var(--frost2)] hidden sm:inline">Sistema de Gestión Clínica</span>
                 </div>
-                <div class="text-sm text-blue-100">{{ userLabel }}</div>
+                <div class="flex items-center gap-3 text-[13px] text-[var(--chrome-text-muted)]">
+                    <div class="w-7 h-7 rounded-full bg-[var(--frost4)] flex items-center justify-center text-white text-[11px] font-bold">
+                        {{ (userLabel || 'U').charAt(0).toUpperCase() }}
+                    </div>
+                    <span class="hidden sm:inline">{{ userLabel }}</span>
+                </div>
             </div>
         </header>
 
         <div class="flex flex-1">
-            <aside class="w-56 bg-white border-r border-gray-200 shrink-0">
-                <nav class="py-4">
+            <aside class="w-[240px] bg-white border-r border-[var(--nord4)] shadow-sm shrink-0">
+                <nav class="py-4 px-3">
                     <Link
                         v-for="item in navigation"
                         :key="item.href + item.label"
                         :href="item.href"
                         :class="[
-                            'block px-5 py-2.5 text-sm transition-colors',
+                            'block px-3 py-2.5 text-[13px] font-medium rounded-lg transition-all duration-200 mb-0.5',
                             item.active
-                                ? 'bg-blue-50 text-pandora-navy font-semibold border-r-2 border-blue-600'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-pandora-navy',
-                            item.href === '#' ? 'cursor-not-allowed opacity-70' : '',
+                                ? 'bg-[var(--frost4)]/10 text-[var(--frost4)] border-l-[3px] border-[var(--frost4)]'
+                                : 'text-[var(--nord3)] hover:bg-[var(--nord6)] hover:text-[var(--nord0)]',
+                            item.href === '#' ? 'cursor-not-allowed opacity-60' : '',
                         ]"
                         @click="onNavClick(item, $event)"
                     >
@@ -61,12 +65,14 @@ function onNavClick(item, event) {
             <main class="flex-1 p-8 overflow-auto">
                 <div
                     v-if="pendingModule"
-                    class="mb-6 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900"
+                    class="mb-6 rounded-lg border border-[var(--frost4)]/20 bg-[var(--frost4)]/10 px-4 py-3 text-[13px] text-[var(--frost4)] animate-fade-in"
                 >
                     El módulo «{{ pendingModule }}» estará disponible cuando se implemente el backend completo.
                 </div>
                 <FlashBanner />
-                <slot />
+                <div class="animate-fade-in">
+                    <slot />
+                </div>
             </main>
         </div>
     </div>

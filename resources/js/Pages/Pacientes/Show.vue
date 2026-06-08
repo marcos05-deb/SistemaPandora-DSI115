@@ -5,17 +5,12 @@ import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 defineOptions({ layout: ClinicalLayout });
 
 const props = defineProps({
-    paciente: {
-        type: Object,
-        required: true
-    }
+    paciente: { type: Object, required: true }
 });
 
-// Format date helper
 const formatDate = (dateString) => {
     if (!dateString) return 'No registrada';
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('es-ES', options);
+    return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 };
 </script>
 
@@ -34,21 +29,25 @@ const formatDate = (dateString) => {
                     </Link>
                     Datos del Paciente
                 </h1>
-                <p class="text-[12px] text-[var(--nord3)] mt-0.5 ml-7">
-                    Información personal y contactos de emergencia. El expediente clínico aún no está habilitado.
-                </p>
+                <p class="text-[12px] text-[var(--nord3)] mt-0.5 ml-7">Información personal y contactos de emergencia.</p>
             </div>
-            <div>
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-medium bg-[var(--nord6)] text-[var(--nord3)] border border-[var(--nord4)]">
-                    UUID: {{ paciente.codigo.substring(0,8) }}...
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium bg-[var(--nord6)] text-[var(--nord3)] border border-[var(--nord4)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+                    </svg>
+                    {{ paciente.codigo.substring(0,8) }}...
                 </span>
+                <button disabled class="px-3 py-1.5 bg-[var(--nord6)] text-[var(--nord3)] text-[11px] font-medium rounded-lg border border-[var(--nord4)] cursor-not-allowed">
+                    Expediente Clínico
+                </button>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Columna Izquierda: Información Principal -->
+            <!-- Left Column -->
             <div class="md:col-span-2 space-y-6">
-                <!-- Tarjeta de Perfil -->
+                <!-- Profile Card -->
                 <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
                     <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--nord6)] flex justify-between items-center">
                         <h2 class="text-[14px] font-medium text-[var(--nord0)] flex items-center gap-2">
@@ -70,7 +69,7 @@ const formatDate = (dateString) => {
                         </div>
                         <div v-if="paciente.motivo_consulta" class="md:col-span-2">
                             <p class="text-[11px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Motivo de Consulta</p>
-                            <p class="text-[14px] text-[var(--nord0)] whitespace-pre-line">{{ paciente.motivo_consulta }}</p>
+                            <p class="text-[14px] text-[var(--nord0)] whitespace-pre-line bg-[var(--nord6)] rounded-lg p-4 border border-[var(--nord4)]">{{ paciente.motivo_consulta }}</p>
                         </div>
                         <div class="md:col-span-2">
                             <p class="text-[11px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Dirección de Residencia</p>
@@ -91,7 +90,7 @@ const formatDate = (dateString) => {
                     </div>
                 </div>
 
-                <!-- Tarjeta Académica y de Referencia -->
+                <!-- Academic Card -->
                 <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
                     <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--nord6)] flex justify-between items-center">
                         <h2 class="text-[14px] font-medium text-[var(--nord0)] flex items-center gap-2">
@@ -124,8 +123,9 @@ const formatDate = (dateString) => {
                 </div>
             </div>
 
-            <!-- Columna Derecha: Familiares -->
+            <!-- Right Column -->
             <div class="space-y-6">
+                <!-- Family Contacts -->
                 <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
                     <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--nord6)]">
                         <h2 class="text-[14px] font-medium text-[var(--nord0)] flex items-center gap-2">
@@ -138,17 +138,17 @@ const formatDate = (dateString) => {
 
                     <div class="p-0">
                         <div v-if="paciente.contactos && paciente.contactos.length > 0">
-                            <div v-for="contacto in paciente.contactos" :key="contacto.id" class="p-6 border-b border-[var(--nord4)] last:border-0 relative">
+                            <div v-for="contacto in paciente.contactos" :key="contacto.id" class="p-5 border-b border-[var(--nord4)] last:border-0 relative">
                                 <div class="flex justify-between items-start">
                                     <div>
                                         <h3 class="text-[13px] font-bold text-[var(--nord0)]">{{ contacto.parentesco }}</h3>
                                         <p class="text-[14px] text-[var(--nord3)] mt-1 font-medium">{{ contacto.nombre_completo }}</p>
                                     </div>
-                                    <div v-if="contacto.es_responsable" class="flex items-center gap-1 text-[10px] border border-[var(--aurora-orange)] text-[var(--aurora-orange)] px-2 py-0.5 rounded font-medium">
+                                    <div v-if="contacto.es_responsable" class="flex items-center gap-1 text-[10px] border border-[var(--aurora-orange)] text-[var(--aurora-orange)] px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-[10px] w-[10px]" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                         </svg>
-                                        Responsable Principal
+                                        Responsable
                                     </div>
                                 </div>
                                 
@@ -170,16 +170,21 @@ const formatDate = (dateString) => {
                             </div>
                         </div>
                         <div v-else class="p-6 text-center text-[13px] text-[var(--nord3)]">
+                            <div class="w-12 h-12 rounded-full bg-[var(--nord6)] flex items-center justify-center mx-auto mb-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[var(--nord3)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
                             No hay familiares registrados.
                         </div>
                     </div>
                 </div>
 
-                <!-- Caja de Expediente (Bloqueado) -->
+                <!-- Clinical Records (locked) -->
                 <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
                     <div class="p-6 text-center">
-                        <div class="w-12 h-12 bg-[var(--nord6)] rounded-full flex items-center justify-center mx-auto mb-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[var(--nord4)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div class="w-14 h-14 bg-[var(--nord6)] rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-[var(--nord4)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
                         </div>
@@ -187,12 +192,16 @@ const formatDate = (dateString) => {
                         <p class="text-[12px] text-[var(--nord3)] mb-4">
                             La funcionalidad de registro de sesiones y evoluciones clínicas será habilitada en el próximo sprint.
                         </p>
-                        <button disabled class="w-full py-2 bg-[var(--nord6)] text-[var(--nord4)] text-[13px] font-medium rounded-[6px] cursor-not-allowed border border-[var(--nord4)]">
-                            Crear Nueva Sesión
+                        <button disabled class="w-full py-2 bg-[var(--nord6)] text-[var(--nord4)] text-[13px] font-medium rounded-[8px] cursor-not-allowed border border-[var(--nord4)]">
+                            <span class="flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Crear Nueva Sesión
+                            </span>
                         </button>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>

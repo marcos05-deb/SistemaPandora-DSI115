@@ -20,27 +20,65 @@ useAutoLogout();
 
 const showFlash = ref(true);
 
-// Watch for flash messages and hide them after 5 seconds
 watch(() => page.props.flash?.message, (newMsg) => {
     if (newMsg) {
         showFlash.value = true;
-        setTimeout(() => {
-            showFlash.value = false;
-        }, 5000);
+        setTimeout(() => { showFlash.value = false; }, 5000);
     }
 }, { immediate: true });
+
+const sidebarLinks = [
+    {
+        label: 'Dashboard',
+        href: '/admin/dashboard',
+        icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z',
+        match: (url) => url === '/admin/dashboard'
+    },
+    {
+        label: 'Personal del Sistema',
+        href: '/admin/users',
+        icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
+        match: (url) => url.startsWith('/admin/users')
+    },
+    {
+        label: 'Auditoría de Pacientes',
+        href: '/admin/pacientes',
+        icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+        match: (url) => url.startsWith('/admin/pacientes')
+    },
+    {
+        label: 'Organigrama',
+        href: '/admin/organigrama',
+        icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+        match: (url) => url.startsWith('/admin/organigrama')
+    },
+];
 </script>
 
 <template>
     <div class="min-h-screen bg-[var(--nord6)] flex flex-col font-sans">
         <!-- Topbar -->
-        <header class="bg-[#2E3440] shadow-md z-20 h-[44px]">
+        <header class="bg-[var(--chrome-topbar)] shadow-md z-20 h-[56px] flex-shrink-0">
             <div class="flex items-center justify-between px-6 h-full">
-                <div class="flex items-center gap-2">
-                    <span class="text-[16px] font-bold tracking-tight text-[#ECEFF4]">PANDORA <span class="font-normal text-[var(--frost2)] ml-1">Admin</span></span>
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-[var(--aurora-purple)] flex items-center justify-center">
+                        <span class="text-[13px] font-bold text-white">P</span>
+                    </div>
+                    <div>
+                        <span class="text-[17px] font-bold tracking-tight text-white">
+                            PANDORA
+                        </span>
+                        <span class="text-[11px] font-normal text-[var(--aurora-purple)] ml-2 align-middle">
+                            Admin
+                        </span>
+                    </div>
                 </div>
-                <div class="flex items-center gap-4 text-[12px] text-[#D8DEE9]">
-                    <button @click="toggleTheme" class="p-1.5 hover:text-white hover:bg-[#434C5E] rounded transition-colors" :title="isDark ? 'Modo Claro' : 'Modo Oscuro'">
+                <div class="flex items-center gap-3 text-[13px] text-[var(--chrome-text-muted)]">
+                    <button 
+                        @click="toggleTheme" 
+                        class="p-2 hover:text-white hover:bg-[var(--chrome-topbar-hover)] rounded-lg transition-colors" 
+                        :title="isDark ? 'Modo Claro' : 'Modo Oscuro'"
+                    >
                         <svg v-if="isDark" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
@@ -48,12 +86,18 @@ watch(() => page.props.flash?.message, (newMsg) => {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
                     </button>
-                    <span>{{ page.props.auth?.user?.name || page.props.auth?.user?.email }}</span>
+                    <div class="h-5 w-px bg-[var(--chrome-border)]"></div>
+                    <div class="flex items-center gap-2 text-[13px]">
+                        <div class="w-7 h-7 rounded-full bg-[var(--aurora-purple)] flex items-center justify-center text-white text-[11px] font-bold">
+                            {{ (page.props.auth?.user?.name || 'U').charAt(0).toUpperCase() }}
+                        </div>
+                        <span class="hidden sm:inline">{{ page.props.auth?.user?.name || page.props.auth?.user?.email }}</span>
+                    </div>
                     <Link 
                         href="/logout" 
                         method="post" 
                         as="button" 
-                        class="px-2 py-1 bg-transparent hover:bg-[#434C5E] text-[#D8DEE9] rounded transition-colors border border-[#4C566A]"
+                        class="px-3 py-1.5 bg-transparent hover:bg-[var(--chrome-topbar-hover)] text-[var(--chrome-text-muted)] rounded-lg transition-colors border border-[var(--chrome-border)] text-[12px] font-medium"
                     >
                         Cerrar Sesión
                     </Link>
@@ -61,74 +105,59 @@ watch(() => page.props.flash?.message, (newMsg) => {
             </div>
         </header>
 
-        <!-- Layout Body -->
         <div class="flex flex-1 overflow-hidden">
-            <!-- Sidebar -->
-            <aside class="w-[180px] bg-[#3B4252] shadow-xl shrink-0 z-10 flex flex-col">
-                <nav class="flex-1 py-4">
+            <aside class="w-[240px] bg-[var(--chrome-sidebar)] shadow-xl shrink-0 z-10 flex flex-col border-r border-[var(--chrome-border)]">
+                <nav class="flex-1 py-4 px-3 space-y-1">
+                    <div class="px-3 pb-2 mb-2 text-[10px] font-semibold text-[var(--chrome-text-muted)] uppercase tracking-[0.12em] border-b border-[var(--chrome-border)]">
+                        Administración
+                    </div>
                     <Link
-                        href="/admin/dashboard"
-                        class="group flex items-center px-4 py-2.5 text-[14px] font-medium rounded-[8px] transition-all duration-200"
-                        :class="$page.url === '/admin/dashboard' ? 'bg-[#4C566A] text-white shadow-sm' : 'text-[#D8DEE9] hover:bg-[#434C5E] hover:text-white'"
+                        v-for="link in sidebarLinks"
+                        :key="link.href"
+                        :href="link.href"
+                        class="group flex items-center px-3 py-2.5 text-[14px] font-medium rounded-lg transition-all duration-200"
+                        :class="link.match($page.url) 
+                            ? 'bg-[var(--aurora-purple)]/15 text-[var(--aurora-purple)] shadow-sm border border-[var(--aurora-purple)]/20' 
+                            : 'text-[var(--chrome-text-muted)] hover:bg-[var(--chrome-sidebar-hover)] hover:text-white'"
                     >
-                        <svg class="mr-3 h-5 w-5 flex-shrink-0 transition-colors" :class="$page.url === '/admin/dashboard' ? 'text-white' : 'text-[#D8DEE9] group-hover:text-[var(--nord11)]'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        <svg 
+                            class="mr-3 h-[18px] w-[18px] flex-shrink-0" 
+                            :class="link.match($page.url) ? 'text-[var(--aurora-purple)]' : 'text-[var(--chrome-text-muted)] group-hover:text-white'"
+                            xmlns="http://www.w3.org/2000/svg" 
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor"
+                        >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" :d="link.icon" />
                         </svg>
-                        Dashboard
-                    </Link>
-
-                    <Link
-                        href="/admin/users"
-                        class="group flex items-center px-4 py-2.5 text-[14px] font-medium rounded-[8px] transition-all duration-200"
-                        :class="$page.url.startsWith('/admin/users') ? 'bg-[#4C566A] text-white shadow-sm' : 'text-[#D8DEE9] hover:bg-[#434C5E] hover:text-white'"
-                    >
-                        <svg class="mr-3 h-5 w-5 flex-shrink-0 transition-colors" :class="$page.url.startsWith('/admin/users') ? 'text-white' : 'text-[#D8DEE9] group-hover:text-[var(--nord13)]'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        Personal del Sistema
-                    </Link>
-                    
-                    <!-- Auditoría de Pacientes -->
-                    <Link
-                        href="/admin/pacientes"
-                        class="group flex items-center px-4 py-2.5 text-[14px] font-medium rounded-[8px] transition-all duration-200"
-                        :class="$page.url.startsWith('/admin/pacientes') ? 'bg-[#4C566A] text-white shadow-sm' : 'text-[#D8DEE9] hover:bg-[#434C5E] hover:text-white'"
-                    >
-                        <svg class="mr-3 h-5 w-5 flex-shrink-0 transition-colors" :class="$page.url.startsWith('/admin/pacientes') ? 'text-white' : 'text-[#D8DEE9] group-hover:text-[var(--nord10)]'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Auditoría de Pacientes
-                    </Link>
-
-                    <!-- Organigrama -->
-                    <Link
-                        href="/admin/organigrama"
-                        class="group flex items-center px-4 py-2.5 text-[14px] font-medium rounded-[8px] transition-all duration-200"
-                        :class="$page.url.startsWith('/admin/organigrama') ? 'bg-[#4C566A] text-white shadow-sm' : 'text-[#D8DEE9] hover:bg-[#434C5E] hover:text-white'"
-                    >
-                        <svg class="mr-3 h-5 w-5 flex-shrink-0 transition-colors" :class="$page.url.startsWith('/admin/organigrama') ? 'text-white' : 'text-[#D8DEE9] group-hover:text-[var(--nord12)]'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                        Organigrama
+                        {{ link.label }}
                     </Link>
                 </nav>
+
+                <div class="p-3 border-t border-[var(--chrome-border)]">
+                    <div class="px-3 py-2 rounded-lg bg-[var(--chrome-sidebar-hover)]/30">
+                        <div class="text-[10px] text-[var(--chrome-text-muted)] uppercase tracking-[0.1em] font-semibold">Rol</div>
+                        <div class="text-[12px] text-[var(--chrome-text)] mt-0.5 truncate">Administrador</div>
+                    </div>
+                </div>
             </aside>
 
-            <!-- Main Content -->
             <main class="flex-1 p-8 overflow-y-auto relative">
-                <!-- Flash messages -->
-                <div v-if="page.props.flash?.message && showFlash" class="max-w-6xl mx-auto mb-6">
+                <div v-if="page.props.flash?.message && showFlash" class="max-w-6xl mx-auto mb-6 animate-fade-in">
                     <div :class="[
-                        'px-4 py-3 rounded-lg shadow-sm border-l-4',
-                        page.props.flash?.variant === 'success' ? 'bg-green-50 border-green-500 text-green-800' : 
-                        page.props.flash?.variant === 'error' ? 'bg-red-50 border-red-500 text-red-800' :
-                        'bg-blue-50 border-blue-500 text-blue-800'
+                        'px-4 py-3 rounded-lg shadow-sm border-l-4 flex items-center gap-2.5',
+                        page.props.flash?.variant === 'success' ? 'bg-[var(--aurora-green)]/10 border-[var(--aurora-green)] text-[var(--aurora-green)]' : 
+                        page.props.flash?.variant === 'error' ? 'bg-[var(--aurora-red)]/10 border-[var(--aurora-red)] text-[var(--aurora-red)]' :
+                        'bg-[var(--frost4)]/10 border-[var(--frost4)] text-[var(--frost4)]'
                     ]">
-                        {{ page.props.flash.message }}
+                        <svg v-if="page.props.flash?.variant === 'success'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <svg v-else-if="page.props.flash?.variant === 'error'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span class="text-[13px]">{{ page.props.flash.message }}</span>
                     </div>
                 </div>
 
-                <div class="max-w-6xl mx-auto">
+                <div class="max-w-6xl mx-auto animate-fade-in">
                     <slot />
                 </div>
             </main>

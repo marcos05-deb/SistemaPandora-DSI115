@@ -37,38 +37,38 @@ defineOptions({
 
     <div class="max-w-3xl">
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-gray-900">Cierre de Sesión</h1>
-            <p class="text-sm text-gray-500 mt-1">
+            <h1 class="text-2xl font-bold text-[var(--nord0)]">Cierre de Sesión</h1>
+            <p class="text-sm text-[var(--nord3)] mt-1">
                 Gestione la seguridad de su sesión activa y cierre cuando sea necesario.
             </p>
         </div>
 
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 space-y-6">
-            <h2 class="text-lg font-semibold text-gray-900">Sesión Activa</h2>
+        <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] p-8 space-y-6">
+            <h2 class="text-lg font-semibold text-[var(--nord0)]">Sesión Activa</h2>
 
             <dl class="space-y-3 text-sm">
                 <div class="flex gap-2">
-                    <dt class="font-medium text-gray-600 w-36">Usuario:</dt>
-                    <dd class="text-gray-900">{{ session.userName }}</dd>
+                    <dt class="font-medium text-[var(--nord3)] w-36">Usuario:</dt>
+                    <dd class="text-[var(--nord0)]">{{ session.userName }}</dd>
                 </div>
                 <div class="flex gap-2 items-center">
-                    <dt class="font-medium text-gray-600 w-36">Rol:</dt>
+                    <dt class="font-medium text-[var(--nord3)] w-36">Rol:</dt>
                     <dd><StatusBadge :label="session.role" variant="director" /></dd>
                 </div>
                 <div class="flex gap-2 items-center flex-wrap">
-                    <dt class="font-medium text-gray-600 w-36">Token JWT:</dt>
-                    <dd class="text-gray-800 font-mono text-xs">
+                    <dt class="font-medium text-[var(--nord3)] w-36">Token JWT:</dt>
+                    <dd class="text-[var(--nord0)] font-mono text-xs">
                         {{ session.tokenPreview }}
-                        <span v-if="session.tokenValid" class="text-green-600 font-sans ml-2">(válido)</span>
+                        <span v-if="session.tokenValid" class="text-[var(--aurora-green)] font-sans ml-2">(válido)</span>
                     </dd>
                 </div>
                 <div class="flex gap-2">
-                    <dt class="font-medium text-gray-600 w-36">Expira en:</dt>
-                    <dd class="text-gray-900">{{ session.expiresIn }}</dd>
+                    <dt class="font-medium text-[var(--nord3)] w-36">Expira en:</dt>
+                    <dd class="text-[var(--nord0)]">{{ session.expiresIn }}</dd>
                 </div>
                 <div class="flex gap-2">
-                    <dt class="font-medium text-gray-600 w-36">Inicio de sesión:</dt>
-                    <dd class="text-gray-900">{{ session.startedAt }}</dd>
+                    <dt class="font-medium text-[var(--nord3)] w-36">Inicio de sesión:</dt>
+                    <dd class="text-[var(--nord0)]">{{ session.startedAt }}</dd>
                 </div>
             </dl>
 
@@ -92,7 +92,7 @@ defineOptions({
     </div>
 
     <Modal :show="showLogoutConfirm" title="Confirmar cierre de sesión" @close="showLogoutConfirm = false">
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-[var(--nord3)]">
             Se invalidará el token JWT de demostración y volverá a la pantalla de inicio de sesión.
         </p>
         <template #footer>

@@ -9,10 +9,10 @@ const variant = computed(() => page.props.flash?.variant ?? 'success');
 
 const classes = computed(() => {
     const map = {
-        success: 'bg-green-50 border-green-200 text-green-900',
-        info: 'bg-blue-50 border-blue-200 text-blue-900',
-        warning: 'bg-orange-50 border-orange-200 text-orange-900',
-        error: 'bg-red-50 border-red-200 text-red-900',
+        success: 'border-[var(--aurora-green)] text-[var(--aurora-green)] bg-[var(--aurora-green)]/5',
+        info: 'border-[var(--frost3)] text-[var(--frost4)] bg-[var(--frost3)]/5',
+        warning: 'border-[var(--aurora-yellow)] text-[var(--aurora-orange)] bg-[var(--aurora-yellow)]/5',
+        error: 'border-[var(--aurora-red)] text-[var(--aurora-red)] bg-[var(--aurora-red)]/5',
     };
     return map[variant.value] ?? map.success;
 });

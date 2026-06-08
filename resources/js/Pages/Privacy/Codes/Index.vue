@@ -35,9 +35,7 @@ const totalDisplay = computed(() => codesList.value.length);
 
 function notify(message) {
     localNotice.value = message;
-    setTimeout(() => {
-        localNotice.value = null;
-    }, 4000);
+    setTimeout(() => { localNotice.value = null; }, 4000);
 }
 
 function nextCode() {
@@ -59,9 +57,7 @@ function confirmGenerate() {
         return;
     }
     const today = new Date().toLocaleDateString('es-SV', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
+        day: '2-digit', month: 'short', year: 'numeric',
     });
     codesList.value.unshift({
         code: nextCode(),
@@ -90,43 +86,43 @@ defineOptions({
     <div class="max-w-5xl">
         <div
             v-if="localNotice"
-            class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900"
+            class="mb-4 rounded-lg border border-[var(--aurora-green)] bg-[var(--aurora-green)]/5 px-4 py-3 text-sm text-[var(--aurora-green)]"
         >
             {{ localNotice }}
         </div>
 
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Códigos de Privacidad</h1>
-                <p class="text-sm text-gray-500 mt-1">
+                <h1 class="text-2xl font-bold text-[var(--nord0)]">Códigos de Privacidad</h1>
+                <p class="text-sm text-[var(--nord3)] mt-1">
                     Gestión de identidad y anonimización de pacientes
                 </p>
             </div>
             <div class="flex items-center gap-4">
                 <PrimaryButton type="button" @click="openGenerate">+ Generar Nuevo Código</PrimaryButton>
-                <span class="text-sm text-gray-500 whitespace-nowrap">
+                <span class="text-sm text-[var(--nord3)] whitespace-nowrap">
                     Total: {{ totalDisplay }} códigos generados
                 </span>
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+        <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
+            <table class="min-w-full">
+                <thead class="bg-[var(--nord5)]">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Código PND</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Paciente (Anon.)</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Facultad</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha Creación</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--nord3)] uppercase tracking-wider">Código PND</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--nord3)] uppercase tracking-wider">Paciente (Anon.)</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--nord3)] uppercase tracking-wider">Facultad</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--nord3)] uppercase tracking-wider">Fecha Creación</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--nord3)] uppercase tracking-wider">Estado</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
-                    <tr v-for="row in codesList" :key="row.code" class="hover:bg-gray-50">
-                        <td class="px-6 py-4 text-sm font-medium text-blue-600">{{ row.code }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">{{ row.patient }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">{{ row.faculty }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ row.createdAt }}</td>
+                <tbody class="divide-y divide-[var(--nord5)]">
+                    <tr v-for="row in codesList" :key="row.code" class="hover:bg-[var(--nord6)] transition-colors">
+                        <td class="px-6 py-4 text-sm font-medium text-[var(--frost4)]">{{ row.code }}</td>
+                        <td class="px-6 py-4 text-sm text-[var(--nord0)]">{{ row.patient }}</td>
+                        <td class="px-6 py-4 text-sm text-[var(--nord3)]">{{ row.faculty }}</td>
+                        <td class="px-6 py-4 text-sm text-[var(--nord3)]">{{ row.createdAt }}</td>
                         <td class="px-6 py-4">
                             <StatusBadge :label="row.status" :variant="row.statusVariant" />
                         </td>
@@ -137,22 +133,22 @@ defineOptions({
     </div>
 
     <Modal :show="showGenerate" title="Generar código de privacidad" @close="showGenerate = false">
-        <p class="text-sm text-gray-500 mb-4">
+        <p class="text-sm text-[var(--nord3)] mb-4">
             Se creará un código PND sin exponer datos identificables en pantalla (demo).
         </p>
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Paciente (alias anonimizado)</label>
+                <label class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Paciente (alias anonimizado)</label>
                 <input
                     v-model="generateForm.patient"
                     type="text"
                     placeholder="Ej: Estudiante #42"
-                    class="w-full rounded-md border-gray-300 text-sm"
+                    class="w-full rounded-[7px] border border-[var(--nord4)] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] outline-none transition-colors"
                 />
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Facultad</label>
-                <select v-model="generateForm.faculty" class="w-full rounded-md border-gray-300 text-sm">
+                <label class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Facultad</label>
+                <select v-model="generateForm.faculty" class="w-full rounded-[7px] border border-[var(--nord4)] px-[10px] py-[7px] text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[rgba(129,161,193,0.2)] outline-none transition-colors">
                     <option v-for="f in faculties" :key="f" :value="f">{{ f }}</option>
                 </select>
             </div>

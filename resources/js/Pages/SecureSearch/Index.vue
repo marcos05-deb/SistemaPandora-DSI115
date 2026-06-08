@@ -24,25 +24,20 @@ function loadHistory() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
         searchHistory.value = stored ? JSON.parse(stored) : [];
-    } catch {
-        searchHistory.value = [];
-    }
+    } catch { searchHistory.value = []; }
 }
 
 function saveToHistory(code) {
     if (!code) return;
     const filtered = searchHistory.value.filter(h => h !== code);
     filtered.unshift(code);
-    const sliced = filtered.slice(0, 10);
-    searchHistory.value = sliced;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sliced));
+    searchHistory.value = filtered.slice(0, 10);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(searchHistory.value));
 }
 
 function submitSearch() {
     saveToHistory(form.code);
-    form.post('/busqueda-segura', {
-        preserveScroll: true,
-    });
+    form.post('/busqueda-segura', { preserveScroll: true });
 }
 
 function autofill(value) {
@@ -65,7 +60,7 @@ loadHistory();
                     </svg>
                     Búsqueda por UUID
                 </h2>
-                <Link href="/pacientes" class="text-[12px] text-[var(--nord10)] hover:text-[var(--nord8)] transition-colors">
+                <Link href="/pacientes" class="text-[12px] text-[var(--nord10)] hover:text-[var(--nord9)] transition-colors font-medium">
                     Buscar por Carnet →
                 </Link>
             </div>
@@ -78,7 +73,7 @@ loadHistory();
                         </svg>
                     </div>
                     <p class="text-[13px] text-[var(--nord3)]">
-                        Ingrese el codigo unico (UUID) del expediente para consultarlo. 
+                        Ingrese el código único (UUID) del expediente para consultarlo. 
                         La identidad del paciente permanece protegida hasta que acceda al detalle.
                     </p>
                 </div>
@@ -135,10 +130,7 @@ loadHistory();
             </div>
         </div>
 
-        <div
-            v-if="results && results.found"
-            class="mt-6 bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden"
-        >
+        <div v-if="results && results.found" class="mt-6 bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden animate-fade-in">
             <div class="px-6 py-5 border-b border-[var(--nord4)] bg-[var(--nord6)]">
                 <div class="flex justify-between items-center">
                     <h3 class="text-[15px] font-medium text-[var(--nord0)] flex items-center gap-2">
@@ -152,19 +144,16 @@ loadHistory();
 
             <div class="p-8">
                 <div class="border border-[var(--nord4)] rounded-lg px-5 py-4 bg-[var(--nord6)]">
-                    <dt class="text-[11px] font-medium text-[var(--nord3)] uppercase tracking-wider">Codigo de Expediente</dt>
+                    <dt class="text-[11px] font-medium text-[var(--nord3)] uppercase tracking-wider">Código de Expediente</dt>
                     <dd class="text-[14px] font-mono font-semibold text-[var(--nord0)] mt-1">{{ results.code }}</dd>
                 </div>
 
-                <p class="text-[12px] text-[var(--nord3)] mt-5 text-center">
-                    Los datos personales del paciente no se muestran en esta vista.
-                    Acceda al expediente para consultar la informacion clinica completa.
-                </p>
+                <p class="text-[12px] text-[var(--nord3)] mt-5 text-center">Los datos personales del paciente no se muestran en esta vista.</p>
 
                 <div class="flex justify-center gap-3 mt-5">
                     <Link
                         :href="`/pacientes/${results.carnet}`"
-                        class="inline-flex items-center px-5 py-2.5 text-[13px] font-medium rounded-lg bg-[var(--nord10)] text-white hover:bg-[var(--nord9)] transition-colors shadow-sm"
+                        class="inline-flex items-center px-5 py-2.5 text-[13px] font-medium rounded-lg bg-[var(--nord10)] text-white hover:bg-[var(--nord9)] transition-all duration-200 shadow-sm hover:shadow-md"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -174,7 +163,7 @@ loadHistory();
                     <button
                         type="button"
                         @click="showHistorial = true"
-                        class="inline-flex items-center px-5 py-2.5 text-[13px] font-medium rounded-lg border border-[var(--nord4)] text-[var(--nord3)] hover:bg-[var(--nord6)] hover:text-[var(--nord0)] transition-colors"
+                        class="inline-flex items-center px-5 py-2.5 text-[13px] font-medium rounded-lg border border-[var(--nord4)] text-[var(--nord3)] hover:bg-[var(--nord6)] hover:text-[var(--nord0)] transition-all duration-200"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -185,26 +174,22 @@ loadHistory();
             </div>
         </div>
 
-        <p class="mt-6 text-[12px] text-[var(--nord3)] text-center">
-            Los datos se muestran de forma anonimizada. Solo personal autorizado puede acceder al expediente completo.
-        </p>
+        <p class="mt-6 text-[12px] text-[var(--nord3)] text-center">Los datos se muestran de forma anonimizada. Solo personal autorizado puede acceder al expediente completo.</p>
     </div>
 
     <Modal :show="showHistorial" title="Historial de Citas" max-width="max-w-2xl" @close="showHistorial = false">
-        <p class="text-sm text-gray-500 mb-4">
-            El módulo de Citas estará disponible en un próximo sprint.
-        </p>
+        <p class="text-[13px] text-[var(--nord3)] mb-4">El módulo de Citas estará disponible en un próximo sprint.</p>
         <table class="min-w-full text-sm">
             <thead>
-                <tr class="text-left text-gray-500 border-b">
-                    <th class="py-2 pr-4">Fecha</th>
-                    <th class="py-2 pr-4">Tipo</th>
-                    <th class="py-2">Estado</th>
+                <tr class="text-left text-[var(--nord3)] border-b border-[var(--nord4)] text-[11px] uppercase tracking-wider">
+                    <th class="py-2 pr-4 font-medium">Fecha</th>
+                    <th class="py-2 pr-4 font-medium">Tipo</th>
+                    <th class="py-2 font-medium">Estado</th>
                 </tr>
             </thead>
-            <tbody class="text-gray-400">
+            <tbody class="text-[var(--nord3)]">
                 <tr>
-                    <td colspan="3" class="py-4 text-center">Sin registros disponibles</td>
+                    <td colspan="3" class="py-8 text-center">Sin registros disponibles</td>
                 </tr>
             </tbody>
         </table>

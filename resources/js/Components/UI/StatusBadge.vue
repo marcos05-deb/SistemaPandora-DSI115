@@ -1,11 +1,11 @@
 <script setup>
 const variants = {
-    active: 'bg-green-100 text-green-800',
-    inactive: 'bg-orange-100 text-orange-800',
-    blocked: 'bg-red-100 text-red-800',
-    director: 'bg-blue-100 text-blue-800',
-    specialist: 'bg-amber-100 text-amber-800',
-    reception: 'bg-purple-100 text-purple-800',
+    active: 'bg-[var(--aurora-green)]/10 text-[var(--aurora-green)]',
+    inactive: 'bg-[var(--aurora-orange)]/10 text-[var(--aurora-orange)]',
+    blocked: 'bg-[var(--aurora-red)]/10 text-[var(--aurora-red)]',
+    director: 'bg-[var(--frost4)]/10 text-[var(--frost4)]',
+    specialist: 'bg-[var(--aurora-yellow)]/10 text-[var(--aurora-orange)]',
+    reception: 'bg-[var(--aurora-purple)]/10 text-[var(--aurora-purple)]',
 };
 
 defineProps({

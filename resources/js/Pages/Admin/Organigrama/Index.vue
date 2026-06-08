@@ -23,22 +23,22 @@ defineProps({
         </div>
 
         <!-- Totales -->
-        <div class="grid grid-cols-4 gap-[10px]">
-            <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
-                <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Usuarios Totales</div>
-                <div class="text-[22px] font-medium text-[var(--nord0)]">{{ totales.usuarios }}</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="bg-white rounded-[10px] py-[14px] px-[16px] shadow-sm border border-[var(--nord4)] hover:shadow-md transition-shadow duration-200">
+                <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider font-medium">Usuarios Totales</div>
+                <div class="text-[24px] font-bold text-[var(--nord0)] mt-1">{{ totales.usuarios }}</div>
             </div>
-            <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
-                <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Activos</div>
-                <div class="text-[22px] font-medium text-[var(--aurora-green)]">{{ totales.activos }}</div>
+            <div class="bg-white rounded-[10px] py-[14px] px-[16px] shadow-sm border border-[var(--nord4)] hover:shadow-md transition-shadow duration-200">
+                <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider font-medium">Activos</div>
+                <div class="text-[24px] font-bold text-[var(--aurora-green)] mt-1">{{ totales.activos }}</div>
             </div>
-            <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
-                <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Inactivos</div>
-                <div class="text-[22px] font-medium text-[var(--aurora-red)]">{{ totales.inactivos }}</div>
+            <div class="bg-white rounded-[10px] py-[14px] px-[16px] shadow-sm border border-[var(--nord4)] hover:shadow-md transition-shadow duration-200">
+                <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider font-medium">Inactivos</div>
+                <div class="text-[24px] font-bold text-[var(--aurora-red)] mt-1">{{ totales.inactivos }}</div>
             </div>
-            <div class="bg-[var(--nord5)] rounded-[8px] py-[10px] px-[14px]">
-                <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider">Áreas Clínicas</div>
-                <div class="text-[22px] font-medium text-[var(--frost4)]">{{ totales.areas }}</div>
+            <div class="bg-white rounded-[10px] py-[14px] px-[16px] shadow-sm border border-[var(--nord4)] hover:shadow-md transition-shadow duration-200">
+                <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider font-medium">Áreas Clínicas</div>
+                <div class="text-[24px] font-bold text-[var(--frost4)] mt-1">{{ totales.areas }}</div>
             </div>
         </div>
 
