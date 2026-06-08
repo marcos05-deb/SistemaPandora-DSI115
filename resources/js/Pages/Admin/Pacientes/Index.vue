@@ -35,7 +35,7 @@ function formatDate(dateStr) {
                 <h2 class="text-[16px] font-medium text-[var(--nord0)] tracking-tight">Auditoría de Pacientes</h2>
                 <p class="text-[12px] text-[var(--nord3)] mt-0.5">Listado anonimizado de todos los expedientes del sistema.</p>
             </div>
-            <div class="text-[11px] text-[var(--nord3)] bg-[var(--nord6)] px-3 py-1.5 rounded-full font-medium border border-[var(--nord4)]">
+            <div class="text-[11px] text-[var(--nord3)] bg-[var(--surface-subtle)] px-3 py-1.5 rounded-full font-medium border border-[var(--nord4)]">
                 {{ pacientes.total || 0 }} registros
             </div>
         </div>
@@ -58,7 +58,7 @@ function formatDate(dateStr) {
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead>
-                        <tr class="bg-[var(--nord5)] text-[var(--nord3)] font-medium text-[11px] uppercase tracking-[0.05em]">
+                        <tr class="bg-[var(--surface-header)] text-[var(--nord3)] font-medium text-[11px] uppercase tracking-[0.05em]">
                             <th class="py-[12px] px-[16px] font-semibold">UUID del Expediente</th>
                             <th class="py-[12px] px-[16px] font-semibold">Creado por</th>
                             <th class="py-[12px] px-[16px] font-semibold">Fecha de Registro</th>
@@ -68,7 +68,7 @@ function formatDate(dateStr) {
                     <tbody class="divide-y divide-[var(--nord5)]">
                         <tr v-for="(paciente, idx) in pacientes.data" :key="paciente.id" 
                             class="hover:bg-[var(--nord6)] transition-colors duration-150"
-                            :class="{ 'bg-[var(--nord6)]/30': idx % 2 === 1 }">
+                            :class="{ 'bg-[var(--surface-subtle)]': idx % 2 === 1 }">
                             <td class="py-[12px] px-[16px] font-mono text-[12px] text-[var(--nord0)]">{{ paciente.codigo }}</td>
                             <td class="py-[12px] px-[16px] text-[12px] text-[var(--nord3)]">{{ paciente.creator?.name || 'Desconocido' }}</td>
                             <td class="py-[12px] px-[16px] text-[12px] text-[var(--nord3)]">{{ formatDate(paciente.created_at) }}</td>
@@ -87,7 +87,7 @@ function formatDate(dateStr) {
                 </table>
             </div>
 
-            <div v-if="pacientes.links && pacientes.links.length > 3" class="px-4 py-3 border-t border-[var(--nord5)] flex justify-center bg-[var(--nord6)]">
+            <div v-if="pacientes.links && pacientes.links.length > 3" class="px-4 py-3 border-t border-[var(--nord5)] flex justify-center bg-[var(--surface-subtle)]">
                 <div class="flex flex-wrap gap-1.5">
                     <template v-for="(link, p) in pacientes.links" :key="p">
                         <div v-if="link.url === null" 

@@ -82,7 +82,7 @@ function clearGeneratedPassword() {
             Usuario Creado Exitosamente
         </h4>
         <p class="text-[12px] text-[var(--nord3)] mb-4">El sistema ha generado una contraseña segura temporal para este usuario. Cópiala y compártela a través de un canal seguro.</p>
-        <div class="bg-white px-4 py-3 rounded-lg border border-[var(--nord4)] flex items-center justify-between">
+        <div class="bg-[var(--surface-subtle)] px-4 py-3 rounded-lg border border-[var(--nord4)] flex items-center justify-between">
             <code class="text-[16px] font-mono text-[var(--nord0)]">{{ $page.props.flash.generated_password }}</code>
             <button 
                 @click="copyPassword($page.props.flash.generated_password)" 
@@ -160,7 +160,7 @@ function clearGeneratedPassword() {
       <div class="overflow-x-auto">
         <table class="w-full text-left">
           <thead>
-            <tr class="bg-[var(--nord5)] text-[var(--nord3)] font-medium text-[11px] uppercase tracking-[0.05em]">
+            <tr class="bg-[var(--surface-header)] text-[var(--nord3)] font-medium text-[11px] uppercase tracking-[0.05em]">
               <th class="py-[12px] px-[16px] font-semibold">Nombre</th>
               <th class="py-[12px] px-[16px] font-semibold">Correo</th>
               <th class="py-[12px] px-[16px] font-semibold">Rol</th>
@@ -173,7 +173,7 @@ function clearGeneratedPassword() {
               v-for="(user, idx) in users.data"
               :key="user.id"
               class="hover:bg-[var(--nord6)] transition-colors duration-150"
-              :class="{ 'bg-[var(--nord6)]/30': idx % 2 === 1 }"
+              :class="{ 'bg-[var(--surface-subtle)]': idx % 2 === 1 }"
             >
               <td class="py-[12px] px-[16px]">
                 <div class="flex items-center gap-3">
@@ -261,7 +261,7 @@ function clearGeneratedPassword() {
       </div>
       
       <!-- Pagination -->
-      <div v-if="users.links && users.links.length > 3" class="px-4 py-3 border-t border-[var(--nord5)] flex justify-center bg-[var(--nord6)]">
+      <div v-if="users.links && users.links.length > 3" class="px-4 py-3 border-t border-[var(--nord5)] flex justify-center bg-[var(--surface-subtle)]">
         <div class="flex flex-wrap gap-1.5">
             <template v-for="(link, p) in users.links" :key="p">
                 <div v-if="link.url === null" 

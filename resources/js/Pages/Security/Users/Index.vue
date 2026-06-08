@@ -158,7 +158,7 @@ defineOptions({
 
         <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
             <table class="min-w-full">
-                <thead class="bg-[var(--nord5)]">
+                <thead class="bg-[var(--surface-header)]">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--nord3)] uppercase tracking-wider">Nombre</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-[var(--nord3)] uppercase tracking-wider">Email</th>

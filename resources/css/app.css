@@ -61,6 +61,8 @@
   --chrome-text-muted: #D8DEE9;
   --chrome-border: #4C566A;
   --surface: #FFFFFF;
+  --surface-header: #ECEFF4;
+  --surface-subtle: #F2F3F7;
 }
 
 .dark {
@@ -80,6 +82,13 @@
   --chrome-text-muted: #A0AAB8;
   --chrome-border: #343A46;
   --surface: #3B4252;
+  --surface-header: #495468;
+  --surface-subtle: #363E4B;
+}
+
+.dark .bg-white {
+  background-color: var(--surface) !important;
+  border-color: var(--nord4) !important;
 }
 
 .dark body {
@@ -90,6 +99,36 @@
 .dark .bg-white {
   background-color: var(--surface) !important;
   border-color: var(--nord4) !important;
+}
+
+.dark select,
+.dark input,
+.dark textarea {
+  color-scheme: dark;
+}
+
+select,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+input[type="date"],
+input[type="search"],
+textarea {
+  background-color: var(--surface);
+}
+
+.dark select,
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="tel"],
+.dark input[type="number"],
+.dark input[type="date"],
+.dark input[type="search"],
+.dark textarea {
+  background-color: var(--surface);
 }
 
 .dark .text-gray-900,
@@ -120,6 +159,18 @@
 .dark .pill-admin {
   background-color: #434C5E;
   color: #ECEFF4;
+}
+
+.field-required {
+  color: #D35F66;
+  font-weight: 700;
+  font-size: 1.1em;
+  margin-left: 2px;
+  cursor: help;
+  user-select: none;
+}
+.dark .field-required {
+  color: #F28482;
 }
 
 @keyframes fade-in {

@@ -60,7 +60,7 @@ function submitUser() {
   <div class="space-y-[14px] max-w-5xl mx-auto">
     <!-- Header Section -->
     <div class="flex items-center gap-4 bg-white py-[14px] px-[18px] shadow-sm border border-[var(--nord4)] rounded-[10px]">
-      <Link href="/admin/users" class="p-2 text-[var(--nord3)] hover:text-[var(--nord0)] bg-[var(--nord6)] hover:bg-[var(--nord5)] rounded-[7px] transition-colors">
+      <Link href="/admin/users" class="p-2 text-[var(--nord3)] hover:text-[var(--nord0)] bg-[var(--surface-subtle)] hover:bg-[var(--surface-header)] rounded-[7px] transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l14 0" /><path d="M5 12l6 6" /><path d="M5 12l6 -6" /></svg>
       </Link>
       <div>
@@ -83,7 +83,7 @@ function submitUser() {
             <h3 class="text-[11px] font-medium text-[var(--nord3)] uppercase tracking-wider mb-4 border-b border-[var(--nord5)] pb-2">Información Básica</h3>
             
             <div>
-              <label for="name" class="block text-[13px] font-medium text-[var(--nord3)] mb-[5px]">Nombre completo <span class="text-[var(--aurora-red)]">*</span></label>
+              <label for="name" class="block text-[13px] font-medium text-[var(--nord3)] mb-[5px]">Nombre completo <span class="field-required" title="Campo obligatorio">*</span></label>
               <input
                 id="name"
                 v-model="form.name"
@@ -98,7 +98,7 @@ function submitUser() {
             </div>
 
             <div>
-              <label for="email" class="block text-[13px] font-medium text-[var(--nord3)] mb-[5px]">Correo electrónico <span class="text-[var(--aurora-red)]">*</span></label>
+              <label for="email" class="block text-[13px] font-medium text-[var(--nord3)] mb-[5px]">Correo electrónico <span class="field-required" title="Campo obligatorio">*</span></label>
               <input
                 id="email"
                 v-model="form.email"
@@ -136,7 +136,7 @@ function submitUser() {
                     </div>
                 </div>
             </div>
-            <div v-else class="bg-[var(--nord5)] border border-[var(--nord4)] p-4 rounded-[7px] mt-6">
+            <div v-else class="bg-[var(--surface-subtle)] border border-[var(--nord4)] p-4 rounded-[7px] mt-6">
                 <div class="flex gap-3 items-start">
                     <svg class="w-5 h-5 text-[var(--nord3)] mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                     <div>
@@ -153,7 +153,7 @@ function submitUser() {
             
             <div class="grid grid-cols-2 gap-4">
               <div class="col-span-2">
-                <label for="role" class="block text-[13px] font-medium text-[var(--nord3)] mb-[5px]">Rol en el sistema <span class="text-[var(--aurora-red)]">*</span></label>
+                <label for="role" class="block text-[13px] font-medium text-[var(--nord3)] mb-[5px]">Rol en el sistema <span class="field-required" title="Campo obligatorio">*</span></label>
                 <select
                   id="role"
                   v-model="form.role_id"
@@ -190,7 +190,7 @@ function submitUser() {
                   
                   <div class="space-y-[18px]">
                       <div>
-                        <label for="area" class="block text-[13px] font-medium text-[var(--nord3)] mb-[5px]">Departamento / Área <span class="text-[var(--aurora-red)]">*</span></label>
+                        <label for="area" class="block text-[13px] font-medium text-[var(--nord3)] mb-[5px]">Departamento / Área <span class="field-required" title="Campo obligatorio">*</span></label>
                         <select
                           id="area"
                           v-model="form.area_id"
@@ -208,7 +208,7 @@ function submitUser() {
                       </div>
 
                       <div>
-                        <label for="especialidad" class="block text-[13px] font-medium text-[var(--nord3)] mb-[5px]">Especialidad <span class="text-[var(--aurora-red)]">*</span></label>
+                        <label for="especialidad" class="block text-[13px] font-medium text-[var(--nord3)] mb-[5px]">Especialidad <span class="field-required" title="Campo obligatorio">*</span></label>
                         <input
                           id="especialidad"
                           v-model="form.especialidad"
@@ -223,7 +223,7 @@ function submitUser() {
                       </div>
 
                       <div>
-                        <label for="numero_registro" class="block text-[13px] font-medium text-[var(--nord3)] mb-[5px]">Número de Registro <span class="text-[var(--aurora-red)]">*</span></label>
+                        <label for="numero_registro" class="block text-[13px] font-medium text-[var(--nord3)] mb-[5px]">Número de Registro <span class="field-required" title="Campo obligatorio">*</span></label>
                         <input
                           id="numero_registro"
                           v-model="form.numero_registro"
@@ -263,7 +263,7 @@ function submitUser() {
 
         <div class="flex items-center justify-between pt-6 border-t border-[var(--nord5)] mt-8">
           <div class="text-[11px] text-[var(--nord3)]">
-            <span class="text-[var(--aurora-red)]">*</span> Campos requeridos
+            <span class="field-required" title="Campo obligatorio">*</span> Campos requeridos
           </div>
           <div class="flex gap-3">
             <Link

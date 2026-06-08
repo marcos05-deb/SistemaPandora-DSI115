@@ -44,7 +44,7 @@ defineProps({
 
         <!-- Jerarquía de Roles -->
         <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
-            <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--nord6)]">
+            <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--surface-header)]">
                 <h3 class="text-[14px] font-medium text-[var(--nord0)] flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[var(--nord10)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -59,7 +59,7 @@ defineProps({
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[13px] font-bold"
                                     :class="{
-                                        'bg-[var(--nord11)]': role.slug === 'sysadmin',
+                                        'bg-[var(--aurora-red)]': role.slug === 'sysadmin',
                                         'bg-[var(--nord10)]': role.slug === 'area_coordinator',
                                         'bg-[var(--frost4)]': role.slug === 'psychosocial_referent',
                                         'bg-[var(--nord9)]': role.slug === 'specialist',
@@ -73,7 +73,7 @@ defineProps({
                                 </div>
                             </div>
                             <span class="text-[11px] px-[8px] py-[2px] rounded-[99px] font-medium"
-                                :class="role.slug === 'sysadmin' ? 'bg-[var(--nord6)] text-[var(--nord3)]' : 'bg-[var(--nord5)] text-[var(--nord3)]'">
+                                :class="role.slug === 'sysadmin' ? 'bg-[var(--surface-header)] text-[var(--nord3)]' : 'bg-[var(--surface-subtle)] text-[var(--nord3)]'">
                                 {{ role.slug }}
                             </span>
                         </div>
@@ -97,7 +97,7 @@ defineProps({
 
         <!-- Áreas Clínicas -->
         <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
-            <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--nord6)]">
+            <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--surface-header)]">
                 <h3 class="text-[14px] font-medium text-[var(--nord0)] flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[var(--aurora-orange)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -111,7 +111,7 @@ defineProps({
                 </div>
                 <div v-else class="space-y-4">
                     <div v-for="area in areas" :key="area.id" class="border border-[var(--nord4)] rounded-[8px] overflow-hidden">
-                        <div class="px-4 py-3 bg-[var(--nord5)] flex items-center justify-between">
+                        <div class="px-4 py-3 bg-[var(--surface-header)] flex items-center justify-between">
                             <h4 class="text-[13px] font-medium text-[var(--nord0)]">{{ area.nombre }}</h4>
                             <span class="text-[11px] text-[var(--nord3)]">{{ area.total_especialistas }} especialista(s)</span>
                         </div>

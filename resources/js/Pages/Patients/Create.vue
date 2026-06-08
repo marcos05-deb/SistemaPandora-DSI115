@@ -54,7 +54,7 @@ defineOptions({
             <form class="space-y-5" @submit.prevent="submit">
                 <div>
                     <label class="block text-sm font-medium text-[var(--nord3)] mb-1">
-                        Nombre Completo <span class="text-[var(--aurora-red)]">*</span>
+                        Nombre Completo <span class="field-required" title="Campo obligatorio">*</span>
                     </label>
                     <input
                         v-model="form.name"
@@ -69,7 +69,7 @@ defineOptions({
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                         <label class="block text-sm font-medium text-[var(--nord3)] mb-1">
-                            Edad <span class="text-[var(--aurora-red)]">*</span>
+                            Edad <span class="field-required" title="Campo obligatorio">*</span>
                         </label>
                         <input
                             v-model="form.age"
@@ -84,7 +84,7 @@ defineOptions({
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-[var(--nord3)] mb-1">
-                            Facultad <span class="text-[var(--aurora-red)]">*</span>
+                            Facultad <span class="field-required" title="Campo obligatorio">*</span>
                         </label>
                         <select
                             v-model="form.faculty"
@@ -110,7 +110,7 @@ defineOptions({
 
                 <div>
                     <label class="block text-sm font-medium text-[var(--nord3)] mb-1">
-                        Responsable <span class="text-[var(--aurora-red)]">*</span>
+                        Responsable <span class="field-required" title="Campo obligatorio">*</span>
                     </label>
                     <input
                         v-model="form.guardian"

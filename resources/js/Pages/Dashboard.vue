@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
+import EmptyState from '@/Components/UI/EmptyState.vue';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -91,27 +92,22 @@ function formatDate(dateStr) {
         <div class="bg-white rounded-xl shadow-sm border border-[var(--nord4)] overflow-hidden">
             <div class="px-6 py-4 border-b border-[var(--nord4)] flex items-center justify-between">
                 <h2 class="text-base font-semibold text-[var(--nord0)]">Pacientes Recientes</h2>
-                <span v-if="pacientes.length > 0" class="text-[11px] text-[var(--nord3)] bg-[var(--nord6)] px-2.5 py-1 rounded-full font-medium">{{ pacientes.length }} registros</span>
+                <span v-if="pacientes.length > 0" class="text-[11px] text-[var(--nord3)] bg-[var(--surface-subtle)] px-2.5 py-1 rounded-full font-medium">{{ pacientes.length }} registros</span>
             </div>
             
-            <div v-if="pacientes.length === 0" class="p-12 text-center flex flex-col items-center">
-                <div class="w-20 h-20 rounded-full bg-[var(--nord6)] flex items-center justify-center mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-[var(--nord3)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                </div>
-                <h3 class="text-base font-medium text-[var(--nord0)] mb-1">No hay pacientes registrados</h3>
-                <p class="text-sm text-[var(--nord3)] max-w-sm">
-                    Aún no existen registros en tu área. 
-                    <span v-if="canCreatePatient">Puedes comenzar registrando el primer paciente.</span>
-                    <span v-else>Contacta al Referente Psicosocial para registrar pacientes.</span>
-                </p>
+            <div v-if="pacientes.length === 0">
+                <EmptyState icon="users" title="No hay pacientes registrados" :description="canCreatePatient ? 'Aún no existen registros en tu área. Puedes comenzar registrando el primer paciente.' : 'Contacta al Referente Psicosocial para registrar pacientes.'">
+                    <Link v-if="canCreatePatient" href="/pacientes/create" class="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--nord10)] hover:bg-[var(--nord9)] text-white font-medium rounded-lg shadow-sm transition-all duration-200 text-sm hover:shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                        Registrar Paciente
+                    </Link>
+                </EmptyState>
             </div>
 
             <div v-else class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead>
-                        <tr class="bg-[var(--nord6)] border-b border-[var(--nord4)] text-xs uppercase tracking-wider text-[var(--nord3)]">
+                        <tr class="bg-[var(--surface-header)] border-b border-[var(--nord4)] text-xs uppercase tracking-wider text-[var(--nord3)]">
                             <th class="p-4 font-semibold">Carnet</th>
                             <th class="p-4 font-semibold">Nombre del Paciente</th>
                             <th class="p-4 font-semibold">Registrado</th>
@@ -119,7 +115,7 @@ function formatDate(dateStr) {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[var(--nord5)]">
-                        <tr v-for="(paciente, idx) in pacientes" :key="paciente.carnet" class="hover:bg-[var(--nord6)] transition-colors duration-150 text-sm" :class="{ 'bg-[var(--nord6)]/30': idx % 2 === 1 }">
+                        <tr v-for="(paciente, idx) in pacientes" :key="paciente.carnet" class="hover:bg-[var(--nord6)] transition-colors duration-150 text-sm" :class="{ 'bg-[var(--surface-subtle)]': idx % 2 === 1 }">
                             <td class="p-4 font-mono text-[var(--nord0)] font-medium">{{ paciente.carnet }}</td>
                             <td class="p-4 text-[var(--nord0)]">{{ paciente.nombre_completo }}</td>
                             <td class="p-4 text-[var(--nord3)]">{{ formatDate(paciente.created_at) }}</td>
