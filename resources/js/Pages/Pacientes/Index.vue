@@ -19,7 +19,7 @@ const canCreatePatient = computed(() => {
 
 const canSeeUuidSearch = computed(() => {
     const roles = page.props.auth?.user?.roles || [];
-    return !roles.includes('psychosocial_referent');
+    return !roles.includes('psychosocial_referent') && !roles.includes('specialist');
 });
 
 const form = useForm({

@@ -16,7 +16,7 @@ class SecureSearchController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->hasRole('psychosocial_referent')) {
+        if ($user->hasRole('psychosocial_referent') || $user->hasRole('specialist')) {
             return redirect()->route('pacientes.index');
         }
 
@@ -42,9 +42,7 @@ class SecureSearchController extends Controller
 
         $query = Paciente::where('codigo', $code);
 
-        if ($user->hasRole('psychosocial_referent')) {
-            $query->where('creado_por_profesional_id', $user->profesional->id);
-        } elseif (!($user->hasRole('specialist') || $user->hasRole('area_coordinator'))) {
+        if ($user->hasRole('psychosocial_referent') || $user->hasRole('specialist')) {
             return redirect()->route('busqueda-segura')->withErrors([
                 'code' => 'No tienes permisos para realizar busquedas.',
             ]);
