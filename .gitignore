@@ -19,3 +19,4 @@ yarn-error.log
 /.idea
 /.vscode
 storage/app/vite-cache/
+database/database.sqlite
