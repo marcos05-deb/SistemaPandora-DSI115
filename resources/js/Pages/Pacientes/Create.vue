@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
+import FieldTooltip from '@/Components/UI/FieldTooltip.vue';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -49,6 +50,23 @@ function maskPhone(field) {
 watch(() => form.errors, () => {
     if (Object.keys(form.errors).length > 0) currentStep.value = 1;
 }, { deep: true });
+
+watch(() => form.responsable_parentesco, (val) => {
+    if (val === 'Padre' && form.padre_telefono) {
+        form.responsable_telefono = form.padre_telefono;
+        form.responsable_nombre = form.padre_nombre;
+    } else if (val === 'Madre' && form.madre_telefono) {
+        form.responsable_telefono = form.madre_telefono;
+        form.responsable_nombre = form.madre_nombre;
+    }
+});
+
+watch(() => form.padre_telefono, (val) => {
+    if (form.responsable_parentesco === 'Padre') form.responsable_telefono = val;
+});
+watch(() => form.madre_telefono, (val) => {
+    if (form.responsable_parentesco === 'Madre') form.responsable_telefono = val;
+});
 
 function focusField(name) {
     currentStep.value = name.startsWith('responsable_') || name.startsWith('padre_') || name.startsWith('madre_') ? 2 : 1;
@@ -130,31 +148,31 @@ function submit() {
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
                         <div>
-                            <label for="field-carnet" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Carnet <span class="field-required" title="Campo obligatorio">*</span></label>
+                            <label for="field-carnet" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Carnet <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="2 letras mayúsculas + 5 dígitos. Ejemplo: AB12345" /></label>
                             <input id="field-carnet" v-model="form.carnet" type="text" @input="maskCarnet" maxlength="7" placeholder="Ej: AB12345" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] font-mono uppercase tracking-wider text-[var(--nord0)] focus:ring-2 outline-none transition-all placeholder:text-[var(--nord3)]" :class="form.errors.carnet ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required />
                             <p v-if="form.errors.carnet" class="form-field-error text-[11px] text-[var(--aurora-red)] mt-1 flex items-center gap-1"><svg class="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{{ form.errors.carnet }}</p>
                         </div>
 
                         <div>
-                            <label for="field-nombre_completo" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Nombre Completo <span class="field-required" title="Campo obligatorio">*</span></label>
+                            <label for="field-nombre_completo" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Nombre Completo <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Nombre tal como aparece en el carnet estudiantil o DUI" /></label>
                             <input id="field-nombre_completo" v-model="form.nombre_completo" type="text" maxlength="255" placeholder="Ej: María José López García" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all placeholder:text-[var(--nord3)]" :class="form.errors.nombre_completo ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required />
                             <p v-if="form.errors.nombre_completo" class="form-field-error text-[11px] text-[var(--aurora-red)] mt-1 flex items-center gap-1"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{{ form.errors.nombre_completo }}</p>
                         </div>
 
                         <div class="md:col-span-2">
-                            <label for="field-direccion" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Dirección <span class="field-required" title="Campo obligatorio">*</span></label>
+                            <label for="field-direccion" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Dirección <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Dirección de residencia actual del estudiante. Incluye colonia, calle, número y municipio" /></label>
                             <textarea id="field-direccion" v-model="form.direccion" rows="2" maxlength="500" placeholder="Ej: Colonia El Roble, Calle Principal #42, San Salvador" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all resize-none placeholder:text-[var(--nord3)]" :class="form.errors.direccion ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required />
                             <p v-if="form.errors.direccion" class="form-field-error text-[11px] text-[var(--aurora-red)] mt-1 flex items-center gap-1"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{{ form.errors.direccion }}</p>
                         </div>
 
                         <div class="md:col-span-2">
-                            <label for="field-motivo_consulta" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Motivo de Consulta <span class="field-required" title="Campo obligatorio">*</span></label>
+                            <label for="field-motivo_consulta" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Motivo de Consulta <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Describe brevemente el problema, síntoma o situación por la cual el estudiante busca ayuda" /></label>
                             <textarea id="field-motivo_consulta" v-model="form.motivo_consulta" rows="3" placeholder="Describa el motivo por el cual el estudiante acude a consulta" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all resize-none placeholder:text-[var(--nord3)]" :class="form.errors.motivo_consulta ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required />
                             <p v-if="form.errors.motivo_consulta" class="form-field-error text-[11px] text-[var(--aurora-red)] mt-1 flex items-center gap-1"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{{ form.errors.motivo_consulta }}</p>
                         </div>
 
                         <div>
-                            <label for="field-carrera_id" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Carrera <span class="field-required" title="Campo obligatorio">*</span></label>
+                            <label for="field-carrera_id" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Carrera <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Selecciona la facultad y carrera que el estudiante cursa actualmente" /></label>
                             <select id="field-carrera_id" v-model="form.carrera_id" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all" :class="form.errors.carrera_id ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required>
                                 <option value="" disabled>Seleccione una carrera</option>
                                 <optgroup v-for="f in facultades" :key="f.id" :label="f.nombre">
@@ -165,13 +183,13 @@ function submit() {
                         </div>
 
                         <div>
-                            <label for="field-fecha_nacimiento" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha Nacimiento <span class="field-required" title="Campo obligatorio">*</span></label>
+                            <label for="field-fecha_nacimiento" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha Nacimiento <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Fecha real de nacimiento. No puede ser una fecha futura" /></label>
                             <input id="field-fecha_nacimiento" v-model="form.fecha_nacimiento" type="date" :max="new Date().toISOString().split('T')[0]" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all" :class="form.errors.fecha_nacimiento ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required />
                             <p v-if="form.errors.fecha_nacimiento" class="form-field-error text-[11px] text-[var(--aurora-red)] mt-1 flex items-center gap-1"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{{ form.errors.fecha_nacimiento }}</p>
                         </div>
 
                         <div>
-                            <label for="field-sexo" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Sexo <span class="field-required" title="Campo obligatorio">*</span></label>
+                            <label for="field-sexo" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Sexo <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Sexo biológico según documento de identidad oficial" /></label>
                             <select id="field-sexo" v-model="form.sexo" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all" :class="form.errors.sexo ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required>
                                 <option value="" disabled>Seleccionar</option>
                                 <option value="M">Masculino</option>
@@ -182,7 +200,7 @@ function submit() {
                         </div>
 
                         <div>
-                            <label for="field-estado_civil" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Estado Civil <span class="field-required" title="Campo obligatorio">*</span></label>
+                            <label for="field-estado_civil" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Estado Civil <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Estado civil actual del estudiante al momento del registro" /></label>
                             <select id="field-estado_civil" v-model="form.estado_civil" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all" :class="form.errors.estado_civil ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required>
                                 <option value="" disabled>Seleccionar</option>
                                 <option value="Soltero">Soltero</option>
@@ -195,22 +213,22 @@ function submit() {
                         </div>
 
                         <div>
-                            <label for="field-profesion_ocupacion" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Profesión / Ocupación</label>
+                            <label for="field-profesion_ocupacion" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Profesión / Ocupación <FieldTooltip text="Si el estudiante trabaja además de estudiar, indica su ocupación actual" /></label>
                             <input id="field-profesion_ocupacion" v-model="form.profesion_ocupacion" type="text" maxlength="255" placeholder="Ej: Estudiante, Ingeniero, Docente" class="w-full bg-white border border-[var(--nord4)] rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[var(--frost3)]/20 outline-none transition-all" />
                         </div>
 
                         <div>
-                            <label for="field-fecha_primera_consulta" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha Primera Consulta</label>
+                            <label for="field-fecha_primera_consulta" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha Primera Consulta <FieldTooltip text="Fecha en la que el estudiante acudió a consulta por primera vez. No puede ser futura" /></label>
                             <input id="field-fecha_primera_consulta" v-model="form.fecha_primera_consulta" type="date" :max="new Date().toISOString().split('T')[0]" class="w-full bg-white border border-[var(--nord4)] rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[var(--frost3)]/20 outline-none transition-all" />
                         </div>
 
                         <div>
-                            <label for="field-referido_por" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Referido Por</label>
+                            <label for="field-referido_por" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Referido Por <FieldTooltip text="Nombre de la persona, médico o institución que refirió al estudiante a consulta" /></label>
                             <input id="field-referido_por" v-model="form.referido_por" type="text" maxlength="255" placeholder="Ej: Dr. Carlos Méndez - Clínica Universitaria" class="w-full bg-white border border-[var(--nord4)] rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[var(--frost3)]/20 outline-none transition-all placeholder:text-[var(--nord3)]" />
                         </div>
 
                         <div>
-                            <label for="field-llevado_por" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Acompañado Por</label>
+                            <label for="field-llevado_por" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Acompañado Por <FieldTooltip text="Persona (familiar, amigo, tutor) que acompañó al estudiante a su primera consulta" /></label>
                             <input id="field-llevado_por" v-model="form.llevado_por" type="text" maxlength="255" placeholder="Ej: Familiar o amigo que acompañó al estudiante" class="w-full bg-white border border-[var(--nord4)] rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[var(--frost3)]/20 outline-none transition-all placeholder:text-[var(--nord3)]" />
                         </div>
                     </div>
@@ -226,26 +244,34 @@ function submit() {
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4 mb-6">
-                        <div class="space-y-4 p-4 rounded-lg border border-[var(--nord4)] bg-[var(--surface-subtle)]">
-                            <h4 class="text-[12px] font-semibold text-[var(--nord3)] uppercase tracking-wider">Datos del Padre</h4>
+                        <!-- Padre -->
+                        <div class="space-y-4 p-4 rounded-lg border border-[var(--nord4)] bg-[var(--surface-subtle)]" :class="{ 'ring-2 ring-[var(--frost4)]/30': form.responsable_parentesco === 'Padre' }">
+                            <h4 class="text-[12px] font-semibold text-[var(--nord3)] uppercase tracking-wider flex items-center gap-2">
+                                Datos del Padre
+                                <span v-if="form.responsable_parentesco === 'Padre'" class="text-[10px] bg-[var(--frost4)]/10 text-[var(--frost4)] px-2 py-0.5 rounded-full font-normal normal-case">Responsable</span>
+                            </h4>
                             <div>
-                                <label for="field-padre_nombre" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Nombre</label>
+                                <label for="field-padre_nombre" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Nombre <FieldTooltip text="Nombre completo del padre del estudiante" /></label>
                                 <input id="field-padre_nombre" v-model="form.padre_nombre" type="text" maxlength="255" placeholder="Ej: José Antonio López" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all" :class="form.errors.padre_nombre ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" />
                             </div>
                             <div>
-                                <label for="field-padre_telefono" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Teléfono</label>
+                                <label for="field-padre_telefono" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Teléfono <FieldTooltip text="8 dígitos numéricos, sin guiones. Ej: 70001234" /></label>
                                 <input id="field-padre_telefono" v-model="form.padre_telefono" type="tel" @input="maskPhone('padre_telefono')" maxlength="8" placeholder="Ej: 70001234" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] font-mono text-[var(--nord0)] focus:ring-2 outline-none transition-all placeholder:text-[var(--nord3)]" :class="form.errors.padre_telefono ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" />
                             </div>
                         </div>
 
-                        <div class="space-y-4 p-4 rounded-lg border border-[var(--nord4)] bg-[var(--surface-subtle)]">
-                            <h4 class="text-[12px] font-semibold text-[var(--nord3)] uppercase tracking-wider">Datos de la Madre</h4>
+                        <!-- Madre -->
+                        <div class="space-y-4 p-4 rounded-lg border border-[var(--nord4)] bg-[var(--surface-subtle)]" :class="{ 'ring-2 ring-[var(--frost4)]/30': form.responsable_parentesco === 'Madre' }">
+                            <h4 class="text-[12px] font-semibold text-[var(--nord3)] uppercase tracking-wider flex items-center gap-2">
+                                Datos de la Madre
+                                <span v-if="form.responsable_parentesco === 'Madre'" class="text-[10px] bg-[var(--frost4)]/10 text-[var(--frost4)] px-2 py-0.5 rounded-full font-normal normal-case">Responsable</span>
+                            </h4>
                             <div>
-                                <label for="field-madre_nombre" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Nombre</label>
+                                <label for="field-madre_nombre" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Nombre <FieldTooltip text="Nombre completo de la madre del estudiante" /></label>
                                 <input id="field-madre_nombre" v-model="form.madre_nombre" type="text" maxlength="255" placeholder="Ej: María Elena García de López" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all" :class="form.errors.madre_nombre ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" />
                             </div>
                             <div>
-                                <label for="field-madre_telefono" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Teléfono</label>
+                                <label for="field-madre_telefono" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Teléfono <FieldTooltip text="8 dígitos numéricos, sin guiones. Ej: 70005678" /></label>
                                 <input id="field-madre_telefono" v-model="form.madre_telefono" type="tel" @input="maskPhone('madre_telefono')" maxlength="8" placeholder="Ej: 70005678" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] font-mono text-[var(--nord0)] focus:ring-2 outline-none transition-all placeholder:text-[var(--nord3)]" :class="form.errors.madre_telefono ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" />
                             </div>
                         </div>
@@ -258,7 +284,7 @@ function submit() {
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
                             <div>
-                                <label for="field-responsable_parentesco" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Parentesco <span class="field-required" title="Campo obligatorio">*</span></label>
+                                <label for="field-responsable_parentesco" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Parentesco <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Relación del responsable legal con el estudiante: padre, madre u otro tutor" /></label>
                                 <select id="field-responsable_parentesco" v-model="form.responsable_parentesco" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all" :class="form.errors.responsable_parentesco ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required>
                                     <option value="" disabled>Seleccionar</option>
                                     <option value="Padre">Padre</option>
@@ -268,17 +294,24 @@ function submit() {
                             </div>
 
                             <div v-if="form.responsable_parentesco === 'Otro'">
-                                <label for="field-responsable_nombre" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Nombre <span class="field-required" title="Campo obligatorio">*</span></label>
+                                <label for="field-responsable_nombre" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Nombre <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Nombre completo de la persona responsable del estudiante. Solo si parentesco es 'Otro'" /></label>
                                 <input id="field-responsable_nombre" v-model="form.responsable_nombre" type="text" maxlength="255" placeholder="Ej: Ana Patricia Torres" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all" :class="form.errors.responsable_nombre ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required />
                             </div>
 
-                            <div :class="{ 'md:col-span-2': form.responsable_parentesco !== 'Otro' }">
-                                <label for="field-responsable_telefono" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Teléfono <span class="field-required" title="Campo obligatorio">*</span></label>
+                            <div class="md:col-span-2" v-if="form.responsable_parentesco && form.responsable_parentesco !== 'Otro'">
+                                <div class="text-[11px] text-[var(--frost4)] flex items-center gap-1.5 bg-[var(--frost4)]/5 px-3 py-2 rounded-lg mb-3">
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span>El teléfono del {{ form.responsable_parentesco === 'Padre' ? 'padre' : 'madre' }} se usará como contacto del responsable</span>
+                                </div>
+                            </div>
+
+                            <div v-if="form.responsable_parentesco === 'Otro'">
+                                <label for="field-responsable_telefono" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Teléfono <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="8 dígitos numéricos, sin guiones. Es el teléfono principal de contacto de emergencia" /></label>
                                 <input id="field-responsable_telefono" v-model="form.responsable_telefono" type="tel" @input="maskPhone('responsable_telefono')" maxlength="8" placeholder="Ej: 70009012" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] font-mono text-[var(--nord0)] focus:ring-2 outline-none transition-all placeholder:text-[var(--nord3)]" :class="form.errors.responsable_telefono ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required />
                             </div>
 
                             <div class="md:col-span-2">
-                                <label for="field-responsable_direccion" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Dirección Completa <span class="field-required" title="Campo obligatorio">*</span></label>
+                                <label for="field-responsable_direccion" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Dirección Completa <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Dirección de residencia del responsable legal. Puede ser la misma del estudiante" /></label>
                                 <textarea id="field-responsable_direccion" v-model="form.responsable_direccion" rows="2" maxlength="500" placeholder="Ej: Misma dirección del estudiante o una diferente" class="w-full bg-white border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all resize-none" :class="form.errors.responsable_direccion ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required />
                             </div>
                         </div>

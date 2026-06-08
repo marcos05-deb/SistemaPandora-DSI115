@@ -70,20 +70,20 @@
   --nord1: #E5E9F0;
   --nord2: #D8DEE9;
   --nord3: #C8CFDA;
-  --nord4: #434C5E;
-  --nord5: #3B4252;
-  --nord6: #2E3440;
+  --nord4: #3D4658;
+  --nord5: #323A49;
+  --nord6: #1F232A;
 
-  --chrome-topbar: #1B1F26;
-  --chrome-topbar-hover: #343A46;
-  --chrome-sidebar: #222834;
-  --chrome-sidebar-hover: #343A46;
+  --chrome-topbar: #15181E;
+  --chrome-topbar-hover: #2A303C;
+  --chrome-sidebar: #1B1F26;
+  --chrome-sidebar-hover: #2A303C;
   --chrome-text: #E5E9F0;
   --chrome-text-muted: #A0AAB8;
-  --chrome-border: #343A46;
-  --surface: #3B4252;
-  --surface-header: #495468;
-  --surface-subtle: #363E4B;
+  --chrome-border: #2A303C;
+  --surface: #2D3440;
+  --surface-header: #384150;
+  --surface-subtle: #262C36;
 }
 
 .dark .bg-white {
