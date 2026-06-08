@@ -18,13 +18,18 @@ class PacienteController extends Controller
      */
     public function index(Request $request): Response|\Illuminate\Http\RedirectResponse
     {
+        $user = auth()->user();
+
+        if ($user->hasRole('area_coordinator')) {
+            return redirect()->route('busqueda-segura');
+        }
+
         if ($request->has('carnet')) {
             $validated = $request->validate([
                 'carnet' => 'required|string|size:7'
             ]);
 
             // Blind index search: Exact match on non-encrypted field
-            $user = auth()->user();
             $query = Paciente::where('carnet', strtoupper($validated['carnet']));
 
             if ($user->hasRole('psychosocial_referent')) {

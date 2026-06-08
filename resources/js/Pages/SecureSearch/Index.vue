@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, useForm, Link } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { Head, useForm, Link, usePage } from '@inertiajs/vue3';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Modal from '@/Components/UI/Modal.vue';
 
@@ -11,6 +11,13 @@ defineOptions({ layout: ClinicalLayout });
 const props = defineProps({
     searchCode: { type: String, default: '' },
     results: { type: Object, default: null },
+});
+
+const page = usePage();
+
+const canSeeCarnetSearch = computed(() => {
+    const roles = page.props.auth?.user?.roles || [];
+    return !roles.includes('area_coordinator');
 });
 
 const form = useForm({
@@ -60,7 +67,7 @@ loadHistory();
                     </svg>
                     Búsqueda por UUID
                 </h2>
-                <Link href="/pacientes" class="text-[12px] text-[var(--nord10)] hover:text-[var(--nord9)] transition-colors font-medium">
+                <Link v-if="canSeeCarnetSearch" href="/pacientes" class="text-[12px] text-[var(--nord10)] hover:text-[var(--nord9)] transition-colors font-medium">
                     Buscar por Carnet →
                 </Link>
             </div>

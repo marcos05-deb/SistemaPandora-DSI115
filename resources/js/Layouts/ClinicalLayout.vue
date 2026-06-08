@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { useTheme } from '@/Composables/useTheme';
 import { useAutoLogout } from '@/Composables/useAutoLogout';
@@ -44,26 +44,32 @@ function onDocClick(e) {
 onMounted(() => document.addEventListener('click', onDocClick));
 onUnmounted(() => document.removeEventListener('click', onDocClick));
 
-const sidebarLinks = [
+const allLinks = [
     {
         label: 'Panel Clínico',
         href: '/dashboard',
         icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z',
-        match: (url) => url === '/dashboard'
+        match: (url) => url === '/dashboard',
+        roles: null,
     },
     {
         label: 'Pacientes',
         href: '/pacientes',
         icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
-        match: (url) => url.startsWith('/pacientes') && !url.startsWith('/busqueda-segura')
+        match: (url) => url.startsWith('/pacientes') && !url.startsWith('/busqueda-segura'),
+        roles: ['psychosocial_referent', 'specialist'],
     },
     {
         label: 'Búsqueda UUID',
         href: '/busqueda-segura',
         icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
-        match: (url) => url.startsWith('/busqueda-segura')
+        match: (url) => url.startsWith('/busqueda-segura'),
+        roles: ['specialist', 'area_coordinator'],
     },
 ];
+
+const userRoles = computed(() => page.props.auth?.user?.roles || []);
+const sidebarLinks = computed(() => allLinks.filter(link => !link.roles || link.roles.some(r => userRoles.value.includes(r))));
 </script>
 
 <template>

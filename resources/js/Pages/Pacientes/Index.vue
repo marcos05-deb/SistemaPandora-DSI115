@@ -17,6 +17,11 @@ const canCreatePatient = computed(() => {
     return roles.includes('psychosocial_referent');
 });
 
+const canSeeUuidSearch = computed(() => {
+    const roles = page.props.auth?.user?.roles || [];
+    return !roles.includes('psychosocial_referent');
+});
+
 const form = useForm({
     carnet: ''
 });
@@ -71,7 +76,7 @@ loadHistory();
                     Búsqueda por Carnet
                 </h2>
                 <div class="flex items-center gap-4">
-                    <Link href="/busqueda-segura" class="text-[12px] text-[var(--nord10)] hover:text-[var(--nord8)] transition-colors">
+                    <Link v-if="canSeeUuidSearch" href="/busqueda-segura" class="text-[12px] text-[var(--nord10)] hover:text-[var(--nord8)] transition-colors">
                         Buscar por UUID →
                     </Link>
                     <Link v-if="canCreatePatient" href="/pacientes/create" class="text-[12px] font-medium text-[var(--nord10)] hover:text-[var(--nord8)] transition-colors flex items-center gap-1">

@@ -12,8 +12,14 @@ class SecureSearchController extends Controller
     /**
      * Display the secure search interface.
      */
-    public function index(): Response
+    public function index(): Response|\Illuminate\Http\RedirectResponse
     {
+        $user = auth()->user();
+
+        if ($user->hasRole('psychosocial_referent')) {
+            return redirect()->route('pacientes.index');
+        }
+
         return Inertia::render('SecureSearch/Index', [
             'searchCode' => '',
             'results' => null,
