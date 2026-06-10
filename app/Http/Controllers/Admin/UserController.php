@@ -127,19 +127,19 @@ class UserController extends Controller
             'numero_registro' => 'required|string|max:255',
         ]);
 
-        $tempPassword = Str::random(16);
+        $user = null;
 
-        DB::transaction(function () use ($validated, $tempPassword) {
+        DB::transaction(function () use ($validated, &$user) {
             // Generar kdf_salt
             $saltBase64 = $this->kdfService->generateSalt();
 
-            // Crear usuario (la contraseña se hashea automáticamente por el cast 'hashed' en Especialista)
+            // Crear usuario
             $user = Especialista::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
                 'is_active' => $validated['is_active'] ?? true,
-                'password' => $tempPassword,
+                'password' => Str::random(64),
                 'kdf_salt' => $saltBase64,
             ]);
 
@@ -156,10 +156,17 @@ class UserController extends Controller
             ]);
         });
 
+        $signedUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'password.setup',
+            now()->addHours(24),
+            ['user' => $user->id]
+        );
+
+        $user->notify(new \App\Notifications\UserCreatedNotification($signedUrl));
+
         return redirect()->route('admin.users.index')
-            ->with('message', 'Usuario creado exitosamente.')
-            ->with('variant', 'success')
-            ->with('generated_password', $tempPassword);
+            ->with('message', 'Usuario creado. Se ha enviado el enlace de configuración al correo del usuario.')
+            ->with('variant', 'success');
     }
 
     /**

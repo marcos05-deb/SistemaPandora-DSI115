@@ -20,7 +20,7 @@ use Inertia\Inertia;
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])
-        ->middleware('throttle:login')
+        ->middleware('throttle:5,1')
         ->name('login.store');
 });
 
@@ -49,18 +49,13 @@ Route::middleware(['auth.jwt', 'require_password_change'])->group(function () {
         if ($user->hasRole('psychosocial_referent')) {
             $profesionalId = $user->profesional->id;
 
-            $pacientes = \App\Models\Paciente::with('expedientes')
+            $pacientesQuery = \App\Models\Paciente::with('expedientes')
                 ->where('creado_por_profesional_id', $profesionalId)
                 ->orderBy('created_at', 'desc')
                 ->take(10)
-                ->get()
-                ->map(function ($paciente) {
-                    return [
-                        'carnet' => $paciente->carnet,
-                        'nombre_completo' => $paciente->nombre_completo,
-                        'created_at' => $paciente->created_at->format('Y-m-d H:i'),
-                    ];
-                });
+                ->get();
+
+            $pacientes = \App\Http\Resources\PacienteResource::collection($pacientesQuery);
 
             $stats = [
                 'total' => \App\Models\Paciente::where('creado_por_profesional_id', $profesionalId)->count(),
@@ -77,10 +72,15 @@ Route::middleware(['auth.jwt', 'require_password_change'])->group(function () {
     })->name('dashboard');
 
     // Clinical Routes
-    Route::get('/pacientes', [\App\Http\Controllers\PacienteController::class, 'index'])->name('pacientes.index');
-    Route::get('/pacientes/create', [\App\Http\Controllers\PacienteController::class, 'create'])->name('pacientes.create');
-    Route::post('/pacientes', [\App\Http\Controllers\PacienteController::class, 'store'])->name('pacientes.store');
-    Route::get('/pacientes/{carnet}', [\App\Http\Controllers\PacienteController::class, 'show'])->name('pacientes.show');
+    Route::middleware('role:psychosocial_referent')->group(function () {
+        Route::get('/pacientes/create', [\App\Http\Controllers\PacienteController::class, 'create'])->name('pacientes.create');
+        Route::post('/pacientes', [\App\Http\Controllers\PacienteController::class, 'store'])->name('pacientes.store');
+    });
+
+    Route::middleware('role:psychosocial_referent|specialist|area_coordinator')->group(function () {
+        Route::get('/pacientes', [\App\Http\Controllers\PacienteController::class, 'index'])->name('pacientes.index')->middleware('throttle:30,1');
+        Route::get('/pacientes/{carnet}', [\App\Http\Controllers\PacienteController::class, 'show'])->name('pacientes.show')->middleware('throttle:30,1');
+    });
 
     // Secure Search Routes (HU-06)
     Route::get('/busqueda-segura', [\App\Http\Controllers\SecureSearchController::class, 'index'])->name('busqueda-segura');

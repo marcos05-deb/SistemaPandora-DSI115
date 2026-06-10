@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import AdminLayout from "@/Layouts/AdminLayout.vue";
+import Pagination from "@/Components/Pagination.vue";
 
 defineOptions({ layout: AdminLayout });
 
@@ -33,20 +34,6 @@ function deactivateUser(id, name) {
     router.delete(`/admin/users/${id}`, { preserveScroll: true });
   }
 }
-
-function copyPassword(password) {
-  navigator.clipboard.writeText(password).then(() => {
-    copied.value = true;
-    setTimeout(() => { clearGeneratedPassword(); }, 5000);
-  }).catch(() => {
-    alert('Error al copiar al portapapeles. Selecciónalo y cópialo manualmente.');
-  });
-}
-
-function clearGeneratedPassword() {
-  page.props.flash.generated_password = null;
-  copied.value = false;
-}
 </script>
 
 <template>
@@ -75,39 +62,18 @@ function clearGeneratedPassword() {
       </Link>
     </div>
 
-    <!-- Alert for Generated Password -->
-    <div v-if="$page.props.flash.generated_password"
+    <!-- Alert for Success Message -->
+    <div v-if="$page.props.flash.message"
         class="relative bg-white border border-[var(--aurora-green)]/40 rounded-2xl p-6 shadow-sm animate-fade-in overflow-hidden">
         <!-- Fondo sutil -->  
         <div class="absolute inset-0 opacity-[0.03]" style="background: radial-gradient(ellipse at top left, var(--aurora-green), transparent 60%);"></div>
-        <button @click="clearGeneratedPassword"
-            class="absolute top-4 right-4 p-1.5 rounded-lg text-[var(--nord3)] hover:bg-[var(--nord5)] hover:text-[var(--nord0)] transition-all">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-        <div class="relative z-10">
-            <h4 class="text-[var(--aurora-green)] font-bold mb-1 flex items-center gap-2 text-[14px]">
-                <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: color-mix(in srgb, var(--aurora-green) 15%, transparent);">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                </div>
-                Usuario Creado Exitosamente
-            </h4>
-            <p class="text-[12px] text-[var(--nord3)] mb-4 ml-9">El sistema ha generado una contraseña segura temporal. Cópiala y compártela a través de un canal seguro.</p>
-            <div class="bg-[var(--surface-subtle)] px-4 py-3 rounded-xl border border-[var(--nord4)] flex items-center justify-between gap-4">
-                <code class="text-[16px] font-mono font-bold text-[var(--nord0)] tracking-widest">{{ $page.props.flash.generated_password }}</code>
-                <button
-                    @click="copyPassword($page.props.flash.generated_password)"
-                    :class="['group relative inline-flex items-center gap-1.5 text-[12px] font-semibold transition-all duration-200 px-3.5 py-2 rounded-lg overflow-hidden', copied ? 'bg-[var(--aurora-green)]/10 text-[var(--aurora-green)]' : 'text-white shadow-sm']"
-                    :style="!copied ? 'background: linear-gradient(135deg, var(--aurora-green), #7DAE63);' : ''"
-                >
-                    <span v-if="copied" class="flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                        ¡Copiada!
-                    </span>
-                    <span v-else class="flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                        Copiar
-                    </span>
-                </button>
+        <div class="relative z-10 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: color-mix(in srgb, var(--aurora-green) 15%, transparent);">
+                <svg class="w-5 h-5 text-[var(--aurora-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <div>
+                <h4 class="text-[var(--aurora-green)] font-bold mb-0.5 text-[14px]">Operación Exitosa</h4>
+                <p class="text-[13px] text-[var(--nord3)] m-0">{{ $page.props.flash.message }}</p>
             </div>
         </div>
     </div>
@@ -285,24 +251,7 @@ function clearGeneratedPassword() {
       </div>
       
       <!-- Pagination -->
-      <div v-if="users.links && users.links.length > 3" class="px-4 py-3 border-t border-[var(--nord5)] flex justify-center bg-[var(--surface-subtle)]">
-        <div class="flex flex-wrap gap-1.5">
-            <template v-for="(link, p) in users.links" :key="p">
-                <div v-if="link.url === null" 
-                    class="px-3 py-1.5 text-[12px] rounded-[8px] text-[var(--nord4)] border border-[var(--nord4)]/50 bg-transparent cursor-not-allowed"
-                    v-html="link.label" 
-                />
-                <Link v-else
-                    class="px-3 py-1.5 text-[12px] font-medium rounded-[8px] transition-all duration-200 border"
-                    :class="link.active 
-                        ? 'bg-[var(--frost4)] text-white border-[var(--frost4)] shadow-sm' 
-                        : 'border-[var(--nord4)] text-[var(--nord3)] hover:bg-[var(--nord5)] hover:border-[var(--frost3)]'"
-                    :href="link.url" 
-                    v-html="link.label" 
-                />
-            </template>
-        </div>
-      </div>
+      <Pagination :links="users.links" />
     </div>
   </div>
 </template>

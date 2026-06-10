@@ -57,7 +57,7 @@ KDF_MEMLIMIT=16777216
 Para efectuar un borrado completo del esquema relacional y repoblar la base de datos con las estructuras y los usuarios de prueba, ejecute el siguiente comando contra el contenedor de aplicación:
 
 ```bash
-docker compose exec app php artisan migrate:fresh --seed
+docker compose exec app php artisan migrate:fresh --database=pgsql_admin --seed
 ```
 
 El proceso de sembrado (`DatabaseSeeder.php`) aprovisionará las siguientes credenciales con propósitos de integración y prueba:

@@ -3,13 +3,14 @@ services:
     image: postgres:16-alpine
     container_name: pandora-postgres
     ports:
-      - "5434:5432"
+      - "127.0.0.1:5434:5432"
     environment:
       POSTGRES_DB: pandora
       POSTGRES_USER: pandora
       POSTGRES_PASSWORD: pandora
     volumes:
       - pandora-pgdata:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pandora -d pandora"]
       interval: 2s
@@ -28,14 +29,15 @@ services:
     environment:
       APP_NAME: PANDORA
       APP_ENV: local
-      APP_DEBUG: "true"
       APP_URL: http://localhost:8000
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: "5432"
       DB_DATABASE: pandora
-      DB_USERNAME: pandora
-      DB_PASSWORD: pandora
+      DB_USERNAME: pandora_app
+      DB_PASSWORD: strong_app_password
+      DB_ADMIN_USERNAME: pandora
+      DB_ADMIN_PASSWORD: pandora
       SESSION_DRIVER: file
       VITE_DEV_SERVER_URL: http://localhost:5173
     depends_on:
