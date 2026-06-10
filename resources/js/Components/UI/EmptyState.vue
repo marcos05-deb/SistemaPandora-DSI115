@@ -15,14 +15,35 @@ const iconPaths = {
 </script>
 
 <template>
-    <div class="flex flex-col items-center justify-center py-16 text-center">
-        <div class="w-20 h-20 rounded-2xl bg-[var(--nord6)] border border-[var(--nord4)] flex items-center justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-[var(--nord3)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" :d="iconPaths[icon] || iconPaths.default" />
-            </svg>
+    <div class="relative flex flex-col items-center justify-center py-16 text-center overflow-hidden">
+        <!-- Fondo de puntos decorativos -->
+        <div class="absolute inset-0 pointer-events-none opacity-40"
+            style="background-image: radial-gradient(circle, var(--nord4) 1px, transparent 1px); background-size: 24px 24px;">
         </div>
-        <h3 class="text-base font-semibold text-[var(--nord0)] mb-1">{{ title }}</h3>
-        <p class="text-sm text-[var(--nord3)] max-w-sm mb-4">{{ description }}</p>
-        <slot />
+        <!-- Gradiente de fondo suave -->
+        <div class="absolute inset-0 pointer-events-none"
+            style="background: radial-gradient(ellipse at 50% 60%, color-mix(in srgb, var(--nord6) 0%, transparent), var(--nord6) 70%);">
+        </div>
+
+        <div class="relative z-10 flex flex-col items-center">
+            <!-- Anillo exterior + caja del ícono -->
+            <div class="relative mb-5">
+                <div class="absolute inset-0 rounded-2xl opacity-20 blur-xl scale-110"
+                    style="background: var(--frost4);"></div>
+                <div class="relative w-20 h-20 rounded-2xl flex items-center justify-center shadow-sm"
+                    style="background: linear-gradient(135deg, var(--nord6) 0%, var(--nord5) 100%); border: 1.5px solid var(--nord4);">
+                    <!-- Puntos decorativos en las esquinas -->
+                    <span class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[var(--nord4)]"></span>
+                    <span class="absolute bottom-2 left-2 w-1.5 h-1.5 rounded-full bg-[var(--nord4)]"></span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 text-[var(--nord3)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4" :d="iconPaths[icon] || iconPaths.default" />
+                    </svg>
+                </div>
+            </div>
+
+            <h3 class="text-[15px] font-bold text-[var(--nord0)] mb-1.5 tracking-tight">{{ title }}</h3>
+            <p class="text-[13px] text-[var(--nord3)] max-w-xs mb-5 leading-relaxed">{{ description }}</p>
+            <slot />
+        </div>
     </div>
 </template>

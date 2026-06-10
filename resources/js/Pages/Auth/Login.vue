@@ -28,32 +28,40 @@ function submitLogin() {
   <div class="min-h-screen flex font-sans">
     <!-- ===== Left Panel: Branding ===== -->
     <div class="hidden lg:flex lg:w-[480px] xl:w-[560px] bg-[var(--chrome-topbar)] relative overflow-hidden flex-col justify-center items-center px-12 py-12">
-      <!-- Abstract background -->
+      <!-- Abstract background animado -->
       <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <svg class="absolute -top-32 -right-32 w-[600px] h-[600px] opacity-[0.08]" viewBox="0 0 600 600" fill="none">
+        <svg class="absolute -top-32 -right-32 w-[600px] h-[600px] opacity-[0.07]" viewBox="0 0 600 600" fill="none">
           <g stroke="white" stroke-width="1">
-            <circle cx="300" cy="300" r="250" />
-            <circle cx="300" cy="300" r="200" />
-            <circle cx="300" cy="300" r="150" />
+            <circle cx="300" cy="300" r="250" class="animate-[spin_40s_linear_infinite]" style="transform-origin:300px 300px" />
+            <circle cx="300" cy="300" r="200" class="animate-[spin_30s_linear_infinite_reverse]" style="transform-origin:300px 300px" />
+            <circle cx="300" cy="300" r="150" class="animate-[spin_20s_linear_infinite]" style="transform-origin:300px 300px" />
             <circle cx="300" cy="300" r="100" />
             <circle cx="300" cy="300" r="50" />
             <line x1="300" y1="0" x2="300" y2="600" />
             <line x1="0" y1="300" x2="600" y2="300" />
           </g>
         </svg>
-        <div class="absolute top-1/3 right-12 w-48 h-48 rounded-full bg-[var(--frost4)] opacity-[0.07] blur-3xl" />
-        <div class="absolute bottom-1/4 left-12 w-40 h-40 rounded-full bg-[var(--aurora-purple)] opacity-[0.07] blur-3xl" />
+        <div class="absolute top-1/3 right-12 w-56 h-56 rounded-full opacity-[0.08] blur-3xl animate-pulse" style="background: var(--frost4);" />
+        <div class="absolute bottom-1/4 left-12 w-48 h-48 rounded-full opacity-[0.07] blur-3xl animate-pulse" style="background: var(--aurora-purple); animation-delay: 1s;" />
+        <div class="absolute top-3/4 right-1/3 w-32 h-32 rounded-full opacity-[0.05] blur-2xl animate-pulse" style="background: var(--aurora-green); animation-delay: 2s;" />
       </div>
 
       <!-- Centered branding -->
       <div class="relative z-10 text-center">
-        <div class="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center mx-auto mb-6 border border-white/10">
+        <div class="relative w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center border border-white/10"
+            style="background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%); backdrop-filter: blur(8px);">
           <svg class="w-8 h-8 text-[var(--frost2)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
+          <span class="absolute -top-1 -right-1 w-3 h-3 bg-[var(--aurora-green)] rounded-full border-2 border-[var(--chrome-topbar)] animate-pulse"></span>
         </div>
         <h1 class="text-[52px] font-bold text-white tracking-tight">PANDORA</h1>
         <p class="text-[15px] text-[var(--chrome-text-muted)] mt-3">Sistema de Gestión de Expedientes Clínicos</p>
+        <div class="flex items-center justify-center gap-2 mt-6">
+          <span class="h-px w-12 bg-white/20"></span>
+          <span class="text-[11px] text-white/40 font-medium tracking-widest uppercase">DSI-115</span>
+          <span class="h-px w-12 bg-white/20"></span>
+        </div>
       </div>
 
       <p class="absolute bottom-8 text-[11px] text-white/30">v1.0</p>

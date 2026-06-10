@@ -131,6 +131,25 @@ textarea {
   background-color: var(--surface);
 }
 
+/* ── Placeholders globales atenuados ── */
+::placeholder {
+  color: var(--nord3);
+  opacity: 0.45;
+}
+.dark ::placeholder {
+  color: var(--chrome-text-muted);
+  opacity: 0.4;
+}
+/* Compatibilidad Firefox */
+::-moz-placeholder {
+  color: var(--nord3);
+  opacity: 0.45;
+}
+.dark ::-moz-placeholder {
+  color: var(--chrome-text-muted);
+  opacity: 0.4;
+}
+
 .dark .text-gray-900,
 .dark .text-gray-800,
 .dark .text-gray-700 {
@@ -212,4 +231,45 @@ textarea {
 .page-leave-to {
   opacity: 0;
   transform: translateY(-8px);
+}
+
+/* ── Scroll suave global ── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Scrollbar personalizada (Webkit) ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--nord4);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--nord3);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--nord2);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--nord3);
+}
+
+/* ── Focus-visible ring global mejorado ── */
+:focus-visible {
+  outline: 2px solid var(--frost4);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Selección de texto ── */
+::selection {
+  background-color: color-mix(in srgb, var(--frost4) 30%, transparent);
+  color: var(--nord0);
 }

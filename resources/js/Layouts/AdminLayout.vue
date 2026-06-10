@@ -23,11 +23,19 @@ const profileOpen = ref(false);
 const profileRef = ref(null);
 const showFlash = ref(true);
 const flashExit = ref(false);
+const flashProgress = ref(100);
+let flashProgressInterval = null;
 
 watch(() => page.props.flash?.message, (newMsg) => {
     if (newMsg) {
         showFlash.value = true;
         flashExit.value = false;
+        flashProgress.value = 100;
+        if (flashProgressInterval) clearInterval(flashProgressInterval);
+        flashProgressInterval = setInterval(() => {
+            flashProgress.value -= 2.5;
+            if (flashProgress.value <= 0) clearInterval(flashProgressInterval);
+        }, 100);
         setTimeout(() => { flashExit.value = true; }, 4000);
         setTimeout(() => { showFlash.value = false; }, 4500);
     }
@@ -77,19 +85,34 @@ const sidebarLinks = [
         <!-- Toast Notification -->
         <div v-if="page.props.flash?.message && showFlash" class="fixed top-4 right-4 z-[60] max-w-sm animate-slide-in-right pointer-events-none">
             <div :class="[
-                'px-4 py-3 rounded-xl shadow-lg border flex items-center gap-2.5 transition-all duration-300 pointer-events-auto',
+                'relative rounded-xl shadow-xl border flex flex-col overflow-hidden pointer-events-auto transition-all duration-300',
                 flashExit ? 'opacity-0 translate-x-4' : 'opacity-100',
-                page.props.flash?.variant === 'success' ? 'bg-[var(--aurora-green)] text-white border-[var(--aurora-green)]' : 
-                page.props.flash?.variant === 'error' ? 'bg-[var(--aurora-red)] text-white border-[var(--aurora-red)]' :
-                'bg-[var(--chrome-topbar)] text-white border-[var(--chrome-border)]'
+                page.props.flash?.variant === 'success' ? 'bg-[var(--chrome-topbar)] border-[var(--aurora-green)]/40' :
+                page.props.flash?.variant === 'error' ? 'bg-[var(--chrome-topbar)] border-[var(--aurora-red)]/40' :
+                'bg-[var(--chrome-topbar)] border-[var(--chrome-border)]'
             ]">
-                <svg v-if="page.props.flash?.variant === 'success'" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <svg v-else-if="page.props.flash?.variant === 'error'" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <svg v-else class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span class="text-[13px] font-medium">{{ page.props.flash.message }}</span>
-                <button @click="showFlash = false" class="ml-auto p-0.5 hover:bg-white/20 rounded transition-colors pointer-events-auto">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+                <div class="flex items-center gap-2.5 px-4 py-3">
+                    <div :class="[
+                        'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
+                        page.props.flash?.variant === 'success' ? 'bg-[var(--aurora-green)]/15' :
+                        page.props.flash?.variant === 'error' ? 'bg-[var(--aurora-red)]/15' :
+                        'bg-white/10'
+                    ]">
+                        <svg v-if="page.props.flash?.variant === 'success'" class="h-4 w-4 text-[var(--aurora-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+                        <svg v-else-if="page.props.flash?.variant === 'error'" class="h-4 w-4 text-[var(--aurora-red)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <svg v-else class="h-4 w-4 text-[var(--aurora-purple)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <span class="text-[13px] font-medium text-white flex-1">{{ page.props.flash.message }}</span>
+                    <button @click="showFlash = false" class="p-1 hover:bg-white/10 rounded-lg transition-colors">
+                        <svg class="h-3.5 w-3.5 text-white/60 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <div class="h-0.5 w-full bg-white/10">
+                    <div class="h-full transition-all duration-100 ease-linear"
+                        :class="page.props.flash?.variant === 'success' ? 'bg-[var(--aurora-green)]' : page.props.flash?.variant === 'error' ? 'bg-[var(--aurora-red)]' : 'bg-[var(--aurora-purple)]'"
+                        :style="{ width: flashProgress + '%' }">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -104,12 +127,18 @@ const sidebarLinks = [
                         <svg v-if="!sidebarOpen" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                         <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
-                    <div class="w-8 h-8 rounded-lg bg-[var(--aurora-purple)] flex items-center justify-center shrink-0">
-                        <span class="text-[13px] font-bold text-white">P</span>
-                    </div>
-                    <div>
-                        <span class="text-[16px] lg:text-[17px] font-bold tracking-tight text-white">PANDORA</span>
-                        <span class="text-[10px] lg:text-[11px] font-normal text-[var(--aurora-purple)] ml-2 align-middle hidden sm:inline">Admin</span>
+                    <div class="flex items-center gap-2.5">
+                        <div class="relative w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                            style="background: linear-gradient(135deg, var(--aurora-purple) 0%, #9A6FA0 100%);">
+                            <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                            <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[var(--aurora-purple)] rounded-full border border-[var(--chrome-topbar)] animate-pulse"></span>
+                        </div>
+                        <div>
+                            <span class="text-[16px] lg:text-[17px] font-bold tracking-tight text-white">PANDORA</span>
+                            <span class="text-[10px] lg:text-[11px] font-normal text-[var(--aurora-purple)] ml-2 align-middle hidden sm:inline">Admin</span>
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 lg:gap-3 text-[13px] text-[var(--chrome-text-muted)]">
@@ -158,12 +187,15 @@ const sidebarLinks = [
                         v-for="link in sidebarLinks"
                         :key="link.href"
                         :href="link.href"
-                        class="group flex items-center px-3 py-2.5 text-[14px] font-medium rounded-lg transition-all duration-200"
-                        :class="link.match($page.url) 
-                            ? 'bg-[var(--aurora-purple)]/15 text-[var(--aurora-purple)] shadow-sm border border-[var(--aurora-purple)]/20' 
+                        class="group relative flex items-center px-3 py-2.5 text-[14px] font-medium rounded-lg transition-all duration-200"
+                        :class="link.match($page.url)
+                            ? 'bg-[var(--aurora-purple)]/15 text-[var(--aurora-purple)]'
                             : 'text-[var(--chrome-text-muted)] hover:bg-[var(--chrome-sidebar-hover)] hover:text-white'"
                     >
-                        <svg class="mr-3 h-[18px] w-[18px] flex-shrink-0" :class="link.match($page.url) ? 'text-[var(--aurora-purple)]' : 'text-[var(--chrome-text-muted)] group-hover:text-white'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <span v-if="link.match($page.url)"
+                            class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[var(--aurora-purple)] transition-all duration-300">
+                        </span>
+                        <svg class="mr-3 h-[18px] w-[18px] flex-shrink-0 transition-colors" :class="link.match($page.url) ? 'text-[var(--aurora-purple)]' : 'text-[var(--chrome-text-muted)] group-hover:text-white'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" :d="link.icon" />
                         </svg>
                         {{ link.label }}

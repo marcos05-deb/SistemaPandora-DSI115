@@ -54,70 +54,90 @@ function clearGeneratedPassword() {
 
   <div class="space-y-[14px]">
     <!-- Header Section -->
-    <div class="flex justify-between items-center bg-white py-[14px] px-[18px] shadow-sm border border-[var(--nord4)] rounded-[10px]">
+    <div class="flex justify-between items-center bg-white py-4 px-5 shadow-sm border border-[var(--nord4)] rounded-2xl">
       <div>
-        <h2 class="text-[16px] font-medium text-[var(--nord0)] tracking-tight">
-          Gestión de Personal
-        </h2>
-        <p class="text-[12px] text-[var(--nord3)] mt-0.5">
-          Administra los accesos y perfiles del sistema PANDORA.
-        </p>
+        <h2 class="text-[17px] font-bold text-[var(--nord0)] tracking-tight">Gestión de Personal</h2>
+        <p class="text-[12px] text-[var(--nord3)] mt-0.5">Administra los accesos y perfiles del sistema PANDORA.</p>
       </div>
       <Link
         href="/admin/users/create"
-        class="bg-[var(--frost4)] text-white py-2 px-4 rounded-[8px] text-[13px] font-medium hover:bg-[#4C6A8D] transition-all duration-200 flex items-center gap-2 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+        class="group relative inline-flex items-center gap-2 overflow-hidden px-4 py-2.5 rounded-xl text-[13px] font-semibold text-white shadow-md transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+        style="background: linear-gradient(135deg, var(--aurora-purple) 0%, #9A6FA0 100%);"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" /></svg>
+        <span class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent group-hover:translate-x-full transition-transform duration-500 ease-in-out"></span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+          <path d="M16 19h6" />
+          <path d="M19 16v6" />
+        </svg>
         Nuevo Usuario
       </Link>
     </div>
 
     <!-- Alert for Generated Password -->
-    <div v-if="$page.props.flash.generated_password" class="bg-white border border-[var(--aurora-green)] rounded-[10px] p-6 relative shadow-sm animate-fade-in">
-        <button @click="clearGeneratedPassword" class="absolute top-4 right-4 text-[var(--aurora-green)] hover:text-[var(--aurora-green)]/80 transition-colors">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <div v-if="$page.props.flash.generated_password"
+        class="relative bg-white border border-[var(--aurora-green)]/40 rounded-2xl p-6 shadow-sm animate-fade-in overflow-hidden">
+        <!-- Fondo sutil -->  
+        <div class="absolute inset-0 opacity-[0.03]" style="background: radial-gradient(ellipse at top left, var(--aurora-green), transparent 60%);"></div>
+        <button @click="clearGeneratedPassword"
+            class="absolute top-4 right-4 p-1.5 rounded-lg text-[var(--nord3)] hover:bg-[var(--nord5)] hover:text-[var(--nord0)] transition-all">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
-        <h4 class="text-[var(--aurora-green)] font-medium mb-2 flex items-center gap-2 text-[14px]">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            Usuario Creado Exitosamente
-        </h4>
-        <p class="text-[12px] text-[var(--nord3)] mb-4">El sistema ha generado una contraseña segura temporal para este usuario. Cópiala y compártela a través de un canal seguro.</p>
-        <div class="bg-[var(--surface-subtle)] px-4 py-3 rounded-lg border border-[var(--nord4)] flex items-center justify-between">
-            <code class="text-[16px] font-mono text-[var(--nord0)]">{{ $page.props.flash.generated_password }}</code>
-            <button 
-                @click="copyPassword($page.props.flash.generated_password)" 
-                :class="['text-[12px] font-medium transition-all duration-200 px-3 py-1.5 rounded-[8px]', copied ? 'bg-[var(--aurora-green)]/10 text-[var(--aurora-green)]' : 'bg-[var(--frost4)] text-white hover:bg-[#4C6A8D]']"
-            >
-                <span v-if="copied" class="flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    ¡Copiada!
-                </span>
-                <span v-else>Copiar</span>
-            </button>
+        <div class="relative z-10">
+            <h4 class="text-[var(--aurora-green)] font-bold mb-1 flex items-center gap-2 text-[14px]">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background: color-mix(in srgb, var(--aurora-green) 15%, transparent);">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                Usuario Creado Exitosamente
+            </h4>
+            <p class="text-[12px] text-[var(--nord3)] mb-4 ml-9">El sistema ha generado una contraseña segura temporal. Cópiala y compártela a través de un canal seguro.</p>
+            <div class="bg-[var(--surface-subtle)] px-4 py-3 rounded-xl border border-[var(--nord4)] flex items-center justify-between gap-4">
+                <code class="text-[16px] font-mono font-bold text-[var(--nord0)] tracking-widest">{{ $page.props.flash.generated_password }}</code>
+                <button
+                    @click="copyPassword($page.props.flash.generated_password)"
+                    :class="['group relative inline-flex items-center gap-1.5 text-[12px] font-semibold transition-all duration-200 px-3.5 py-2 rounded-lg overflow-hidden', copied ? 'bg-[var(--aurora-green)]/10 text-[var(--aurora-green)]' : 'text-white shadow-sm']"
+                    :style="!copied ? 'background: linear-gradient(135deg, var(--aurora-green), #7DAE63);' : ''"
+                >
+                    <span v-if="copied" class="flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        ¡Copiada!
+                    </span>
+                    <span v-else class="flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        Copiar
+                    </span>
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Metrics Cards -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div class="bg-white rounded-[10px] py-[14px] px-[16px] shadow-sm border border-[var(--nord4)] hover:shadow-md transition-shadow duration-200">
-            <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider font-medium">Usuarios totales</div>
-            <div class="text-[24px] font-bold text-[var(--nord0)] mt-1">{{ metrics.total }}</div>
+        <div class="relative overflow-hidden bg-white rounded-2xl py-4 px-4 shadow-sm border border-[var(--nord4)] group hover:shadow-md transition-all duration-200">
+            <div class="absolute top-0 right-0 w-20 h-20 rounded-full opacity-[0.05] -translate-y-6 translate-x-6" style="background: radial-gradient(circle, var(--nord3), transparent);"></div>
+            <div class="text-[10px] text-[var(--nord3)] uppercase tracking-wider font-semibold mb-1">Total</div>
+            <div class="text-[28px] font-bold text-[var(--nord0)] tabular-nums">{{ metrics.total }}</div>
         </div>
-        <div class="bg-white rounded-[10px] py-[14px] px-[16px] shadow-sm border border-[var(--nord4)] hover:shadow-md transition-shadow duration-200">
-            <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider font-medium">Activos</div>
-            <div class="text-[24px] font-bold text-[var(--aurora-green)] mt-1">{{ metrics.active }}</div>
+        <div class="relative overflow-hidden bg-white rounded-2xl py-4 px-4 shadow-sm border border-[var(--nord4)] group hover:shadow-md transition-all duration-200">
+            <div class="absolute top-0 right-0 w-20 h-20 rounded-full opacity-[0.06] -translate-y-6 translate-x-6" style="background: radial-gradient(circle, var(--aurora-green), transparent);"></div>
+            <div class="text-[10px] text-[var(--nord3)] uppercase tracking-wider font-semibold mb-1">Activos</div>
+            <div class="text-[28px] font-bold text-[var(--aurora-green)] tabular-nums">{{ metrics.active }}</div>
         </div>
-        <div class="bg-white rounded-[10px] py-[14px] px-[16px] shadow-sm border border-[var(--nord4)] hover:shadow-md transition-shadow duration-200">
-            <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider font-medium">Inactivos</div>
-            <div class="text-[24px] font-bold text-[var(--aurora-red)] mt-1">{{ metrics.inactive }}</div>
+        <div class="relative overflow-hidden bg-white rounded-2xl py-4 px-4 shadow-sm border border-[var(--nord4)] group hover:shadow-md transition-all duration-200">
+            <div class="absolute top-0 right-0 w-20 h-20 rounded-full opacity-[0.06] -translate-y-6 translate-x-6" style="background: radial-gradient(circle, var(--aurora-red), transparent);"></div>
+            <div class="text-[10px] text-[var(--nord3)] uppercase tracking-wider font-semibold mb-1">Inactivos</div>
+            <div class="text-[28px] font-bold text-[var(--aurora-red)] tabular-nums">{{ metrics.inactive }}</div>
         </div>
-        <div class="bg-white rounded-[10px] py-[14px] px-[16px] shadow-sm border border-[var(--nord4)] hover:shadow-md transition-shadow duration-200">
-            <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider font-medium">Coordinadores</div>
-            <div class="text-[24px] font-bold text-[var(--frost4)] mt-1">{{ metrics.coordinators_ratio }}</div>
+        <div class="relative overflow-hidden bg-white rounded-2xl py-4 px-4 shadow-sm border border-[var(--nord4)] group hover:shadow-md transition-all duration-200">
+            <div class="absolute top-0 right-0 w-20 h-20 rounded-full opacity-[0.05] -translate-y-6 translate-x-6" style="background: radial-gradient(circle, var(--frost4), transparent);"></div>
+            <div class="text-[10px] text-[var(--nord3)] uppercase tracking-wider font-semibold mb-1">Coordinadores</div>
+            <div class="text-[28px] font-bold text-[var(--frost4)] tabular-nums">{{ metrics.coordinators_ratio }}</div>
         </div>
-        <div class="bg-white rounded-[10px] py-[14px] px-[16px] shadow-sm border border-[var(--nord4)] hover:shadow-md transition-shadow duration-200">
-            <div class="text-[11px] text-[var(--nord3)] uppercase tracking-wider font-medium">Ref. Psicosociales</div>
-            <div class="text-[24px] font-bold text-[var(--nord10)] mt-1">{{ metrics.psychosocial_referents }}</div>
+        <div class="relative overflow-hidden bg-white rounded-2xl py-4 px-4 shadow-sm border border-[var(--nord4)] group hover:shadow-md transition-all duration-200">
+            <div class="absolute top-0 right-0 w-20 h-20 rounded-full opacity-[0.05] -translate-y-6 translate-x-6" style="background: radial-gradient(circle, var(--aurora-purple), transparent);"></div>
+            <div class="text-[10px] text-[var(--nord3)] uppercase tracking-wider font-semibold mb-1">Ref. Psicosociales</div>
+            <div class="text-[28px] font-bold text-[var(--aurora-purple)] tabular-nums">{{ metrics.psychosocial_referents }}</div>
         </div>
     </div>
 
@@ -210,24 +230,28 @@ function clearGeneratedPassword() {
                 </template>
                 <span v-else class="text-[11px] italic text-[var(--nord3)]">N/A</span>
               </td>
-              <td class="py-[12px] px-[16px] text-right space-x-3">
+              <td class="py-3 px-4 text-right">
                 <template v-if="user.id !== $page.props.auth.user.id">
-                    <Link
-                    :href="`/admin/users/${user.id}/edit`"
-                    class="text-[var(--frost4)] hover:text-[#4C6A8D] transition-colors text-[12px] font-medium inline-flex items-center gap-1"
-                    >
-                    Editar
-                    </Link>
-                    <button
-                    @click="deactivateUser(user.id, user.name)"
-                    class="text-[var(--aurora-red)] hover:text-[#a05058] transition-colors text-[12px] font-medium inline-flex items-center gap-1"
-                    >
-                    Desactivar
-                    </button>
+                    <div class="flex items-center justify-end gap-2">
+                        <Link
+                            :href="`/admin/users/${user.id}/edit`"
+                            class="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-[var(--frost4)]/30 text-[var(--frost4)] bg-[var(--frost4)]/5 hover:bg-[var(--frost4)]/12 hover:border-[var(--frost4)]/50 transition-all duration-150"
+                        >
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            Editar
+                        </Link>
+                        <button
+                            @click="deactivateUser(user.id, user.name)"
+                            class="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-[var(--aurora-red)]/30 text-[var(--aurora-red)] bg-[var(--aurora-red)]/5 hover:bg-[var(--aurora-red)]/12 hover:border-[var(--aurora-red)]/50 transition-all duration-150"
+                        >
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                            Desactivar
+                        </button>
+                    </div>
                 </template>
-                <div v-else class="text-[var(--nord3)] text-[12px] font-medium inline-flex items-center gap-1 justify-end w-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z" /><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" /><path d="M8 11v-4a4 4 0 1 1 8 0v4" /></svg>
-                  Tu usuario
+                <div v-else class="text-[var(--nord3)] text-[11px] font-medium inline-flex items-center gap-1.5 justify-end w-full px-3 py-1.5 rounded-lg bg-[var(--surface-subtle)] border border-[var(--nord4)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z" /><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" /><path d="M8 11v-4a4 4 0 1 1 8 0v4" /></svg>
+                    Tu usuario
                 </div>
               </td>
             </tr>

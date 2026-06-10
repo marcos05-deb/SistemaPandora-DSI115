@@ -73,34 +73,74 @@ const formatDate = (dateString) => {
                         </h2>
                     </div>
                     
-                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
-                        <div>
-                            <p class="text-[11px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Nombre Completo</p>
-                            <p class="text-[14px] text-[var(--nord0)] font-medium">{{ paciente.nombre_completo }}</p>
+                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Nombre -->
+                        <div class="flex items-start gap-3 p-3 rounded-xl bg-[var(--surface-subtle)] border border-[var(--nord4)]">
+                            <div class="w-8 h-8 rounded-lg bg-[var(--frost4)]/10 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg class="h-4 w-4 text-[var(--frost4)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-0.5">Nombre Completo</p>
+                                <p class="text-[14px] text-[var(--nord0)] font-semibold">{{ paciente.nombre_completo }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-[11px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Carnet Estudiantil</p>
-                            <p class="text-[14px] text-[var(--nord0)] font-mono">{{ paciente.carnet }}</p>
+                        <!-- Carnet -->
+                        <div class="flex items-start gap-3 p-3 rounded-xl bg-[var(--surface-subtle)] border border-[var(--nord4)]">
+                            <div class="w-8 h-8 rounded-lg bg-[var(--aurora-yellow)]/15 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg class="h-4 w-4 text-[var(--aurora-yellow)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/></svg>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-0.5">Carnet Estudiantil</p>
+                                <p class="text-[14px] text-[var(--nord0)] font-mono font-semibold">{{ paciente.carnet }}</p>
+                            </div>
                         </div>
-                        <div v-if="paciente.motivo_consulta" class="md:col-span-2">
-                            <p class="text-[11px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Motivo de Consulta</p>
-                            <p class="text-[14px] text-[var(--nord0)] whitespace-pre-line bg-[var(--surface-header)] rounded-lg p-4 border border-[var(--nord4)]">{{ paciente.motivo_consulta }}</p>
+                        <!-- Motivo -->
+                        <div v-if="paciente.motivo_consulta" class="md:col-span-2 flex items-start gap-3 p-3 rounded-xl bg-[var(--frost4)]/5 border border-[var(--frost4)]/20">
+                            <div class="w-8 h-8 rounded-lg bg-[var(--frost4)]/10 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg class="h-4 w-4 text-[var(--frost4)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[10px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Motivo de Consulta</p>
+                                <p class="text-[13px] text-[var(--nord0)] whitespace-pre-line leading-relaxed">{{ paciente.motivo_consulta }}</p>
+                            </div>
                         </div>
-                        <div class="md:col-span-2">
-                            <p class="text-[11px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Dirección de Residencia</p>
-                            <p class="text-[14px] text-[var(--nord0)]">{{ paciente.direccion }}</p>
+                        <!-- Dirección -->
+                        <div class="md:col-span-2 flex items-start gap-3 p-3 rounded-xl bg-[var(--surface-subtle)] border border-[var(--nord4)]">
+                            <div class="w-8 h-8 rounded-lg bg-[var(--aurora-green)]/10 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg class="h-4 w-4 text-[var(--aurora-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-0.5">Dirección de Residencia</p>
+                                <p class="text-[13px] text-[var(--nord0)]">{{ paciente.direccion }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-[11px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Fecha de Nacimiento</p>
-                            <p class="text-[14px] text-[var(--nord0)]">{{ formatDate(paciente.fecha_nacimiento) }}</p>
+                        <!-- Fecha nac + Sexo/Civil en fila -->
+                        <div class="flex items-start gap-3 p-3 rounded-xl bg-[var(--surface-subtle)] border border-[var(--nord4)]">
+                            <div class="w-8 h-8 rounded-lg bg-[var(--aurora-purple)]/10 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg class="h-4 w-4 text-[var(--aurora-purple)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-0.5">Fecha de Nacimiento</p>
+                                <p class="text-[14px] text-[var(--nord0)]">{{ formatDate(paciente.fecha_nacimiento) }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-[11px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Sexo / Estado Civil</p>
-                            <p class="text-[14px] text-[var(--nord0)]">{{ paciente.sexo }} — {{ paciente.estado_civil }}</p>
+                        <div class="flex items-start gap-3 p-3 rounded-xl bg-[var(--surface-subtle)] border border-[var(--nord4)]">
+                            <div class="w-8 h-8 rounded-lg bg-[var(--aurora-orange)]/10 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg class="h-4 w-4 text-[var(--aurora-orange)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-0.5">Sexo / Estado Civil</p>
+                                <p class="text-[14px] text-[var(--nord0)]">{{ paciente.sexo }} — {{ paciente.estado_civil }}</p>
+                            </div>
                         </div>
-                        <div v-if="paciente.profesion_ocupacion">
-                            <p class="text-[11px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Ocupación Adicional</p>
-                            <p class="text-[14px] text-[var(--nord0)]">{{ paciente.profesion_ocupacion }}</p>
+                        <div v-if="paciente.profesion_ocupacion" class="flex items-start gap-3 p-3 rounded-xl bg-[var(--surface-subtle)] border border-[var(--nord4)]">
+                            <div class="w-8 h-8 rounded-lg bg-[var(--frost1)]/15 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg class="h-4 w-4 text-[var(--frost1)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-0.5">Ocupación Adicional</p>
+                                <p class="text-[14px] text-[var(--nord0)]">{{ paciente.profesion_ocupacion }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -197,24 +237,31 @@ const formatDate = (dateString) => {
 
                 <!-- Clinical Records (locked) -->
                 <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
-                    <div class="p-6 text-center">
-                        <div class="w-14 h-14 bg-[var(--surface-header)] rounded-full flex items-center justify-center mx-auto mb-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-[var(--nord4)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
-                        <h3 class="text-[14px] font-medium text-[var(--nord0)] mb-1">Módulo de Expedientes</h3>
-                        <p class="text-[12px] text-[var(--nord3)] mb-4">
-                            La funcionalidad de registro de sesiones y evoluciones clínicas será habilitada en el próximo sprint.
-                        </p>
-                        <button disabled class="w-full py-2 bg-[var(--surface-header)] text-[var(--nord4)] text-[13px] font-medium rounded-[8px] cursor-not-allowed border border-[var(--nord4)]">
-                            <span class="flex items-center justify-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    <div class="relative px-6 py-8 text-center overflow-hidden">
+                        <!-- Fondo decorativo -->
+                        <div class="absolute inset-0 opacity-[0.03]" style="background: repeating-linear-gradient(45deg, var(--nord0) 0, var(--nord0) 1px, transparent 0, transparent 50%); background-size: 12px 12px;"></div>
+                        <div class="relative z-10">
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4"
+                                style="background: linear-gradient(135deg, var(--aurora-yellow)/15, var(--aurora-orange)/10); border: 1px solid var(--aurora-yellow)/30; color: var(--aurora-yellow);">
+                                <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+                                Próximamente
+                            </div>
+                            <div class="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center"
+                                style="background: linear-gradient(135deg, var(--nord4) 0%, var(--nord5) 100%);">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-[var(--nord3)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
+                            </div>
+                            <h3 class="text-[14px] font-semibold text-[var(--nord0)] mb-1">Módulo de Expedientes</h3>
+                            <p class="text-[12px] text-[var(--nord3)] mb-5 leading-relaxed">
+                                El registro de sesiones y evoluciones clínicas<br>estará disponible en el siguiente sprint.
+                            </p>
+                            <button disabled class="w-full py-2 text-[12px] font-medium rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
+                                style="background: var(--surface-subtle); color: var(--nord4); border: 1px dashed var(--nord4);">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                                 Crear Nueva Sesión
-                            </span>
-                        </button>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
