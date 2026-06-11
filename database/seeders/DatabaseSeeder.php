@@ -75,5 +75,9 @@ class DatabaseSeeder extends Seeder
                 ['area_id' => $area->id, 'especialidad' => 'Pediatría', 'numero_registro' => 'PED-001']
             );
         }
+
+        $this->call([
+            ExpedienteSeeder::class,
+        ]);
     }
 }
