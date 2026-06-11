@@ -4,8 +4,6 @@ import { Head, useForm, Link, usePage } from '@inertiajs/vue3';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Modal from '@/Components/UI/Modal.vue';
 
-const STORAGE_KEY = 'pandora_uuid_history';
-
 defineOptions({ layout: ClinicalLayout });
 
 const props = defineProps({
@@ -14,6 +12,7 @@ const props = defineProps({
 });
 
 const page = usePage();
+const STORAGE_KEY = computed(() => `pandora_uuid_history_${page.props.auth.user.id}`);
 
 const canSeeCarnetSearch = computed(() => {
     const roles = page.props.auth?.user?.roles || [];
@@ -29,7 +28,7 @@ const searchHistory = ref([]);
 
 function loadHistory() {
     try {
-        const stored = localStorage.getItem(STORAGE_KEY);
+        const stored = localStorage.getItem(STORAGE_KEY.value);
         searchHistory.value = stored ? JSON.parse(stored) : [];
     } catch { searchHistory.value = []; }
 }
@@ -39,7 +38,7 @@ function saveToHistory(code) {
     const filtered = searchHistory.value.filter(h => h !== code);
     filtered.unshift(code);
     searchHistory.value = filtered.slice(0, 10);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(searchHistory.value));
+    localStorage.setItem(STORAGE_KEY.value, JSON.stringify(searchHistory.value));
 }
 
 function submitSearch() {

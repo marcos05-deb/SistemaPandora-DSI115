@@ -68,4 +68,5 @@ class ConfigurationTest extends ComplianceTestCase
         $this->assertFalse(session()->has('generated_password'));
         $this->assertFalse(session()->has('password'));
     }
+
 }

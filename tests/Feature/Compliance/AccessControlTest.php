@@ -43,18 +43,12 @@ class AccessControlTest extends ComplianceTestCase
 
         // Cobertura Espejo (Positiva)
         $this->actingAs($odonSpecialist);
-        $responsePositiva = $this->get('/expedientes/' . $expOdon->id);
-        if ($responsePositiva->status() === 500) {
-            dump($responsePositiva->exception ?? 'Unknown 500 error in Positiva');
-        }
-        $this->assertTrue(in_array($responsePositiva->status(), [200, 302, 404])); // Según la implementación de view
+        $responsePositiva = $this->get('/pacientes/' . $pacienteOdon->carnet);
+        $responsePositiva->assertStatus(200);
 
         // Cobertura Negativa (Fuga Cero y 403)
-        $responseNegativa = $this->get('/expedientes/' . $expPsico->id);
-        if ($responseNegativa->status() === 500) {
-            dump($responseNegativa->exception ?? 'Unknown 500 error in Negativa');
-        }
-        $this->assertTrue(in_array($responseNegativa->status(), [403, 404]));
+        $responseNegativa = $this->get('/pacientes/' . $pacientePsico->carnet);
+        $responseNegativa->assertStatus(403);
         
         if ($responseNegativa->status() === 403) {
             $responseNegativa->assertDontSee($pacientePsico->carnet);

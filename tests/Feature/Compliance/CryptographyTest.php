@@ -26,9 +26,6 @@ class CryptographyTest extends ComplianceTestCase
 
     public function test_derivacion_y_persistencia_de_llaves_con_purga()
     {
-        if (config('session.driver') !== 'database') {
-            $this->markTestSkipped('Este test requiere el driver de sesión database para interrogar la tabla de sesiones purgada.');
-        }
 
         $response = $this->post('/login', [
             'email' => $this->especialista->email,
@@ -69,11 +66,6 @@ class CryptographyTest extends ComplianceTestCase
 
     public function test_asercion_de_cifrado_en_reposo()
     {
-        $this->post('/login', [
-            'email' => $this->especialista->email,
-            'password' => 'password_segura',
-        ]);
-
         $paciente = Paciente::factory()->create([
             'nombre_completo' => 'Juan Perez',
             'creado_por_profesional_id' => $this->especialista->profesional->id,

@@ -5,13 +5,12 @@ import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 
 defineOptions({ layout: ClinicalLayout });
 
-const STORAGE_KEY = 'pandora_carnet_history';
-
 const props = defineProps({
     results: { type: Object, default: null },
 });
 
 const page = usePage();
+const STORAGE_KEY = computed(() => `pandora_carnet_history_${page.props.auth.user.id}`);
 const canCreatePatient = computed(() => {
     const roles = page.props.auth?.user?.roles || [];
     return roles.includes('psychosocial_referent');
@@ -30,7 +29,7 @@ const searchHistory = ref([]);
 
 function loadHistory() {
     try {
-        const stored = localStorage.getItem(STORAGE_KEY);
+        const stored = localStorage.getItem(STORAGE_KEY.value);
         searchHistory.value = stored ? JSON.parse(stored) : [];
     } catch {
         searchHistory.value = [];
@@ -44,7 +43,7 @@ function saveToHistory(carnet) {
     filtered.unshift(upper);
     const sliced = filtered.slice(0, 10);
     searchHistory.value = sliced;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sliced));
+    localStorage.setItem(STORAGE_KEY.value, JSON.stringify(sliced));
 }
 
 function search() {

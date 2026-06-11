@@ -153,7 +153,7 @@ class PacienteController extends Controller
         $this->authorize('view', $paciente);
 
         return Inertia::render('Pacientes/Show', [
-            'paciente' => new \App\Http\Resources\PacienteResource($paciente)
+            'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve()
         ]);
     }
 }

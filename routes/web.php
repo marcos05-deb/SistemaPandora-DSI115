@@ -55,7 +55,7 @@ Route::middleware(['auth.jwt', 'require_password_change'])->group(function () {
                 ->take(10)
                 ->get();
 
-            $pacientes = \App\Http\Resources\PacienteResource::collection($pacientesQuery);
+            $pacientes = \App\Http\Resources\PacienteResource::collection($pacientesQuery)->resolve();
 
             $stats = [
                 'total' => \App\Models\Paciente::where('creado_por_profesional_id', $profesionalId)->count(),

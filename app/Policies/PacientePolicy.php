@@ -27,7 +27,12 @@ class PacientePolicy
             return $paciente->creado_por_profesional_id === $especialista->profesional->id;
         }
 
-        return $especialista->hasRole('specialist') || $especialista->hasRole('area_coordinator');
+        if ($especialista->hasRole('specialist') || $especialista->hasRole('area_coordinator')) {
+            // Un especialista solo puede ver al paciente si tiene un expediente en su misma área (AreaScope se encarga del filtrado)
+            return $paciente->expedientes()->exists();
+        }
+
+        return false;
     }
 
     /**

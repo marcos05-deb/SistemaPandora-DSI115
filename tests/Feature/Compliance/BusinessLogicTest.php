@@ -52,12 +52,10 @@ class BusinessLogicTest extends ComplianceTestCase
         });
 
         // 3. Ejecutamos el request
+        $this->withoutExceptionHandling();
         try {
             $response = $this->post('/pacientes', $payload);
-            if ($response->status() === 302 && $response->headers->get('Location') !== route('dashboard')) {
-                dump(session('errors')->getBag('default')->getMessages());
-            }
-            $response->assertStatus(500); // Dado que arrojamos un \Exception explícito sin handle, retornará 500
+            $this->fail('Se esperaba una excepción de atomicidad y la ruta retornó exitosamente.');
         } catch (\Exception $e) {
             $this->assertEquals('Falla simulada de base de datos durante transacción', $e->getMessage());
         }
@@ -126,5 +124,50 @@ class BusinessLogicTest extends ComplianceTestCase
             ->where('results.carnet', 'XY22222')
             ->where('results.found', true)
         );
+    }
+
+    public function test_mass_assignment_es_ignorado()
+    {
+        $this->actingAs($this->referent);
+
+        $pacienteData = Paciente::factory()->make(['carnet' => 'MM77777'])->toArray();
+        $payload = array_merge($pacienteData, [
+            'responsable_parentesco' => 'Otro',
+            'responsable_nombre' => 'Resp',
+            'responsable_telefono' => '12341234',
+            'responsable_direccion' => 'Dir',
+            'is_admin' => true, // Intento de mass assignment de variable ficticia o protegida
+        ]);
+
+        $response = $this->post('/pacientes', $payload);
+        $response->assertStatus(302);
+
+        // Validar que el paciente existe
+        $paciente = Paciente::where('carnet', 'MM77777')->first();
+        $this->assertNotNull($paciente);
+        
+        // Atributo protegido inexistente no crashea ni inyecta
+        $this->assertFalse(isset($paciente->is_admin));
+    }
+
+    public function test_inyeccion_sql_rechazada_por_form_request()
+    {
+        $this->actingAs($this->referent);
+
+        // Proveemos un carnet válido para evitar que falle por la validación de carnet
+        $pacienteData = Paciente::factory()->make(['carnet' => 'XX12345'])->toArray();
+        $payload = array_merge($pacienteData, [
+            'responsable_parentesco' => 'Otro',
+            'responsable_nombre' => "' OR 1=1 --", // Vector SQLi (Aceptado como string por el request, pero blindado por PDO en Eloquent)
+            'responsable_telefono' => "1234' OR '1'='1", // Vector SQLi en telefono
+            'responsable_direccion' => "1234",
+        ]);
+
+        $response = $this->post('/pacientes', $payload);
+        
+        // Debería ser rechazado por las validaciones (regex de telefono)
+        // Retorna 302 con errores en sesión (comportamiento web estándar en Laravel)
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors(['responsable_telefono']);
     }
 }
