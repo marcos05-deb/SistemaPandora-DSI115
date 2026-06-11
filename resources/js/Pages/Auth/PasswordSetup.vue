@@ -195,6 +195,7 @@ function submitSetup() {
             </button>
           </form>
         </div>
+      </div>
     </div>
   </div>
 </template>
