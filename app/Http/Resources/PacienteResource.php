@@ -39,7 +39,7 @@ class PacienteResource extends JsonResource
                 return [
                     'id' => $this->carrera->id,
                     'nombre' => $this->carrera->nombre,
-                    'facultad' => $this->carrera->whenLoaded('facultad'),
+                    'facultad' => $this->carrera->relationLoaded('facultad') ? $this->carrera->facultad : null,
                 ];
             }),
             'expedientes' => $this->whenLoaded('expedientes'),

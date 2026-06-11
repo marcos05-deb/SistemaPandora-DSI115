@@ -4,6 +4,39 @@
 
 PANDORA es un sistema integral de gestión clínica desarrollado sobre el framework Laravel 11, utilizando Inertia.js y Vue 3 para la capa de presentación. La arquitectura implementa controles estrictos de seguridad, incluyendo cifrado simétrico y asimétrico para el resguardo de información clínica, y un modelo de Control de Acceso Basado en Roles (RBAC) con aislamiento de datos por áreas organizacionales.
 
+### Certificaciones y Estándares (Compliance)
+El núcleo del sistema y su pipeline de Integración Continua (CI) auditan incondicionalmente el cumplimiento técnico de:
+- **OWASP ASVS (Application Security Verification Standard) Nivel 2/3**: Validando Control de Acceso (V4), Criptografía en Reposo (V6), Lógica de Negocio (V11) y Configuración Segura (V14).
+- **HIPAA (Health Insurance Portability and Accountability Act)**: Validando acceso estricto a PHI y encriptación de bases de datos.
+- **ISO/IEC 27001 (Anexo A.14)**: Segregación inquebrantable de privilegios de infraestructura de bases de datos (DDL vs DML).
+
+Cualquier despliegue es abortado automáticamente si el código no supera la validación estricta definida en `Tests\Feature\Compliance`.
+
+## Estructura del Proyecto
+
+```text
+SistemaPandora-DSI115/
+├── .github/workflows/          # Pipelines de CI/CD (Validación de Compliance)
+├── app/
+│   ├── Http/Controllers/       # Controladores web (Autenticación, RBAC, Clínico)
+│   ├── Http/Middleware/        # Filtros de Seguridad (EnforceAreaScope, SecurityHeaders)
+│   ├── Models/                 # Modelos de Eloquent con reglas de encriptación
+│   └── Policies/               # Políticas estrictas de autorización
+├── database/
+│   ├── migrations/             # Definiciones DDL de PostgreSQL
+│   └── seeders/                # Datos de prueba para entornos locales (Integración)
+├── resources/js/               # Frontend (Vue 3 + Inertia)
+│   ├── Components/             # Componentes UI de diseño institucional (Nord/Oracle)
+│   ├── Pages/                  # Vistas por módulo (Auth, Dashboard, Usuarios)
+│   └── Layouts/                # Contenedores estructurales
+├── tests/
+│   └── Feature/                
+│       ├── Compliance/         # Suite estricta OWASP/HIPAA/ISO27001
+│       └── HU*/                # Pruebas de Historias de Usuario
+├── docker-compose.yml          # Topología de desarrollo (App + Postgres)
+└── Makefile                    # Comandos operativos rápidos
+```
+
 ## Requisitos del Entorno
 
 La infraestructura de desarrollo está diseñada para operar exclusivamente a través de contenedores, garantizando la paridad entre los entornos de desarrollo local y los entornos de integración/producción.
