@@ -5,16 +5,13 @@ namespace Database\Seeders;
 use App\Models\Area;
 use App\Models\Carrera;
 use App\Models\ContactoPaciente;
-use App\Models\Especialista;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Profesional;
-use App\Services\Crypto\KeyDerivationService;
 use Illuminate\Database\Seeder;
 
 class ExpedienteSeeder extends Seeder
 {
-    private string $seedPassword = 'password_segura';
 
     public function run(): void
     {
@@ -22,8 +19,6 @@ class ExpedienteSeeder extends Seeder
             $this->command?->info('Expedientes ya existen. Saltando ExpedienteSeeder.');
             return;
         }
-
-        $this->setupEncryptionContext();
 
         $areas = [
             'psicologia'       => Area::where('nombre', 'Psicología')->first(),
@@ -327,37 +322,6 @@ class ExpedienteSeeder extends Seeder
             }
         }
 
-        session()->forget('_sym_key');
-
         $this->command?->info('ExpedienteSeeder: 10 pacientes, contactos y expedientes creados correctamente.');
-    }
-
-    private function setupEncryptionContext(): void
-    {
-        $kdfService = app(KeyDerivationService::class);
-
-        $admin = Especialista::where('email', 'admin@pandora.com')->first();
-
-        if (!$admin) {
-            $admin = Especialista::create([
-                'email' => 'admin@pandora.com',
-                'name' => 'Administrador',
-                'password' => $this->seedPassword,
-                'must_change_password' => false,
-            ]);
-        }
-
-        if (!$admin->kdf_salt) {
-            $saltBase64 = $kdfService->generateSalt();
-            $admin->kdf_salt = $saltBase64;
-            $admin->save();
-        }
-
-        $salt = base64_decode($admin->kdf_salt, strict: true);
-        $derivedKey = $kdfService->derive($this->seedPassword, $salt);
-
-        session(['_sym_key' => base64_encode($derivedKey)]);
-
-        sodium_memzero($derivedKey);
     }
 }

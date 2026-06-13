@@ -27,7 +27,7 @@ Route::middleware('guest')->group(function () {
 Route::redirect('/', '/login');
 
 // --- Rutas protegidas (Auth con JWT) ---
-Route::middleware(['auth.jwt', 'require_password_change'])->group(function () {
+Route::middleware(['auth', 'require_password_change'])->group(function () {
     // Password Setup (Primer Ingreso)
     Route::get('/password/setup', [\App\Http\Controllers\Auth\PasswordSetupController::class, 'show'])->name('password.setup')->withoutMiddleware('require_password_change');
     Route::post('/password/setup', [\App\Http\Controllers\Auth\PasswordSetupController::class, 'update'])->name('password.setup.store')->withoutMiddleware('require_password_change');

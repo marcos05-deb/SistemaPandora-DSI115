@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Especialista;
-use App\Services\Auth\JwtService;
-use App\Services\Crypto\KeyDerivationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -25,10 +23,6 @@ use Inertia\Response;
  */
 class LoginController extends Controller
 {
-    public function __construct(
-        private readonly KeyDerivationService $kdfService,
-        private readonly JwtService $jwt,
-    ) {}
 
     /**
      * Muestra la vista de login.
@@ -108,52 +102,10 @@ class LoginController extends Controller
         $especialista->locked_until = null;
         $especialista->save();
 
-        // Derivar clave simétrica si el especialista tiene kdf_salt
-        $password = $credentials['password'];
-
-        if ($especialista->kdf_salt) {
-            $salt = base64_decode($especialista->kdf_salt, strict: true);
-            $derivedKey = $this->kdfService->derive($password, $salt);
-            session(['_sym_key' => base64_encode($derivedKey)]);
-
-            // Limpiar material sensible de memoria
-            sodium_memzero($derivedKey);
-        } else {
-            // Especialista sin kdf_salt: generar sal y guardarla.
-            // Esto ocurre la primera vez que un especialista creado antes del Sprint 1 hace login.
-            $saltBase64 = $this->kdfService->generateSalt();
-            $salt = base64_decode($saltBase64, strict: true);
-            $derivedKey = $this->kdfService->derive($password, $salt);
-
-            $especialista->kdf_salt = $saltBase64;
-            $especialista->save();
-
-            session(['_sym_key' => base64_encode($derivedKey)]);
-
-            sodium_memzero($derivedKey);
-        }
-
-        // Limpiar contraseña de memoria
-        sodium_memzero($password);
-
-        // Emitir token JWT (exp. 8h) en cookie HttpOnly
-        $jwtToken = $this->jwt->create($especialista);
-        $jwtCookie = cookie(
-            'pandora_token',
-            $jwtToken,
-            480,
-            null,
-            null,
-            app()->environment('production'),
-            true,
-            false,
-            'Strict'
-        );
-
         if ($especialista->hasRole('sysadmin')) {
-            return redirect()->intended('/admin/dashboard')->withCookie($jwtCookie);
+            return redirect()->intended('/admin/dashboard');
         }
 
-        return redirect()->intended('/dashboard')->withCookie($jwtCookie);
+        return redirect()->intended('/dashboard');
     }
 }

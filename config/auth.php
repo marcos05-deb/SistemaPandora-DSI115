@@ -21,10 +21,6 @@ return [
             'driver'   => 'session',
             'provider' => 'users',
         ],
-        'jwt' => [
-            'driver'   => 'session',
-            'provider' => 'users',
-        ],
     ],
 
     'providers' => [

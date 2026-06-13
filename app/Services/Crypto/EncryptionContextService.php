@@ -14,24 +14,26 @@ use App\Exceptions\DecryptionException;
 class EncryptionContextService
 {
     /**
-     * Retorna la clave simétrica de 32 bytes desde sesión.
+     * Retorna la clave simétrica de 32 bytes derivada de BLIND_INDEX_SECRET.
      *
-     * @throws DecryptionException Si la clave no está disponible (sesión expirada o no autenticado).
+     * @throws DecryptionException Si BLIND_INDEX_SECRET no está configurado.
      */
     public function getKey(): string
     {
-        if (!session()->has('_sym_key')) {
+        $secret = config('app.blind_index_secret');
+
+        if (empty($secret)) {
             throw new DecryptionException(
-                'Clave de cifrado no disponible. La sesión expiró o el usuario no está autenticado.'
+                'BLIND_INDEX_SECRET no configurado. Contacte al administrador.'
             );
         }
 
-        $decoded = base64_decode(session('_sym_key'), strict: true);
+        $raw = base64_decode($secret, strict: true);
 
-        if ($decoded === false || strlen($decoded) !== SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
-            throw new DecryptionException('La clave de sesión está malformada o tiene longitud incorrecta.');
+        if ($raw === false || strlen($raw) !== SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
+            throw new DecryptionException('BLIND_INDEX_SECRET debe ser 32 bytes en Base64.');
         }
 
-        return $decoded;
+        return $raw;
     }
 }

@@ -25,19 +25,12 @@ class LogoutController extends Controller
 {
     public function destroy(Request $request)
     {
-        // 1. Borrar la clave simétrica antes de invalidar la sesión
-        session()->forget('_sym_key');
-
-        // 2. Desloguear al usuario en el guard
         Auth::guard('web')->logout();
 
-        // 3. Invalidar la sesión completa
         $request->session()->invalidate();
 
-        // 4. Regenerar el token CSRF
         $request->session()->regenerateToken();
 
-        // 5. Redirigir a login eliminando cookie JWT
-        return redirect('/login')->withCookie(cookie()->forget('pandora_token'));
+        return redirect('/login');
     }
 }

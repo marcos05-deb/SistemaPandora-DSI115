@@ -31,13 +31,12 @@ class DatabaseSeeder extends Seeder
         }
 
         // Seed Clinical Staff
-        $kdfService = app(\App\Services\Crypto\KeyDerivationService::class);
         $area = \App\Models\Area::first() ?? \App\Models\Area::create(['nombre' => 'Área General']);
 
         // 1. Coordinador
         $coordinador = Especialista::firstOrCreate(
             ['email' => 'coordinador@pandora.com'],
-            ['name' => 'Dr. Coordinador', 'password' => 'password_segura', 'must_change_password' => false, 'kdf_salt' => $kdfService->generateSalt()]
+            ['name' => 'Dr. Coordinador', 'password' => 'password_segura', 'must_change_password' => false]
         );
         $roleCoord = Role::where('slug', 'area_coordinator')->first();
         if ($roleCoord && !$coordinador->roles()->where('role_id', $roleCoord->id)->exists()) {
@@ -51,7 +50,7 @@ class DatabaseSeeder extends Seeder
         // 2. Referente Psicosocial
         $psicosocial = Especialista::firstOrCreate(
             ['email' => 'psicosocial@pandora.com'],
-            ['name' => 'Lic. Psicosocial', 'password' => 'password_segura', 'must_change_password' => false, 'kdf_salt' => $kdfService->generateSalt()]
+            ['name' => 'Lic. Psicosocial', 'password' => 'password_segura', 'must_change_password' => false]
         );
         $rolePsico = Role::where('slug', 'psychosocial_referent')->first();
         if ($rolePsico && !$psicosocial->roles()->where('role_id', $rolePsico->id)->exists()) {
@@ -65,7 +64,7 @@ class DatabaseSeeder extends Seeder
         // 3. Especialista Normal
         $especialista = Especialista::firstOrCreate(
             ['email' => 'especialista@pandora.com'],
-            ['name' => 'Dr. Especialista', 'password' => 'password_segura', 'must_change_password' => false, 'kdf_salt' => $kdfService->generateSalt()]
+            ['name' => 'Dr. Especialista', 'password' => 'password_segura', 'must_change_password' => false]
         );
         $roleEsp = Role::where('slug', 'specialist')->first();
         if ($roleEsp && !$especialista->roles()->where('role_id', $roleEsp->id)->exists()) {
