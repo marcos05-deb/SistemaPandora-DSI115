@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Especialista;
+use App\Services\Auth\JwtService;
+use App\Services\Crypto\KeyDerivationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -23,6 +25,10 @@ use Inertia\Response;
  */
 class LoginController extends Controller
 {
+    public function __construct(
+        private readonly KeyDerivationService $kdf,
+        private readonly JwtService $jwt,
+    ) {}
 
     /**
      * Muestra la vista de login.
@@ -72,6 +78,7 @@ class LoginController extends Controller
         }
 
         $credentials = $request->only('email', 'password');
+        $passwordPlain = $request->input('password');
 
         if (!Auth::attempt($credentials)) {
             if ($existingUser) {
@@ -100,12 +107,30 @@ class LoginController extends Controller
         $especialista = Auth::user();
         $especialista->failed_login_attempts = 0;
         $especialista->locked_until = null;
-        $especialista->save();
 
-        if ($especialista->hasRole('sysadmin')) {
-            return redirect()->intended('/admin/dashboard');
+        // Generar KDF salt si el especialista no tiene
+        if (empty($especialista->kdf_salt)) {
+            $especialista->kdf_salt = $this->kdf->generateSalt();
         }
 
-        return redirect()->intended('/dashboard');
+        // Derivar clave simétrica a partir de la contraseña + salt
+        $saltRaw = base64_decode($especialista->kdf_salt, strict: true);
+        $derivedKey = $this->kdf->derive($passwordPlain, $saltRaw);
+        session(['_sym_key' => base64_encode($derivedKey)]);
+
+        $especialista->save();
+
+        // Emitir token JWT en cookie HttpOnly
+        $jwtToken = $this->jwt->create($especialista);
+        $jwtCookie = cookie('pandora_token', $jwtToken, minutes: 480, httpOnly: true, sameSite: 'Strict');
+
+        // Limpiar contraseña de memoria
+        sodium_memzero($passwordPlain);
+
+        if ($especialista->hasRole('sysadmin')) {
+            return redirect()->intended('/admin/dashboard')->withCookie($jwtCookie);
+        }
+
+        return redirect()->intended('/dashboard')->withCookie($jwtCookie);
     }
 }

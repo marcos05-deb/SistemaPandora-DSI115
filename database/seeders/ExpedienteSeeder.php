@@ -23,16 +23,31 @@ class ExpedienteSeeder extends Seeder
         $areas = [
             'psicologia'       => Area::where('nombre', 'Psicología')->first(),
             'medicina_general' => Area::where('nombre', 'Medicina General')->first(),
-            'fisioterapia'     => Area::where('nombre', 'Fisioterapia')->first(),
             'nutricion'        => Area::where('nombre', 'Nutrición')->first(),
             'trabajo_social'   => Area::where('nombre', 'Trabajo Social')->first(),
         ];
 
-        $profesionales = Profesional::all();
-        if ($profesionales->isEmpty()) {
-            $this->command?->warn('No hay profesionales. Ejecute DatabaseSeeder primero.');
+        $profByEmail = [];
+        foreach (Profesional::with('especialista')->get() as $prof) {
+            $profByEmail[$prof->especialista->email] = $prof;
+        }
+
+        $psicosocial = $profByEmail['psicosocial@pandora.com'] ?? null;
+        $especialista = $profByEmail['especialista@pandora.com'] ?? null;
+        $especialistaNutri = $profByEmail['especialista-nutri@pandora.com'] ?? null;
+
+        if (!$psicosocial || !$especialista || !$especialistaNutri) {
+            $this->command?->warn('Faltan profesionales. Ejecute DatabaseSeeder primero.');
             return;
         }
+
+        // Mapa: area_key => profesional creador del paciente
+        $creadorPorArea = [
+            'psicologia'       => $psicosocial,
+            'medicina_general' => $especialista,
+            'nutricion'        => $especialistaNutri,
+            'trabajo_social'   => $psicosocial,
+        ];
 
         $pacientes = [
             [
@@ -144,7 +159,7 @@ class ExpedienteSeeder extends Seeder
                     ['nombre_completo' => 'Manuel Sorto', 'parentesco' => 'Padre', 'telefono_personal' => '7677-8899', 'direccion' => 'Calle El Calvario #33, San Juan Opico, La Libertad', 'es_responsable' => false],
                 ],
                 'expediente' => [
-                    'area_key' => 'fisioterapia',
+                    'area_key' => 'medicina_general',
                     'motivo_consulta' => 'Dolor lumbar crónico de 8 meses post-accidente de tránsito',
                     'notas_clinicas' => 'Paciente masculino de 26 años, estudiante de cuarto año de Ingeniería Civil. Antecedente de accidente de tránsito en motocicleta hace 8 meses con contusión lumbar directa. RMN de columna lumbosacra muestra hernia discal posterolateral izquierda L4-L5 de 4 mm sin compromiso radicular franco. Dolor referido a región glútea izquierda. Escala EVA: 6/10 en sedestación prolongada, 3/10 en bipedestación. Test de Lasègue negativo. Reflejos osteotendinosos conservados. Se prescribe programa de fisioterapia: ejercicios de fortalecimiento del core abdominal y paravertebral (3 sesiones por semana durante 8 semanas), reeducación postural, uso de silla ergonómica en aulas. Se recomienda mochila con ruedas para evitar carga lumbar.',
                     'diagnostico' => 'Lumbalgia mecánica crónica por hernia discal L4-L5 (M51.2)',
@@ -280,7 +295,7 @@ class ExpedienteSeeder extends Seeder
                 continue;
             }
 
-            $profesional = $profesionales->random();
+            $profesional = $creadorPorArea[$data['expediente']['area_key']];
 
             $paciente = Paciente::create([
                 'carnet' => $data['carnet'],

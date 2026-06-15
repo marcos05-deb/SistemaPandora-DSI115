@@ -44,8 +44,9 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
             'total' => 0,
             'activos' => 0,
         ];
+        $areaIds = $user->areas()->pluck('areas.id')->toArray();
 
-        // Solo el referente psicosocial ve los pacientes (y únicamente los que él registró)
+        // Referente psicosocial: pacientes que él registró
         if ($user->hasRole('psychosocial_referent')) {
             $profesionalId = $user->profesional->id;
 
@@ -62,6 +63,26 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
                 'activos' => \App\Models\Expediente::whereHas('paciente', function ($q) use ($profesionalId) {
                     $q->where('creado_por_profesional_id', $profesionalId);
                 })->count(),
+            ];
+        }
+
+        // Coordinador y especialista: pacientes con expedientes en su área
+        if ($user->hasRole('area_coordinator') || $user->hasRole('specialist')) {
+            $pacientesQuery = \App\Models\Paciente::with('expedientes')
+                ->whereHas('expedientes', function ($q) use ($areaIds) {
+                    $q->whereIn('area_id', $areaIds);
+                })
+                ->orderBy('created_at', 'desc')
+                ->take(10)
+                ->get();
+
+            $pacientes = \App\Http\Resources\PacienteResource::collection($pacientesQuery)->resolve();
+
+            $stats = [
+                'total' => \App\Models\Paciente::whereHas('expedientes', function ($q) use ($areaIds) {
+                    $q->whereIn('area_id', $areaIds);
+                })->count(),
+                'activos' => \App\Models\Expediente::whereIn('area_id', $areaIds)->count(),
             ];
         }
 

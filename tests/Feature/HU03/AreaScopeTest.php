@@ -23,6 +23,8 @@ class AreaScopeTest extends TestCase
     private $especialistaMulti;
     private $expPsico;
     private $expMed;
+    private $profPsicoId;
+    private $profMultiPsicoId;
 
     protected function setUp(): void
     {
@@ -32,11 +34,15 @@ class AreaScopeTest extends TestCase
         $this->areaPsico = Area::forceCreate(['id' => 1, 'nombre' => 'Psicología', 'requiere_aprobacion_estricta' => false]);
         $this->areaMed = Area::forceCreate(['id' => 2, 'nombre' => 'Medicina', 'requiere_aprobacion_estricta' => false]);
 
-        // 2. Crear roles
+        // 2. Crear facultad y carrera para FK
+        DB::table('facultades')->insert(['id' => 1, 'nombre' => 'Ciencias Sociales']);
+        DB::table('carreras')->insert(['id' => 1, 'nombre' => 'Psicología', 'facultad_id' => 1]);
+
+        // 3. Crear roles
         $roleSysadmin = Role::forceCreate(['nombre' => 'Administrador', 'slug' => 'sysadmin', 'nivel' => 100]);
         $roleEspecialista = Role::forceCreate(['nombre' => 'Especialista', 'slug' => 'specialist', 'nivel' => 10]);
 
-        // 3. Crear Especialistas
+        // 4. Crear Especialistas
         $this->sysadmin = Especialista::forceCreate([
             'email' => 'admin@test.com',
             'password' => 'secret',
@@ -48,8 +54,9 @@ class AreaScopeTest extends TestCase
             'password' => 'secret',
         ]);
         $this->especialistaPsico->roles()->attach($roleEspecialista);
+        $this->profPsicoId = Str::uuid();
         DB::table('profesionales')->insert([
-            'id' => Str::uuid(),
+            'id' => $this->profPsicoId,
             'user_id' => $this->especialistaPsico->id,
             'area_id' => $this->areaPsico->id,
             'especialidad' => 'Psicología',
@@ -61,8 +68,9 @@ class AreaScopeTest extends TestCase
             'password' => 'secret',
         ]);
         $this->especialistaMulti->roles()->attach($roleEspecialista);
+        $this->profMultiPsicoId = Str::uuid();
         DB::table('profesionales')->insert([
-            'id' => Str::uuid(),
+            'id' => $this->profMultiPsicoId,
             'user_id' => $this->especialistaMulti->id,
             'area_id' => $this->areaPsico->id,
             'especialidad' => 'Psicología',
@@ -76,15 +84,12 @@ class AreaScopeTest extends TestCase
             'numero_registro' => '125'
         ]);
 
-        // Desactivamos restricciones temporales
-        DB::statement('SET session_replication_role = replica;');
-
         $pacienteId = Str::uuid();
         DB::table('pacientes')->insert([
             'codigo' => $pacienteId,
             'carnet' => 'TEST-01',
             'carrera_id' => 1,
-            'creado_por_profesional_id' => Str::uuid(),
+            'creado_por_profesional_id' => $this->profPsicoId,
             'sexo' => 'M',
             'estado_civil' => 'Soltero',
             'fecha_nacimiento' => '1990-01-01'
@@ -100,14 +105,21 @@ class AreaScopeTest extends TestCase
             'area_id' => $this->areaMed->id,
         ]);
 
-        DB::statement('SET session_replication_role = DEFAULT;');
-
         // Configurar una ruta de prueba con el middleware
         Route::middleware(['web', 'enforce_area_scope'])->group(function () {
             Route::get('/test-expedientes/{expediente}', function (Expediente $expediente) {
                 return response()->json(['id' => $expediente->id]);
             });
         });
+    }
+
+    protected function migrateFreshUsing()
+    {
+        return [
+            '--drop-views' => true,
+            '--drop-types' => true,
+            '--database' => 'pgsql_admin',
+        ];
     }
 
     public function test_sysadmin_cannot_access_clinical_routes()
