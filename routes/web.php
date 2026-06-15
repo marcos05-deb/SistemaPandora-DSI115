@@ -18,13 +18,12 @@ use Inertia\Inertia;
 
 // --- Rutas públicas (Guest) ---
 Route::middleware('guest')->group(function () {
+    Route::redirect('/', '/login');
     Route::get('/login', [LoginController::class, 'show'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])
         ->middleware('throttle:5,1')
         ->name('login.store');
 });
-
-Route::redirect('/', '/login');
 
 // --- Rutas protegidas (Auth con JWT) ---
 Route::middleware(['auth', 'require_password_change'])->group(function () {
@@ -46,7 +45,7 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         ];
 
         // Solo el referente psicosocial ve los pacientes (y únicamente los que él registró)
-        if ($user->hasRole('psychosocial_referent')) {
+        if ($user->hasRole('psychosocial_referent') && $user->profesional) {
             $profesionalId = $user->profesional->id;
 
             $pacientesQuery = \App\Models\Paciente::with('expedientes')

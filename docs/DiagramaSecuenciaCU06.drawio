@@ -1,0 +1,15 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Página-1" id="cu06-seq">
+    <mxGraphModel dx="2189" dy="1465" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <UserObject label="" mermaidData="{&#xa;  &quot;data&quot;: &quot;sequenceDiagram\n    Note over Admin,PostgreSQL: CU-06 - Auditar Pacientes\n    participant Admin as Administrador (sysadmin)\n    participant Vue as Vue Frontend (Admin/Pacientes/Index.vue)\n    participant Controller as AdminPacienteController\n    participant PostgreSQL\n\n    Admin-&gt;&gt;Vue: 1. GET /admin/pacientes\n    Vue-&gt;&gt;Controller: 2. GET /admin/pacientes\n    Controller-&gt;&gt;PostgreSQL: 3. SELECT codigo, created_at\n    Note over Controller,PostgreSQL: Solo UUID y fecha - sin datos personales\n    Controller--&gt;&gt;Vue: 4. Renderizar tabla anonimizada\n    Vue--&gt;&gt;Admin: 5. Ver lista de UUIDs\n    opt Buscar por UUID\n        Admin-&gt;&gt;Vue: 6. Escribir UUID en busqueda\n        Vue-&gt;&gt;Controller: 7. GET /admin/pacientes?search=...\n        Controller-&gt;&gt;PostgreSQL: 8. ILIKE sobre codigo::text\n        Controller--&gt;&gt;Vue: 9. Resultados filtrados\n    end&quot;,&#xa;  &quot;config&quot;: null&#xa;}" id="cu06-seq">
+          <mxCell connectable="0" parent="1" style="group;transparentBounds=1;editIcon=1;lockedGroup=0;groupPadding=20;" vertex="1">
+            <mxGeometry as="geometry" />
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

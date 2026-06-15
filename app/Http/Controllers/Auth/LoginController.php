@@ -103,9 +103,9 @@ class LoginController extends Controller
         $especialista->save();
 
         if ($especialista->hasRole('sysadmin')) {
-            return redirect()->intended('/admin/dashboard');
+            return redirect()->intended('/admin/dashboard#');
         }
 
-        return redirect()->intended('/dashboard');
+        return redirect()->intended('/dashboard#');
     }
 }
