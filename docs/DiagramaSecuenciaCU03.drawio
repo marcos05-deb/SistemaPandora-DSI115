@@ -1,0 +1,15 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Página-1" id="cu03-seq">
+    <mxGraphModel dx="2587" dy="1702" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <UserObject label="" mermaidData="{&#xa;  &quot;data&quot;: &quot;sequenceDiagram\n    Note over Admin,PostgreSQL: CU-03 - Gestionar Usuarios\n    participant Admin as Administrador (sysadmin)\n    participant Vue as Vue Frontend (Admin/Users/Index.vue)\n    participant Controller as UserController\n    participant PostgreSQL\n\n    Admin-&gt;&gt;Vue: 1. GET /admin/users\n    Vue-&gt;&gt;Controller: 2. GET /admin/users\n    Controller-&gt;&gt;PostgreSQL: 3. Consultar usuarios + roles + areas\n    Controller-&gt;&gt;Controller: 4. Calcular metricas\n    Controller--&gt;&gt;Vue: 5. Renderizar tabla + metricas\n    Admin-&gt;&gt;Vue: 6. Ver listado\n    opt Filtrar o eliminar\n        Admin-&gt;&gt;Vue: 7. Filtrar por nombre/rol\n        Vue-&gt;&gt;Controller: 8. GET /admin/users?search=...\n        Controller--&gt;&gt;Vue: 9. Resultados filtrados\n    end\n    opt Eliminar usuario\n        Admin-&gt;&gt;Vue: 10. Click eliminar\n        Vue-&gt;&gt;Controller: 11. DELETE /admin/users/{id}\n        Controller-&gt;&gt;PostgreSQL: 12. Soft-delete (is_active=false)\n        Controller--&gt;&gt;Vue: 13. Tabla actualizada\n    end&quot;,&#xa;  &quot;config&quot;: null&#xa;}" id="cu03-seq">
+          <mxCell connectable="0" parent="1" style="group;transparentBounds=1;editIcon=1;lockedGroup=0;groupPadding=20;" vertex="1">
+            <mxGeometry as="geometry" />
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

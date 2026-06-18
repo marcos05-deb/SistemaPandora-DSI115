@@ -1,8 +1,10 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue';
+import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
+    cacheDir: 'storage/app/vite-cache',
     server: {
         host: '0.0.0.0',
         port: 5173,
@@ -30,7 +32,7 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-            '@': '/resources/js',
+            '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
         },
     },
 });

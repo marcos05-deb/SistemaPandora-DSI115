@@ -18,11 +18,20 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            'appName' => 'PANDORA',
+            'appName'     => 'PANDORA',
             'appSubtitle' => 'Sistema de Gestión Clínica',
+            'auth' => [
+                'user' => $request->user() ? [
+                    'id'    => $request->user()->id,
+                    'email' => $request->user()->email,
+                    'name'  => $request->user()->name,
+                    'roles' => $request->user()->roles()->pluck('slug')->toArray(),
+                ] : null,
+            ],
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),
                 'variant' => fn () => $request->session()->get('variant', 'success'),
+                'generated_password' => fn () => $request->session()->get('generated_password'),
             ],
         ];
     }

@@ -35,7 +35,7 @@
 |---|---|---|---|
 | C-01 | HU-05 | 🔴 Bug | Colisión de variable `$key` en `EncryptedFieldCast` corregida → renombrada a `$encKey` |
 | C-02 | HU-01, HU-05 | 🔴 Bug | Nomenclatura algorítmica corregida: `sodium_crypto_secretbox` implementa XSalsa20-Poly1305, no AES-256-GCM |
-| C-03 | HU-01 | 🔴 Bug | Inconsistencia de rate limiting unificada: "5 intentos → el 6° retorna HTTP 429" |
+| C-03 | HU-01 | ✅ Hecho | Bloqueo de cuenta: 3 intentos fallidos → bloqueo 15 min |
 | C-04 | HU-03 | 🔴 Bug | `AreaScope` corregido para soportar múltiples áreas por especialista (`whereIn` en lugar de `where`) |
 | C-05 | HU-05 | 🔴 Bug | `DecryptionException` definida explícitamente con namespace y ubicación |
 | C-06 | HU-04 | 🔴 Bug | `encodeBase32Crockford()` implementado completamente |
@@ -176,10 +176,10 @@ database/
 - **Renderizado:** SPA con Inertia. Sin API REST pura. Sin endpoints JSON independientes de Inertia salvo los de autenticación.
 
 ### Autenticación
-- Basada en **sesiones de Laravel** con cookies `HttpOnly`, `SameSite=Strict`, `Secure=true`.
-- Gestionada mediante **Laravel Sanctum en modo SPA**.
-- Antes de usar rutas protegidas, el cliente SPA debe obtener la cookie CSRF mediante `GET /sanctum/csrf-cookie` y adjuntarla en todos los requests mutantes (`POST`, `PUT`, `DELETE`, `PATCH`).
-- **Prohibido JWT** en cualquier forma (`tymon/jwt-auth`, tokens Bearer en cookies, etc.).
+- Basada en **token JWT** (`firebase/php-jwt`) con expiración de **8 horas** (480 minutos).
+- El token JWT se almacena en cookie `pandora_token` con `HttpOnly`, `SameSite=Strict`, `Secure=true` en producción.
+- El middleware `AuthenticateJwt` valida el token JWT en cada petición a rutas protegidas.
+- Para el acto de login se usa `Auth::attempt()` con el guard `session`; tras autenticación exitosa se emite el JWT.
 
 ### Base de Datos
 - **PostgreSQL `^16.x`** con extensión `pgcrypto` habilitada.
@@ -306,30 +306,29 @@ public function derive(string $password, string $salt): string
 - La clave derivada resultante se almacena **únicamente en sesión de servidor** bajo `_sym_key` (codificada en Base64).
 - La contraseña en texto plano **nunca se persiste ni se loguea**. Limpiar con `sodium_memzero()` después de la derivación.
 
-**c) Política de Sesión**
-- Duración: **120 minutos** desde la última actividad (sesión deslizante).
-- Sesión única por Especialista: el login desde un nuevo dispositivo invalida la sesión anterior.
-- Implementar con tabla de sesiones en DB (`SESSION_DRIVER=database`).
+**c) Token JWT**
+- Autenticación mediante **token JWT** (`firebase/php-jwt`) con algoritmo HS256.
+- Expiración: **8 horas** (480 minutos) desde la emisión.
+- El token se almacena en cookie `pandora_token` con `HttpOnly`, `SameSite=Strict`, `Secure=true` en producción.
+- La clave de firma del JWT es `APP_KEY` (sin prefijo `base64:`).
 
-**d) Rate Limiting — Protección contra fuerza bruta — C-03**
+**d) Bloqueo de Cuenta — Protección contra fuerza bruta — C-03**
 
-> **Cambio respecto a v2.0:** Se unificó la descripción y el criterio de aceptación que eran contradictorios.
-
-- Máximo **5 intentos fallidos** por IP + por email en ventana de **10 minutos**.
-- Al superar el límite: bloqueo de **15 minutos**, respuesta `HTTP 429`.
-- El 6° intento (primero que excede el límite de 5) recibe `HTTP 429` inmediatamente.
-- Usar `RateLimiter::for('login', ...)` en `RouteServiceProvider`.
-- Implementar con el middleware `ThrottleRequests` de Laravel en la ruta `POST /login`.
+- Máximo **3 intentos fallidos** consecutivos por cuenta.
+- Al superar el límite: bloqueo de **15 minutos** (columna `locked_until` en `users`).
+- El contador de intentos fallidos se resetea tras un login exitoso.
+- Rate limiting adicional en la ruta `POST /login`: 3 intentos por IP+email en ventana de 10 minutos.
 
 #### Criterios de Aceptación
 
-- [ ] `POST /login` con credenciales válidas retorna redirección Inertia y sesión activa.
-- [ ] `POST /login` con credenciales inválidas retorna `HTTP 422` con mensaje genérico (no revelar si el email existe o no).
-- [ ] Después del login, `session()->get('_sym_key')` contiene la clave derivada en Base64.
-- [ ] La clave derivada tiene exactamente 32 bytes al decodificar.
-- [ ] Tras 5 intentos fallidos, el 6° intento retorna `HTTP 429`.
-- [ ] El bloqueo se levanta automáticamente a los 15 minutos.
-- [ ] Test feature cubre: login exitoso, credenciales inválidas, rate limit.
+- [x] `POST /login` con credenciales válidas emite cookie JWT `pandora_token` (exp. 8h) y redirige al dashboard.
+- [x] `POST /login` con credenciales inválidas retorna error genérico (no revelar si el email existe o no).
+- [x] Después del login, `session()->get('_sym_key')` contiene la clave derivada en Base64.
+- [x] La clave derivada tiene exactamente 32 bytes al decodificar.
+- [x] Tras 3 intentos fallidos, la cuenta se bloquea por 15 minutos.
+- [x] El bloqueo se levanta automáticamente a los 15 minutos.
+- [x] Login exitoso resetea el contador de intentos fallidos.
+- [x] Test feature cubre: login exitoso, cookie JWT, credenciales inválidas, bloqueo de cuenta.
 
 ---
 
@@ -360,11 +359,11 @@ public function derive(string $password, string $salt): string
 
 #### Criterios de Aceptación
 
-- [ ] `POST /logout` retorna redirección a `/login`.
-- [ ] Tras el logout, cualquier request autenticado retorna `HTTP 401` o redirección a `/login`.
-- [ ] `session()->has('_sym_key')` retorna `false` tras el logout.
-- [ ] La cookie de sesión anterior no sirve para re-autenticar (el ID de sesión fue regenerado).
-- [ ] Test feature cubre: logout exitoso, request post-logout rechazado.
+- [x] `POST /logout` retorna redirección a `/login`.
+- [x] Tras el logout, cualquier request autenticado retorna `HTTP 401` o redirección a `/login`.
+- [x] `session()->has('_sym_key')` retorna `false` tras el logout.
+- [x] La cookie de sesión anterior no sirve para re-autenticar (el ID de sesión fue regenerado).
+- [x] Test feature cubre: logout exitoso, request post-logout rechazado.
 
 ---
 
@@ -384,37 +383,29 @@ public function derive(string $password, string $salt): string
 
 > **Regla crítica:** El rol `sysadmin` tiene acceso cero a datos clínicos. El acceso administrativo y el acceso clínico son mutuamente excluyentes por diseño.
 
-#### Estructura de Tablas
+#### Estructura de Tablas (Esquema Real)
 
-```sql
--- Tabla roles
-CREATE TABLE roles (
-    id       SMALLINT PRIMARY KEY,
-    nombre   VARCHAR(60) NOT NULL,
-    slug     VARCHAR(30) NOT NULL UNIQUE,
-    nivel    SMALLINT NOT NULL
-);
+El sistema utiliza las tablas existentes y la tabla pivote de profesionales para la gestión de acceso, en lugar de una tabla combinada genérica:
 
--- Relación Especialista <-> Rol <-> Área
--- Un especialista puede tener un rol por área (ej. Coordinador en Psicología, Especialista en Fisioterapia)
-CREATE TABLE especialista_rol_area (
-    especialista_id UUID     REFERENCES especialistas(id),
-    rol_id          SMALLINT REFERENCES roles(id),
-    area_id         SMALLINT REFERENCES areas(id),
-    PRIMARY KEY (especialista_id, area_id)
-);
-```
+- **`users`**: Tabla principal de especialistas.
+- **`roles`**: Contiene `id` (BIGINT), `nombre`, `slug` y `nivel`.
+- **`role_user`**: Tabla pivote global que asigna un rol a un usuario (`user_id`, `role_id`). Los roles son globales para el usuario.
+- **`profesionales`**: Relaciona a un `user_id` con un `area_id`. Permite que un usuario pertenezca a múltiples áreas de atención.
 
-#### Relación `areas()` en el Modelo — C-04
+#### Relación `areas()` y `roles()` en el Modelo — C-04
 
-Para que el scope pueda consultar todas las áreas autorizadas de un especialista, el modelo debe exponer esta relación:
+Para que el scope pueda consultar todas las áreas autorizadas de un especialista, el modelo debe exponer esta relación a través de la tabla `profesionales` y sus roles a través de `role_user`:
 
 ```php
 // app/Models/Especialista.php
 public function areas(): BelongsToMany
 {
-    return $this->belongsToMany(Area::class, 'especialista_rol_area')
-                ->withPivot('rol_id');
+    return $this->belongsToMany(Area::class, 'profesionales', 'user_id', 'area_id');
+}
+
+public function roles(): BelongsToMany
+{
+    return $this->belongsToMany(Role::class, 'role_user', 'user_id', 'role_id');
 }
 
 public function hasRole(string $slug): bool
@@ -463,11 +454,11 @@ Registrar en `bootstrap/app.php` y aplicar al grupo de rutas `expedientes.*`.
 
 #### Criterios de Aceptación
 
-- [ ] Un Especialista de Área A que solicita el UUID de un expediente de Área B recibe `HTTP 403`.
-- [ ] El Global Scope está activo en todas las consultas de `Expediente` y no puede desactivarse desde una request HTTP.
-- [ ] El rol `sysadmin` no puede acceder a ninguna ruta de expedientes clínicos.
-- [ ] Un especialista con roles en múltiples áreas puede ver expedientes de **todas** sus áreas autorizadas.
-- [ ] Tests cubren: acceso a propio scope (éxito), acceso fuera de scope (403), acceso de sysadmin a ruta clínica (403), especialista multi-área (éxito en ambas).
+- [x] Un Especialista de Área A que solicita el UUID de un expediente de Área B recibe `HTTP 403` (o 404 por el scope).
+- [x] El Global Scope está activo en todas las consultas de `Expediente` y no puede desactivarse desde una request HTTP.
+- [x] El rol `sysadmin` no puede acceder a ninguna ruta de expedientes clínicos.
+- [x] Un especialista con roles en múltiples áreas puede ver expedientes de **todas** sus áreas autorizadas.
+- [x] Tests cubren: acceso a propio scope (éxito), acceso fuera de scope (403/404), acceso de sysadmin a ruta clínica (403), especialista multi-área (éxito en ambas).
 
 ---
 

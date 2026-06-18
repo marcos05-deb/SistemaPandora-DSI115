@@ -12,8 +12,13 @@ return new class extends Migration
     {
         DB::statement('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
         
+        DB::statement("DROP TYPE IF EXISTS sexo_enum CASCADE;");
         DB::statement("CREATE TYPE sexo_enum AS ENUM ('M', 'F', 'Otro');");
+        
+        DB::statement("DROP TYPE IF EXISTS estado_civil_enum CASCADE;");
         DB::statement("CREATE TYPE estado_civil_enum AS ENUM ('Soltero', 'Casado', 'Divorciado', 'Viudo', 'Unión Libre');");
+        
+        DB::statement("DROP TYPE IF EXISTS parentesco_enum CASCADE;");
         DB::statement("CREATE TYPE parentesco_enum AS ENUM ('Padre', 'Madre', 'Tutor', 'Otro');");
     }
 

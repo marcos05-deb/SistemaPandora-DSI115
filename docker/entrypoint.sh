@@ -18,6 +18,15 @@ fi
 mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs database
 chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
+# Limpiar caché obsoleta (especialmente config cache) que pueda causar conflictos con SQLite antiguo
+php artisan optimize:clear 2>/dev/null || true
+
+if [ "$APP_ENV" = "production" ] || [ "$APP_ENV" = "staging" ]; then
+    php artisan config:cache
+else
+    php artisan config:clear
+fi
+
 if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ]; then
     echo "Esperando PostgreSQL..."
     i=0
@@ -26,8 +35,8 @@ if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ]; then
             \$h = getenv('DB_HOST') ?: 'postgres';
             \$p = getenv('DB_PORT') ?: '5432';
             \$d = getenv('DB_DATABASE') ?: 'pandora';
-            \$u = getenv('DB_USERNAME') ?: 'pandora';
-            \$w = getenv('DB_PASSWORD') ?: 'pandora';
+            \$u = getenv('DB_ADMIN_USERNAME') ?: 'pandora';
+            \$w = getenv('DB_ADMIN_PASSWORD') ?: 'pandora';
             new PDO(\"pgsql:host=\$h;port=\$p;dbname=\$d\", \$u, \$w);
         " 2>/dev/null; then
             break
@@ -35,7 +44,7 @@ if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ]; then
         i=$((i + 1))
         sleep 2
     done
-    php artisan migrate --force --no-interaction 2>/dev/null || true
+    php artisan migrate --database=pgsql_admin --force --no-interaction 2>/dev/null || true
 fi
 
 exec "$@"

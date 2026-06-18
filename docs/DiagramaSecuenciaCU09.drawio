@@ -1,0 +1,15 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Página-1" id="cu09-seq">
+    <mxGraphModel dx="3211" dy="2074" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <UserObject label="" mermaidData="{&#xa;  &quot;data&quot;: &quot;sequenceDiagram\n    Note over Usuario,PostgreSQL: CU-09 - Buscar Paciente por Carnet\n    participant Usuario as Ref / Coord / Espec\n    participant Vue as Vue Frontend (Pacientes/Index.vue)\n    participant Controller as PacienteController (index)\n    participant Middleware as Middleware / Policies\n    participant PostgreSQL\n\n    Usuario-&gt;&gt;Vue: 1. Navegar a /pacientes\n    Vue-&gt;&gt;Controller: 2. GET /pacientes\n    Controller--&gt;&gt;Vue: 3. Renderizar campo busqueda\n    Usuario-&gt;&gt;Vue: 4. Ingresar carnet\n    Usuario-&gt;&gt;Vue: 5. Presionar Enter\n    Vue-&gt;&gt;Controller: 6. GET /pacientes?carnet=CH17001\n    Controller-&gt;&gt;Middleware: 7. Rate Limiting (30 req/min)\n    Controller-&gt;&gt;PostgreSQL: 8. Buscar segun rol\n    Note over Controller,PostgreSQL: Referente: WHERE carnet + creado_por&lt;br/&gt;Coord/Espec: WHERE carnet + EXISTS expedientes\n    alt Encontrado\n        Controller--&gt;&gt;Vue: 9a. Redirect 302 a CU-10\n    else No encontrado\n        Controller--&gt;&gt;Vue: 9b. &quot;No se encontro paciente&quot;\n    end&quot;,&#xa;  &quot;config&quot;: null&#xa;}" id="cu09-seq">
+          <mxCell connectable="0" parent="1" style="group;transparentBounds=1;editIcon=1;lockedGroup=0;groupPadding=20;" vertex="1">
+            <mxGeometry as="geometry" />
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

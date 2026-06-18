@@ -1,7 +1,7 @@
 <script setup>
 const variants = {
-    warning: 'bg-orange-50 border-orange-200 text-orange-900',
-    info: 'bg-blue-50 border-blue-200 text-blue-900',
+    warning: 'border-[var(--aurora-yellow)] text-[var(--aurora-orange)] bg-[var(--aurora-yellow)]/5',
+    info: 'border-[var(--frost3)] text-[var(--frost4)] bg-[var(--frost3)]/5',
 };
 
 defineProps({
