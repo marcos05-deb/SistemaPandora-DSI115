@@ -36,15 +36,15 @@ class SecureSearchTest extends TestCase
         $roleEspecialista = Role::forceCreate(['nombre' => 'Especialista', 'slug' => 'specialist', 'nivel' => 10]);
         $roleReferent = Role::forceCreate(['nombre' => 'Referente Psicosocial', 'slug' => 'psychosocial_referent', 'nivel' => 20]);
 
-        // Carrera dummy para FK
+        // Facultad primero, luego carrera (FK order)
+        DB::table('facultades')->insert([
+            'id' => 1,
+            'nombre' => 'Ciencias Sociales',
+        ]);
         DB::table('carreras')->insert([
             'id' => 1,
             'nombre' => 'Psicologia',
             'facultad_id' => 1,
-        ]);
-        DB::table('facultades')->insert([
-            'id' => 1,
-            'nombre' => 'Ciencias Sociales',
         ]);
 
         // Especialista Psico
@@ -93,9 +93,6 @@ class SecureSearchTest extends TestCase
             'numero_registro' => 'TS-001',
         ]);
 
-        // Desactivar restricciones para inserts directos
-        DB::statement('SET session_replication_role = replica;');
-
         $uuidPsico = Str::uuid();
         $uuidMed = Str::uuid();
 
@@ -131,10 +128,17 @@ class SecureSearchTest extends TestCase
             'area_id' => $this->areaMed->id,
         ]);
 
-        DB::statement('SET session_replication_role = DEFAULT;');
-
         $this->pacienteEnPsico = Paciente::find($uuidPsico);
         $this->pacienteEnMed = Paciente::find($uuidMed);
+    }
+
+    protected function migrateFreshUsing()
+    {
+        return [
+            '--drop-views' => true,
+            '--drop-types' => true,
+            '--database' => 'pgsql_admin',
+        ];
     }
 
     public function test_secure_search_page_renders_for_specialist(): void
