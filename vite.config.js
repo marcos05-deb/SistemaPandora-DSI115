@@ -4,6 +4,7 @@ import vue from '@vitejs/plugin-vue';
 import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
+    cacheDir: 'storage/app/vite-cache',
     server: {
         host: '0.0.0.0',
         port: 5173,

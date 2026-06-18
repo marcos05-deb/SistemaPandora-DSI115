@@ -13,6 +13,7 @@ return [
     'faker_locale' => 'es_SV',
     'cipher' => 'AES-256-CBC',
     'key' => env('APP_KEY'),
+    'blind_index_secret' => env('BLIND_INDEX_SECRET'),
     'previous_keys' => [
         ...array_filter(
             explode(',', env('APP_PREVIOUS_KEYS', ''))

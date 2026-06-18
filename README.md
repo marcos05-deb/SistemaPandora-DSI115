@@ -4,6 +4,39 @@
 
 PANDORA es un sistema integral de gestión clínica desarrollado sobre el framework Laravel 11, utilizando Inertia.js y Vue 3 para la capa de presentación. La arquitectura implementa controles estrictos de seguridad, incluyendo cifrado simétrico y asimétrico para el resguardo de información clínica, y un modelo de Control de Acceso Basado en Roles (RBAC) con aislamiento de datos por áreas organizacionales.
 
+### Certificaciones y Estándares (Compliance)
+El núcleo del sistema y su pipeline de Integración Continua (CI) auditan incondicionalmente el cumplimiento técnico de:
+- **OWASP ASVS (Application Security Verification Standard) Nivel 2/3**: Validando Control de Acceso (V4), Criptografía en Reposo (V6), Lógica de Negocio (V11) y Configuración Segura (V14).
+- **HIPAA (Health Insurance Portability and Accountability Act)**: Validando acceso estricto a PHI y encriptación de bases de datos.
+- **ISO/IEC 27001 (Anexo A.14)**: Segregación inquebrantable de privilegios de infraestructura de bases de datos (DDL vs DML).
+
+Cualquier despliegue es abortado automáticamente si el código no supera la validación estricta definida en `Tests\Feature\Compliance`.
+
+## Estructura del Proyecto
+
+```text
+SistemaPandora-DSI115/
+├── .github/workflows/          # Pipelines de CI/CD (Validación de Compliance)
+├── app/
+│   ├── Http/Controllers/       # Controladores web (Autenticación, RBAC, Clínico)
+│   ├── Http/Middleware/        # Filtros de Seguridad (EnforceAreaScope, SecurityHeaders)
+│   ├── Models/                 # Modelos de Eloquent con reglas de encriptación
+│   └── Policies/               # Políticas estrictas de autorización
+├── database/
+│   ├── migrations/             # Definiciones DDL de PostgreSQL
+│   └── seeders/                # Datos de prueba para entornos locales (Integración)
+├── resources/js/               # Frontend (Vue 3 + Inertia)
+│   ├── Components/             # Componentes UI de diseño institucional (Nord/Oracle)
+│   ├── Pages/                  # Vistas por módulo (Auth, Dashboard, Usuarios)
+│   └── Layouts/                # Contenedores estructurales
+├── tests/
+│   └── Feature/                
+│       ├── Compliance/         # Suite estricta OWASP/HIPAA/ISO27001
+│       └── HU*/                # Pruebas de Historias de Usuario
+├── docker-compose.yml          # Topología de desarrollo (App + Postgres)
+└── Makefile                    # Comandos operativos rápidos
+```
+
 ## Requisitos del Entorno
 
 La infraestructura de desarrollo está diseñada para operar exclusivamente a través de contenedores, garantizando la paridad entre los entornos de desarrollo local y los entornos de integración/producción.
@@ -57,7 +90,7 @@ KDF_MEMLIMIT=16777216
 Para efectuar un borrado completo del esquema relacional y repoblar la base de datos con las estructuras y los usuarios de prueba, ejecute el siguiente comando contra el contenedor de aplicación:
 
 ```bash
-docker compose exec app php artisan migrate:fresh --seed
+docker compose exec app php artisan migrate:fresh --database=pgsql_admin --seed
 ```
 
 El proceso de sembrado (`DatabaseSeeder.php`) aprovisionará las siguientes credenciales con propósitos de integración y prueba:
@@ -76,6 +109,36 @@ El sistema ha sido migrado recientemente de SQLite a PostgreSQL. Si al iniciar e
 El archivo `entrypoint.sh` contiene rutinas de invalidación de caché, pero en caso de que el error persista, realice una purga manual:
 1. Elimine recursivamente todos los archivos con extensión `.php` alojados dentro del directorio `bootstrap/cache/` en su máquina host. Debe mantener intacto el archivo `.gitignore` ubicado en ese mismo directorio.
 2. Reinicie el conjunto de contenedores.
+
+### Error "Firebase\JWT\JWT not found" al clonar el repositorio
+El directorio `vendor/` está excluido del control de versiones (`.gitignore`) porque las dependencias se gestionan con Composer. Este error indica que las dependencias PHP no están instaladas.
+
+**Solución con Docker** (recomendada):
+```bash
+docker compose down -v
+docker compose up --build
+```
+El `entrypoint.sh` ejecutará `composer install` automáticamente durante el arranque.
+
+**Solución sin Docker** (instalación local):
+```bash
+composer install --no-dev --optimize-autoloader
+php artisan key:generate
+```
+
+### Generación del BLIND_INDEX_SECRET
+La clave de índice ciego (`BLIND_INDEX_SECRET`) es requerida para el cifrado determinista de datos clínicos. El `entrypoint.sh` no la genera automáticamente. Tras el primer despliegue, se debe ejecutar:
+
+```bash
+docker compose exec app php -r "file_put_contents('.env', PHP_EOL . 'BLIND_INDEX_SECRET=' . base64_encode(random_bytes(32)), FILE_APPEND);"
+docker compose exec app php artisan config:clear
+```
+
+Para instalaciones sin Docker, generar el valor y agregarlo manualmente al archivo `.env`:
+```bash
+php -r "echo base64_encode(random_bytes(32));"
+# Copiar la salida y agregar al .env: BLIND_INDEX_SECRET=<valor_generado>
+```
 
 ## Accesos a Servicios Locales
 

@@ -7,31 +7,51 @@ use App\Exceptions\DecryptionException;
 /**
  * EncryptionContextService — Roadmap §HU-05, C-07.
  *
- * Abstrae el acceso a la clave simétrica de sesión (_sym_key).
- * Permite que EncryptedFieldCast sea testeable en aislamiento
- * mockeando este servicio en lugar de acceder a session() directamente.
+ * Provee la clave simétrica de 32 bytes para cifrar/descifrar datos de pacientes.
+ *
+ * La clave criptográfica real es BLIND_INDEX_SECRET (config/app),
+ * común a todo el sistema para que múltiples especialistas puedan leer
+ * los mismos pacientes.
+ *
+ * _sym_key en sesión actúa como gate de autenticación:
+ *   - Web: debe existir en sesión (el usuario hizo login).
+ *   - CLI: se omite el gate (seeders, comandos artisan).
+ *
+ * RBAC y Area Scope son responsables de controlar QUIÉN ve QUÉ paciente;
+ * EncryptionContextService solo protege los datos en reposo.
  */
 class EncryptionContextService
 {
     /**
-     * Retorna la clave simétrica de 32 bytes desde sesión.
+     * Retorna la clave simétrica de 32 bytes (BLIND_INDEX_SECRET).
      *
-     * @throws DecryptionException Si la clave no está disponible (sesión expirada o no autenticado).
+     * @throws DecryptionException Si en modo web no hay _sym_key en sesión
+     *                             o si BLIND_INDEX_SECRET no está configurado.
      */
     public function getKey(): string
     {
-        if (!session()->has('_sym_key')) {
+        if (!app()->runningInConsole() || app()->runningUnitTests()) {
+            if (empty(session('_sym_key'))) {
+                throw new DecryptionException(
+                    'Clave de sesión no disponible. La sesión puede haber expirado.'
+                );
+            }
+        }
+
+        $secret = config('app.blind_index_secret');
+
+        if (empty($secret)) {
             throw new DecryptionException(
-                'Clave de cifrado no disponible. La sesión expiró o el usuario no está autenticado.'
+                'BLIND_INDEX_SECRET no configurado. Contacte al administrador.'
             );
         }
 
-        $decoded = base64_decode(session('_sym_key'), strict: true);
+        $raw = base64_decode($secret, strict: true);
 
-        if ($decoded === false || strlen($decoded) !== SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
-            throw new DecryptionException('La clave de sesión está malformada o tiene longitud incorrecta.');
+        if ($raw === false || strlen($raw) !== SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
+            throw new DecryptionException('BLIND_INDEX_SECRET debe ser 32 bytes en Base64.');
         }
 
-        return $decoded;
+        return $raw;
     }
 }

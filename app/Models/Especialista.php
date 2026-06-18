@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -18,7 +21,7 @@ use Illuminate\Notifications\Notifiable;
  */
 class Especialista extends Authenticatable
 {
-    use Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     /**
      * Apunta a la tabla 'users' existente en la DB.
@@ -34,6 +37,8 @@ class Especialista extends Authenticatable
         'is_active',
         'password',
         'kdf_salt',
+        'failed_login_attempts',
+        'locked_until',
     ];
 
     protected $hidden = [
@@ -46,6 +51,7 @@ class Especialista extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'locked_until' => 'datetime',
         ];
     }
 

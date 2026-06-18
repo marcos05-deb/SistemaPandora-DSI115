@@ -20,13 +20,13 @@ use Inertia\Inertia;
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])
-        ->middleware('throttle:login')
+        ->middleware('throttle:5,1')
         ->name('login.store');
 });
 
 Route::redirect('/', '/login');
 
-// --- Rutas protegidas (Auth) ---
+// --- Rutas protegidas (Auth con JWT) ---
 Route::middleware(['auth', 'require_password_change'])->group(function () {
     // Password Setup (Primer Ingreso)
     Route::get('/password/setup', [\App\Http\Controllers\Auth\PasswordSetupController::class, 'show'])->name('password.setup')->withoutMiddleware('require_password_change');
@@ -44,29 +44,45 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
             'total' => 0,
             'activos' => 0,
         ];
+        $areaIds = $user->areas()->pluck('areas.id')->toArray();
 
-        // Solo el referente psicosocial ve los pacientes (y únicamente los que él registró)
+        // Referente psicosocial: pacientes que él registró
         if ($user->hasRole('psychosocial_referent')) {
             $profesionalId = $user->profesional->id;
 
-            $pacientes = \App\Models\Paciente::with('expedientes')
+            $pacientesQuery = \App\Models\Paciente::with('expedientes')
                 ->where('creado_por_profesional_id', $profesionalId)
                 ->orderBy('created_at', 'desc')
                 ->take(10)
-                ->get()
-                ->map(function ($paciente) {
-                    return [
-                        'carnet' => $paciente->carnet,
-                        'nombre_completo' => $paciente->nombre_completo,
-                        'created_at' => $paciente->created_at->format('Y-m-d H:i'),
-                    ];
-                });
+                ->get();
+
+            $pacientes = \App\Http\Resources\PacienteResource::collection($pacientesQuery)->resolve();
 
             $stats = [
                 'total' => \App\Models\Paciente::where('creado_por_profesional_id', $profesionalId)->count(),
                 'activos' => \App\Models\Expediente::whereHas('paciente', function ($q) use ($profesionalId) {
                     $q->where('creado_por_profesional_id', $profesionalId);
                 })->count(),
+            ];
+        }
+
+        // Coordinador y especialista: pacientes con expedientes en su área
+        if ($user->hasRole('area_coordinator') || $user->hasRole('specialist')) {
+            $pacientesQuery = \App\Models\Paciente::with('expedientes')
+                ->whereHas('expedientes', function ($q) use ($areaIds) {
+                    $q->whereIn('area_id', $areaIds);
+                })
+                ->orderBy('created_at', 'desc')
+                ->take(10)
+                ->get();
+
+            $pacientes = \App\Http\Resources\PacienteResource::collection($pacientesQuery)->resolve();
+
+            $stats = [
+                'total' => \App\Models\Paciente::whereHas('expedientes', function ($q) use ($areaIds) {
+                    $q->whereIn('area_id', $areaIds);
+                })->count(),
+                'activos' => \App\Models\Expediente::whereIn('area_id', $areaIds)->count(),
             ];
         }
 
@@ -77,10 +93,19 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
     })->name('dashboard');
 
     // Clinical Routes
-    Route::get('/pacientes', [\App\Http\Controllers\PacienteController::class, 'index'])->name('pacientes.index');
-    Route::get('/pacientes/create', [\App\Http\Controllers\PacienteController::class, 'create'])->name('pacientes.create');
-    Route::post('/pacientes', [\App\Http\Controllers\PacienteController::class, 'store'])->name('pacientes.store');
-    Route::get('/pacientes/{carnet}', [\App\Http\Controllers\PacienteController::class, 'show'])->name('pacientes.show');
+    Route::middleware('role:psychosocial_referent')->group(function () {
+        Route::get('/pacientes/create', [\App\Http\Controllers\PacienteController::class, 'create'])->name('pacientes.create');
+        Route::post('/pacientes', [\App\Http\Controllers\PacienteController::class, 'store'])->name('pacientes.store');
+    });
+
+    Route::middleware('role:psychosocial_referent|specialist|area_coordinator')->group(function () {
+        Route::get('/pacientes', [\App\Http\Controllers\PacienteController::class, 'index'])->name('pacientes.index')->middleware('throttle:30,1');
+        Route::get('/pacientes/{carnet}', [\App\Http\Controllers\PacienteController::class, 'show'])->name('pacientes.show')->middleware('throttle:30,1');
+    });
+
+    // Secure Search Routes (HU-06)
+    Route::get('/busqueda-segura', [\App\Http\Controllers\SecureSearchController::class, 'index'])->name('busqueda-segura');
+    Route::post('/busqueda-segura', [\App\Http\Controllers\SecureSearchController::class, 'search'])->name('busqueda-segura.search');
 
     // Admin Routes
     Route::middleware('sysadmin')->prefix('admin')->group(function () {
@@ -96,6 +121,9 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
 
         // Patients audit
         Route::get('/pacientes', [\App\Http\Controllers\Admin\PacienteController::class, 'index'])->name('admin.pacientes.index');
+
+        // Organigrama
+        Route::get('/organigrama', [\App\Http\Controllers\Admin\OrganigramaController::class, 'index'])->name('admin.organigrama.index');
     });
 
     Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout');

@@ -1,4 +1,5 @@
 import '../css/app.css';
+import '@vuepic/vue-datepicker/dist/main.css';
 import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
@@ -18,6 +19,6 @@ createInertiaApp({
             .mount(el);
     },
     progress: {
-        color: '#2563eb',
+        color: '#5E81AC',
     },
 });

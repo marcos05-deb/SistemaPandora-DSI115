@@ -12,6 +12,7 @@
         "@vitejs/plugin-vue": "^6.0.7",
         "autoprefixer": "^10.5.0",
         "axios": "^1.16.1",
+        "@vuepic/vue-datepicker": "^8.4.0",
         "laravel-vite-plugin": "^3.1.0",
         "postcss": "^8.5.15",
         "tailwindcss": "^4.3.0",

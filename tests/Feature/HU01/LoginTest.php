@@ -7,15 +7,17 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 /**
- * Tests de HU-01: Autenticación y Criptografía Base.
+ * Tests de HU-01: Autenticación JWT y Criptografía Base.
  *
- * Criterios de aceptación del Roadmap:
- * - POST /login con credenciales válidas → redirección Inertia y sesión activa.
+ * Criterios de aceptación:
+ * - POST /login con credenciales válidas → redirección y cookie JWT (pandora_token).
  * - POST /login con credenciales inválidas → HTTP 422 con mensaje genérico.
+ * - El token JWT expira en 8 horas (480 min).
  * - Después del login, session()->get('_sym_key') contiene clave derivada en Base64.
  * - La clave derivada tiene exactamente 32 bytes al decodificar.
- * - Tras 5 intentos fallidos, el 6° intento retorna HTTP 429.
- * - Test feature cubre: login exitoso, credenciales inválidas, rate limit.
+ * - Bloqueo de cuenta tras 3 intentos fallidos (15 min).
+ * - Tras 3 intentos fallidos, el 4° intento bloquea la cuenta.
+ * - Login exitoso resetea el contador de intentos fallidos.
  */
 
 beforeEach(function () {
@@ -40,6 +42,32 @@ it('permite_login_con_credenciales_validas', function () {
 
     $response->assertRedirect('/dashboard');
     $this->assertAuthenticated();
+});
+
+it('emite_cookie_jwt_tras_login_exitoso', function () {
+    $response = $this->post('/login', [
+        'email'    => 'dr.martinez@clinica.org',
+        'password' => $this->testPassword,
+    ]);
+
+    $response->assertRedirect('/dashboard');
+    $response->assertCookie('pandora_token');
+    $this->assertAuthenticated();
+});
+
+it('cookie_jwt_tiene_expiracion_de_8_horas', function () {
+    $response = $this->post('/login', [
+        'email'    => 'dr.martinez@clinica.org',
+        'password' => $this->testPassword,
+    ]);
+
+    $cookie = collect($response->headers->getCookies())
+        ->first(fn ($c) => $c->getName() === 'pandora_token');
+
+    expect($cookie)->not->toBeNull();
+    $expiresInMinutes = ($cookie->getExpiresTime() - time()) / 60;
+    expect($expiresInMinutes)->toBeGreaterThan(475);
+    expect($expiresInMinutes)->toBeLessThan(485);
 });
 
 it('almacena_sym_key_en_sesion_tras_login', function () {
@@ -84,7 +112,6 @@ it('no_revela_si_email_existe_con_credenciales_invalidas', function () {
         'password' => 'cualquier_cosa',
     ]);
 
-    // El mensaje debe ser genérico, igual que si el email existiera
     $response->assertSessionHasErrors('email');
     $this->assertGuest();
 });
@@ -98,26 +125,48 @@ it('valida_campos_requeridos', function () {
     $response->assertSessionHasErrors(['email', 'password']);
 });
 
-it('bloquea_sexto_intento_login_con_http_429', function () {
-    // 5 intentos fallidos
-    for ($i = 0; $i < 5; $i++) {
+it('bloquea_cuenta_tras_3_intentos_fallidos', function () {
+    for ($i = 0; $i < 3; $i++) {
         $this->post('/login', [
             'email'    => 'dr.martinez@clinica.org',
             'password' => 'contraseña_incorrecta',
         ]);
     }
 
-    // 6° intento: debe recibir bloqueo
-    $response = $this->post('/login', [
+    $this->especialista->refresh();
+    expect($this->especialista->locked_until)->not->toBeNull();
+
+    $response = $this->withHeaders(['Referer' => '/login'])
+        ->post('/login', [
+            'email'    => 'dr.martinez@clinica.org',
+            'password' => $this->testPassword,
+        ]);
+
+    $response->assertRedirect('/login');
+    $response->assertSessionHasErrors('email');
+    $this->assertGuest();
+});
+
+it('login_exitoso_resetea_intentos_fallidos', function () {
+    $this->post('/login', [
         'email'    => 'dr.martinez@clinica.org',
         'password' => 'contraseña_incorrecta',
     ]);
 
-    $response->assertSessionHasErrors('throttle');
+    $this->especialista->refresh();
+    expect($this->especialista->failed_login_attempts)->toBe(1);
+
+    $this->post('/login', [
+        'email'    => 'dr.martinez@clinica.org',
+        'password' => $this->testPassword,
+    ]);
+
+    $this->especialista->refresh();
+    expect($this->especialista->failed_login_attempts)->toBe(0);
+    expect($this->especialista->locked_until)->toBeNull();
 });
 
 it('genera_kdf_salt_si_especialista_no_tiene', function () {
-    // Crear especialista sin kdf_salt
     $especialista = Especialista::create([
         'email'    => 'nuevo@clinica.org',
         'password' => $this->testPassword,
@@ -131,7 +180,6 @@ it('genera_kdf_salt_si_especialista_no_tiene', function () {
 
     $this->assertAuthenticated();
 
-    // Verificar que se generó kdf_salt
     $especialista->refresh();
     expect($especialista->kdf_salt)->not->toBeNull()
         ->and(session('_sym_key'))->not->toBeNull();

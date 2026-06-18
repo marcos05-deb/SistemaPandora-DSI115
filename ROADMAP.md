@@ -35,7 +35,7 @@
 |---|---|---|---|
 | C-01 | HU-05 | 🔴 Bug | Colisión de variable `$key` en `EncryptedFieldCast` corregida → renombrada a `$encKey` |
 | C-02 | HU-01, HU-05 | 🔴 Bug | Nomenclatura algorítmica corregida: `sodium_crypto_secretbox` implementa XSalsa20-Poly1305, no AES-256-GCM |
-| C-03 | HU-01 | 🔴 Bug | Inconsistencia de rate limiting unificada: "5 intentos → el 6° retorna HTTP 429" |
+| C-03 | HU-01 | ✅ Hecho | Bloqueo de cuenta: 3 intentos fallidos → bloqueo 15 min |
 | C-04 | HU-03 | 🔴 Bug | `AreaScope` corregido para soportar múltiples áreas por especialista (`whereIn` en lugar de `where`) |
 | C-05 | HU-05 | 🔴 Bug | `DecryptionException` definida explícitamente con namespace y ubicación |
 | C-06 | HU-04 | 🔴 Bug | `encodeBase32Crockford()` implementado completamente |
@@ -176,10 +176,10 @@ database/
 - **Renderizado:** SPA con Inertia. Sin API REST pura. Sin endpoints JSON independientes de Inertia salvo los de autenticación.
 
 ### Autenticación
-- Basada en **sesiones de Laravel** con cookies `HttpOnly`, `SameSite=Strict`, `Secure=true`.
-- Gestionada mediante **Laravel Sanctum en modo SPA**.
-- Antes de usar rutas protegidas, el cliente SPA debe obtener la cookie CSRF mediante `GET /sanctum/csrf-cookie` y adjuntarla en todos los requests mutantes (`POST`, `PUT`, `DELETE`, `PATCH`).
-- **Prohibido JWT** en cualquier forma (`tymon/jwt-auth`, tokens Bearer en cookies, etc.).
+- Basada en **token JWT** (`firebase/php-jwt`) con expiración de **8 horas** (480 minutos).
+- El token JWT se almacena en cookie `pandora_token` con `HttpOnly`, `SameSite=Strict`, `Secure=true` en producción.
+- El middleware `AuthenticateJwt` valida el token JWT en cada petición a rutas protegidas.
+- Para el acto de login se usa `Auth::attempt()` con el guard `session`; tras autenticación exitosa se emite el JWT.
 
 ### Base de Datos
 - **PostgreSQL `^16.x`** con extensión `pgcrypto` habilitada.
@@ -306,30 +306,29 @@ public function derive(string $password, string $salt): string
 - La clave derivada resultante se almacena **únicamente en sesión de servidor** bajo `_sym_key` (codificada en Base64).
 - La contraseña en texto plano **nunca se persiste ni se loguea**. Limpiar con `sodium_memzero()` después de la derivación.
 
-**c) Política de Sesión**
-- Duración: **120 minutos** desde la última actividad (sesión deslizante).
-- Sesión única por Especialista: el login desde un nuevo dispositivo invalida la sesión anterior.
-- Implementar con tabla de sesiones en DB (`SESSION_DRIVER=database`).
+**c) Token JWT**
+- Autenticación mediante **token JWT** (`firebase/php-jwt`) con algoritmo HS256.
+- Expiración: **8 horas** (480 minutos) desde la emisión.
+- El token se almacena en cookie `pandora_token` con `HttpOnly`, `SameSite=Strict`, `Secure=true` en producción.
+- La clave de firma del JWT es `APP_KEY` (sin prefijo `base64:`).
 
-**d) Rate Limiting — Protección contra fuerza bruta — C-03**
+**d) Bloqueo de Cuenta — Protección contra fuerza bruta — C-03**
 
-> **Cambio respecto a v2.0:** Se unificó la descripción y el criterio de aceptación que eran contradictorios.
-
-- Máximo **5 intentos fallidos** por IP + por email en ventana de **10 minutos**.
-- Al superar el límite: bloqueo de **15 minutos**, respuesta `HTTP 429`.
-- El 6° intento (primero que excede el límite de 5) recibe `HTTP 429` inmediatamente.
-- Usar `RateLimiter::for('login', ...)` en `RouteServiceProvider`.
-- Implementar con el middleware `ThrottleRequests` de Laravel en la ruta `POST /login`.
+- Máximo **3 intentos fallidos** consecutivos por cuenta.
+- Al superar el límite: bloqueo de **15 minutos** (columna `locked_until` en `users`).
+- El contador de intentos fallidos se resetea tras un login exitoso.
+- Rate limiting adicional en la ruta `POST /login`: 3 intentos por IP+email en ventana de 10 minutos.
 
 #### Criterios de Aceptación
 
-- [x] `POST /login` con credenciales válidas retorna redirección Inertia y sesión activa.
-- [x] `POST /login` con credenciales inválidas retorna `HTTP 422` con mensaje genérico (no revelar si el email existe o no).
+- [x] `POST /login` con credenciales válidas emite cookie JWT `pandora_token` (exp. 8h) y redirige al dashboard.
+- [x] `POST /login` con credenciales inválidas retorna error genérico (no revelar si el email existe o no).
 - [x] Después del login, `session()->get('_sym_key')` contiene la clave derivada en Base64.
 - [x] La clave derivada tiene exactamente 32 bytes al decodificar.
-- [x] Tras 5 intentos fallidos, el 6° intento retorna `HTTP 429`.
+- [x] Tras 3 intentos fallidos, la cuenta se bloquea por 15 minutos.
 - [x] El bloqueo se levanta automáticamente a los 15 minutos.
-- [x] Test feature cubre: login exitoso, credenciales inválidas, rate limit.
+- [x] Login exitoso resetea el contador de intentos fallidos.
+- [x] Test feature cubre: login exitoso, cookie JWT, credenciales inválidas, bloqueo de cuenta.
 
 ---
 

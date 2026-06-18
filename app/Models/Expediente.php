@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -10,7 +12,7 @@ use App\Models\Scopes\AreaScope;
 
 class Expediente extends Model
 {
-    use SoftDeletes, HasUuids;
+    use HasFactory, SoftDeletes, HasUuids;
 
     protected $fillable = [
         'paciente_id',
