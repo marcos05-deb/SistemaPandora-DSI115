@@ -18,7 +18,7 @@ class RequirePasswordChange
         if (auth()->check() && auth()->user()->must_change_password) {
             // Permitir acceso a la vista de configuración y a la acción de logout
             if (!$request->routeIs('password.setup') && !$request->routeIs('password.setup.store') && !$request->routeIs('logout')) {
-                return redirect()->to(route('password.setup') . '#');
+                return redirect()->route('password.setup');
             }
         }
 
