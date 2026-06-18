@@ -1,0 +1,15 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Página-1" id="cu10-seq">
+    <mxGraphModel dx="3211" dy="2074" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <UserObject label="" mermaidData="{&#xa;  &quot;data&quot;: &quot;sequenceDiagram\n    Note over Usuario,PostgreSQL: CU-10 - Ver Expediente del Paciente\n    participant Usuario as Ref / Coord / Espec\n    participant Vue as Vue Frontend (Pacientes/Show.vue)\n    participant Controller as PacienteController (show)\n    participant Middleware as PacientePolicy\n    participant PostgreSQL\n\n    Usuario-&gt;&gt;Vue: 1. GET /pacientes/{carnet}\n    Vue-&gt;&gt;Controller: 2. GET /pacientes/{carnet}\n    Controller-&gt;&gt;Middleware: 3. Rate Limiting (30 req/min)\n    Controller-&gt;&gt;Middleware: 4. PacientePolicy::view()\n    alt No autorizado\n        Middleware--&gt;&gt;Controller: 403/404\n    end\n    Controller-&gt;&gt;PostgreSQL: 5. Cargar paciente + relaciones\n    Controller-&gt;&gt;Controller: 6. Descifrar campos PHI\n    Note over Controller,Controller: EncryptedFieldCast obtiene _sym_key&lt;br/&gt;de la sesion y aplica sodium_crypto_secretbox_open\n    Controller-&gt;&gt;Controller: 7. PacienteResource (filtrar campos)\n    Controller--&gt;&gt;Vue: 8. Renderizar expediente descifrado\n    Vue--&gt;&gt;Usuario: 9. Visualizar datos completos&quot;,&#xa;  &quot;config&quot;: null&#xa;}" id="cu10-seq">
+          <mxCell connectable="0" parent="1" style="group;transparentBounds=1;editIcon=1;lockedGroup=0;groupPadding=20;" vertex="1">
+            <mxGeometry as="geometry" />
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
