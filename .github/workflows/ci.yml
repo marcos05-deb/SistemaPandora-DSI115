@@ -13,23 +13,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Set up Environment
+      run: cp .env.example .env
+
+    - name: Fix Directory Permissions for Docker
+      run: sudo chown -R 1000:1000 .
+
     - name: Start services using Docker Compose
       run: docker compose -f docker-compose.yml up -d postgres app
 
-    - name: Wait for PostgreSQL
-      run: sleep 10 # Aseguramos que la bd esté lista (idealmente con un ping)
-
-    - name: Install Dependencies
-      run: docker compose exec -T app composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-
-    - name: Copy .env
-      run: cp .env.example .env
-
-    - name: Generate Application Key
-      run: docker compose exec -T app php artisan key:generate
-
-    - name: Run Migrations
-      run: docker compose exec -T app php artisan migrate --force
+    - name: Wait for App Initialization
+      run: |
+        echo "Waiting for app container to finish entrypoint.sh (composer, migrate, etc)..."
+        timeout 180 bash -c 'until docker compose logs app | grep -q "Server running on"; do sleep 5; done'
+        echo "App is fully initialized!"
 
     - name: Execute Compliance Suite
       run: docker compose exec -T app php artisan test --filter Compliance
