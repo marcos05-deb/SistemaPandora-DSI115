@@ -44,12 +44,15 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
             'activos' => 0,
         ];
         $areaIds = $user->areas()->pluck('areas.id')->toArray();
+        $areasDisponibles = [];
 
         // Solo el referente psicosocial ve los pacientes (y únicamente los que él registró)
         if ($user->hasRole('psychosocial_referent') && $user->profesional) {
             $profesionalId = $user->profesional->id;
 
-            $pacientesQuery = \App\Models\Paciente::with('expedientes')
+            $pacientesQuery = \App\Models\Paciente::with(['expedientes' => function ($q) {
+                $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class);
+            }])
                 ->where('creado_por_profesional_id', $profesionalId)
                 ->orderBy('created_at', 'desc')
                 ->take(10)
@@ -63,6 +66,8 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
                     $q->where('creado_por_profesional_id', $profesionalId);
                 })->count(),
             ];
+            
+            $areasDisponibles = \App\Models\Area::select('id', 'nombre')->orderBy('nombre')->get();
         }
 
         // Coordinador y especialista: pacientes con expedientes en su área
@@ -88,6 +93,7 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         return Inertia::render('Dashboard', [
             'pacientes' => $pacientes,
             'stats' => $stats,
+            'areasDisponibles' => $areasDisponibles,
         ]);
     })->name('dashboard');
 
@@ -96,7 +102,6 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         Route::get('/pacientes/create', [\App\Http\Controllers\PacienteController::class, 'create'])->name('pacientes.create');
         Route::post('/pacientes', [\App\Http\Controllers\PacienteController::class, 'store'])->name('pacientes.store');
         
-        Route::get('/pacientes/{paciente}/derivar', [\App\Http\Controllers\DerivacionController::class, 'create'])->name('pacientes.derivar.create');
         Route::post('/pacientes/{paciente}/derivar', [\App\Http\Controllers\DerivacionController::class, 'store'])->name('pacientes.derivar.store');
     });
 

@@ -2,12 +2,14 @@
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
-import { computed } from 'vue';
+import DerivacionModal from '@/Components/Expediente/DerivacionModal.vue';
+import { computed, ref } from 'vue';
 
 defineOptions({ layout: ClinicalLayout });
 
 const props = defineProps({
-    paciente: { type: Object, required: true }
+    paciente: { type: Object, required: true },
+    areasDisponibles: { type: Array, default: () => [] }
 });
 
 const page = usePage();
@@ -21,6 +23,13 @@ const formatDate = (dateString) => {
     if (!dateString) return 'No registrada';
     return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 };
+
+const getAreaName = (areaId) => {
+    const area = props.areasDisponibles.find(a => a.id === areaId);
+    return area ? area.nombre : 'Área';
+};
+
+const isDerivacionModalOpen = ref(false);
 </script>
 
 <template>
@@ -53,6 +62,26 @@ const formatDate = (dateString) => {
                     <template v-if="canSeeFullUuid">{{ paciente.codigo }}</template>
                     <template v-else>{{ paciente.codigo.substring(0,8) }}...</template>
                 </span>
+                
+                <template v-if="page.props.auth?.user?.roles?.includes('psychosocial_referent')">
+                    <template v-if="paciente.expedientes && paciente.expedientes.length > 0">
+                        <span class="px-3 py-1.5 bg-[var(--surface-subtle)] text-[var(--nord3)] text-[11px] font-semibold rounded-lg border border-[var(--nord4)] inline-flex items-center gap-1.5 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[var(--aurora-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Referido al {{ getAreaName(paciente.expedientes[0].area_id) }}
+                        </span>
+                    </template>
+                    <button v-else 
+                        @click="isDerivacionModalOpen = true"
+                        class="px-3 py-1.5 bg-[var(--nord8)] hover:bg-[var(--nord9)] text-white text-[11px] font-medium rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                        Derivar a Área
+                    </button>
+                </template>
+
                 <button disabled class="px-3 py-1.5 bg-[var(--surface-header)] text-[var(--nord3)] text-[11px] font-medium rounded-lg border border-[var(--nord4)] cursor-not-allowed">
                     Expediente Clínico
                 </button>
@@ -266,5 +295,12 @@ const formatDate = (dateString) => {
                 </div>
             </div>
         </div>
+
+        <DerivacionModal
+            :show="isDerivacionModalOpen"
+            :paciente="paciente"
+            :areas="areasDisponibles"
+            @close="isDerivacionModalOpen = false"
+        />
     </div>
 </template>

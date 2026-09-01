@@ -1,10 +1,19 @@
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import EmptyState from '@/Components/UI/EmptyState.vue';
+import DerivacionModal from '@/Components/Expediente/DerivacionModal.vue';
 
 defineOptions({ layout: ClinicalLayout });
+
+const isDerivacionModalOpen = ref(false);
+const pacienteSeleccionado = ref(null);
+
+const openDerivacionModal = (paciente) => {
+    pacienteSeleccionado.value = paciente;
+    isDerivacionModalOpen.value = true;
+};
 
 const page = usePage();
 
@@ -13,7 +22,7 @@ const canCreatePatient = computed(() => {
     return roles.includes('psychosocial_referent');
 });
 
-defineProps({
+const props = defineProps({
     pacientes: {
         type: Array,
         default: () => []
@@ -24,8 +33,17 @@ defineProps({
             total: 0,
             activos: 0
         })
+    },
+    areasDisponibles: {
+        type: Array,
+        default: () => []
     }
 });
+
+const getAreaName = (areaId) => {
+    const area = props.areasDisponibles.find(a => a.id === areaId);
+    return area ? area.nombre : 'Área';
+};
 
 function formatDate(dateStr) {
     if (!dateStr) return '-';
@@ -164,7 +182,24 @@ function formatDate(dateStr) {
                             </td>
                             <td class="px-6 py-3.5 font-mono text-[var(--nord3)] text-[12px] font-medium">{{ paciente.carnet }}</td>
                             <td class="px-6 py-3.5 text-[var(--nord3)] hidden sm:table-cell text-[12px]">{{ formatDate(paciente.created_at) }}</td>
-                            <td class="px-6 py-3.5 text-right">
+                            <td class="px-6 py-3.5 text-right flex justify-end gap-2 items-center">
+                                <template v-if="canCreatePatient">
+                                    <template v-if="paciente.expedientes && paciente.expedientes.length > 0">
+                                        <span class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--nord3)] bg-[var(--surface-subtle)] px-3 py-1.5 rounded-lg border border-[var(--nord4)]">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[var(--aurora-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            Referido al {{ getAreaName(paciente.expedientes[0].area_id) }}
+                                        </span>
+                                    </template>
+                                    <button v-else @click="openDerivacionModal(paciente)"
+                                        class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--nord8)] hover:text-white bg-[var(--nord8)]/10 hover:bg-[var(--nord8)] px-3 py-1.5 rounded-lg transition-all duration-150">
+                                        Derivar a Área
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                        </svg>
+                                    </button>
+                                </template>
                                 <Link :href="`/pacientes/${paciente.carnet}`"
                                     class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--frost4)] hover:text-[var(--nord10)] bg-[var(--frost4)]/8 hover:bg-[var(--frost4)]/15 px-3 py-1.5 rounded-lg transition-all duration-150">
                                     Ver Expediente
@@ -178,5 +213,12 @@ function formatDate(dateStr) {
                 </table>
             </div>
         </div>
+
+        <DerivacionModal
+            :show="isDerivacionModalOpen"
+            :paciente="pacienteSeleccionado"
+            :areas="areasDisponibles"
+            @close="isDerivacionModalOpen = false"
+        />
     </div>
 </template>

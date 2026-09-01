@@ -22,27 +22,6 @@ class DerivacionController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create(Paciente $paciente): Response
-    {
-        // Enforce policy via middleware or here
-        $this->authorize('derivar', \App\Models\Expediente::class);
-
-        $areas = Area::select('id', 'nombre')->orderBy('nombre')->get();
-
-        // Pass patient info to display on the form
-        return Inertia::render('Expediente/Derivacion/Create', [
-            'paciente' => [
-                'codigo' => $paciente->codigo,
-                'carnet' => $paciente->carnet,
-                'nombre_completo' => $paciente->nombre_completo,
-            ],
-            'areas' => $areas,
-        ]);
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(DerivacionStoreRequest $request, Paciente $paciente): RedirectResponse
@@ -55,7 +34,7 @@ class DerivacionController extends Controller
             $profesionalId
         );
 
-        return redirect()->route('pacientes.index')
+        return redirect()->back()
             ->with('success', 'Paciente derivado exitosamente.');
     }
 }

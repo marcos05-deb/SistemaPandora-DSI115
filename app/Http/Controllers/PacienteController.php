@@ -143,7 +143,9 @@ class PacienteController extends Controller
      */
     public function show($carnet): Response
     {
-        $paciente = Paciente::with(['contactos', 'carrera.facultad'])
+        $paciente = Paciente::with(['contactos', 'carrera.facultad', 'expedientes' => function ($q) {
+            $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class);
+        }])
             ->where('carnet', $carnet)
             ->firstOrFail();
 
@@ -151,9 +153,15 @@ class PacienteController extends Controller
 
         // Aplicamos la política IDOR
         $this->authorize('view', $paciente);
+        
+        $areasDisponibles = [];
+        if ($user->hasRole('psychosocial_referent')) {
+            $areasDisponibles = \App\Models\Area::select('id', 'nombre')->orderBy('nombre')->get();
+        }
 
         return Inertia::render('Pacientes/Show', [
-            'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve()
+            'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve(),
+            'areasDisponibles' => $areasDisponibles,
         ]);
     }
 }
