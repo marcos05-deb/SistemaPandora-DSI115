@@ -341,3 +341,14 @@
   - **Pruebas de Seguridad (AAA):** Se implementó `tests/Unit/Cryptography/AreaEncryptionTest.php` comprobando que (a) el cifrado es determinista por área, (b) dos especialistas de la misma área descifran con éxito, y (c) se lanza una excepción al intentar acceder con la clave de un área ajena.
 - **Cómo verificar:**
   - Ejecutar el comando `./vendor/bin/pest tests/Unit/Cryptography/AreaEncryptionTest.php` en la terminal. Los 4 tests del flujo criptográfico deben pasar exitosamente (`PASS`).
+
+### [2026-09-01] Implementación de US-07: Derivar un paciente a un área clínica
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se requiere permitir a los Referentes Psicosociales derivar pacientes registrados hacia distintas áreas clínicas del sistema, creando un nuevo `Expediente` con estado "abierto" de forma aislada y controlada.
+- **Cambios realizados:**
+  - **Base de Datos:** Se creó una migración para agregar las columnas `estado` (string), `derivado_por_profesional_id` (foreignUuid) y `fecha_derivacion` (timestampTz) a la tabla `expedientes`.
+  - **Modelos y Autorización:** Se actualizó `Expediente.php` con el trait `Auditable` para registrar logs de auditoría nativos. Se modificó `ExpedientePolicy.php` añadiendo el método `derivar()` que restringe esta acción de manera estricta al rol `psychosocial_referent`.
+  - **Controlador y Servicio:** Se crearon `DerivacionController.php` (para el flujo HTTP y autorización) y `DerivacionService.php` (para aislar la lógica de creación del expediente dentro de una transacción `DB::transaction`).
+  - **Validación Anti-duplicidad:** Se implementó el form request `DerivacionStoreRequest.php` que cuenta con una regla custom (`after`) para verificar y abortar la derivación si ya existe un expediente "abierto" para el mismo paciente en el área seleccionada, previniendo duplicados lógicos.
+  - **Frontend:** Se creó `resources/js/Pages/Expediente/Derivacion/Create.vue` usando Vue 3 Composition API y Tailwind CSS v4, integrando la paleta Nord y un diseño UX limpio y reactivo mediante `useForm`.
+  - **Pruebas:** Se desarrolló la suite Pest `tests/Feature/Expediente/DerivacionTest.php` utilizando estrictamente el patrón AAA y la sintaxis `expect()`, cubriendo casos de éxito, validación por duplicidad y rechazos de acceso (403 Forbidden).

@@ -95,6 +95,9 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
     Route::middleware('role:psychosocial_referent')->group(function () {
         Route::get('/pacientes/create', [\App\Http\Controllers\PacienteController::class, 'create'])->name('pacientes.create');
         Route::post('/pacientes', [\App\Http\Controllers\PacienteController::class, 'store'])->name('pacientes.store');
+        
+        Route::get('/pacientes/{paciente}/derivar', [\App\Http\Controllers\DerivacionController::class, 'create'])->name('pacientes.derivar.create');
+        Route::post('/pacientes/{paciente}/derivar', [\App\Http\Controllers\DerivacionController::class, 'store'])->name('pacientes.derivar.store');
     });
 
     Route::middleware('role:psychosocial_referent|specialist|area_coordinator')->group(function () {

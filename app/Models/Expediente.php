@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Scopes\AreaScope;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Expediente extends Model
+class Expediente extends Model implements Auditable
 {
-    use HasFactory, SoftDeletes, HasUuids;
+    use HasFactory, SoftDeletes, HasUuids, \OwenIt\Auditing\Auditable;
 
     protected $fillable = [
         'paciente_id',
@@ -20,12 +21,16 @@ class Expediente extends Model
         'motivo_consulta',
         'notas_clinicas',
         'diagnostico',
+        'estado',
+        'derivado_por_profesional_id',
+        'fecha_derivacion',
     ];
 
     protected $casts = [
         'motivo_consulta' => \App\Models\Casts\EncryptedFieldCast::class,
         'notas_clinicas'  => \App\Models\Casts\EncryptedFieldCast::class,
         'diagnostico'     => \App\Models\Casts\EncryptedFieldCast::class,
+        'fecha_derivacion'=> 'datetime',
     ];
 
     protected static function booted(): void
@@ -41,5 +46,10 @@ class Expediente extends Model
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
+    }
+
+    public function derivadoPor(): BelongsTo
+    {
+        return $this->belongsTo(Profesional::class, 'derivado_por_profesional_id');
     }
 }
