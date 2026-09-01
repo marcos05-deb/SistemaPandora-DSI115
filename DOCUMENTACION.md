@@ -331,3 +331,13 @@
   - **Cobertura Antifragilidad (OWASP ASVS v4):** 
     - **Mass Assignment:** Se creó `test_mass_assignment_es_ignorado` inyectando propiedades críticas falsas (`is_admin`) asegurando su filtrado de persistencia nativo por el modelo de Eloquent.
     - **Inyección SQL (SQLi):** Se construyó `test_inyeccion_sql_rechazada_por_form_request` disparando vectores de ataque al servidor. Se certificó que el protocolo `FormRequest` atrapa, bloquea (302) y rechaza el payload inyectado valiéndose de validaciones RegEx mucho antes de tocar la capa ORM.
+
+### [2026-09-01] Resolución de Deuda Arquitectónica C-09: Cifrado Multi-Especialista
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se resolvió la deuda técnica C-09 del Sistema Pandora transicionando de una clave individual por especialista a una **Clave Compartida por Área** para cifrar y descifrar los campos clínicos protegidos (PHI). Esto permite que distintos especialistas de una misma área puedan leer el expediente de un paciente, manteniendo el aislamiento estricto frente a otras áreas clínicas.
+- **Cambios realizados:**
+  - **Servicio Criptográfico:** Se creó `app/Services/AreaEncryptionService.php` utilizando `libsodium` nativo de PHP (`sodium_crypto_generichash` y `sodium_crypto_aead_xchacha20poly1305_ietf_*`) para derivar determinísticamente una clave simétrica combinando el secreto maestro de la aplicación y el UUID del Área.
+  - **Casteo de Eloquent:** Se implementó `app/Casts/EncryptedFieldCast.php`, que resuelve dinámicamente el `area_id` del modelo e interactúa con el servicio de encriptación de manera transparente para el ORM.
+  - **Pruebas de Seguridad (AAA):** Se implementó `tests/Unit/Cryptography/AreaEncryptionTest.php` comprobando que (a) el cifrado es determinista por área, (b) dos especialistas de la misma área descifran con éxito, y (c) se lanza una excepción al intentar acceder con la clave de un área ajena.
+- **Cómo verificar:**
+  - Ejecutar el comando `./vendor/bin/pest tests/Unit/Cryptography/AreaEncryptionTest.php` en la terminal. Los 4 tests del flujo criptográfico deben pasar exitosamente (`PASS`).
