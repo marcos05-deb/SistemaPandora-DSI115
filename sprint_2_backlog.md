@@ -47,10 +47,10 @@ Entonces los datos se descifran con la llave antigua y se recifran con la nueva 
 
 **Tareas Técnicas (Laravel):**
 
-- [ ] **Configuración:** Agregar variable de entorno `AREA_KEY_SECRET` y validación en el bootstrap.
-- [ ] **Casts (`EncryptedFieldCast`):** Refactorizar el cast para que dependa del ID del Área del contexto actual (o inyectar la clave correcta) en lugar del KDF del usuario.
+- [x] **Configuración:** Agregar variable de entorno `AREA_KEY_SECRET` y validación en el bootstrap.
+- [x] **Casts (`EncryptedFieldCast`):** Refactorizar el cast para que dependa del ID del Área del contexto actual (o inyectar la clave correcta) en lugar del KDF del usuario.
 - [ ] **Comando Artisan:** Crear un comando `crypto:migrate-area-keys` para migrar datos existentes (lectura con KDF antiguo, escritura con nueva llave de área).
-- [ ] **Tests:** Unit tests verificando que dos usuarios de la misma área puedan descifrar el mismo campo, y usuarios de áreas distintas fallen.
+- [x] **Tests:** Unit tests verificando que dos usuarios de la misma área puedan descifrar el mismo campo, y usuarios de áreas distintas fallen.
 
 
 ---
@@ -87,14 +87,14 @@ Entonces recibe HTTP 403 Forbidden
 
 **Tareas Técnicas (Laravel):**
 
-- [ ] **Migración:** Agregar columnas al esquema `expedientes`: `estado` (ENUM: `abierto`, `en_atencion`, `cerrado`), `derivado_por_profesional_id` (FK a `profesionales`), `fecha_derivacion` (TIMESTAMPTZ).
-- [ ] **Modelo `Expediente`:** Actualizar relaciones: `belongsTo Paciente`, `belongsTo Area`, `belongsTo Profesional` (derivante). Agregar mutador para campo `estado`.
-- [ ] **Controlador `DerivacionController`:** Método `store()` para crear expediente. Transacción DB para atomicidad. Registrar evento de auditoría usando el paquete `spatie/laravel-activitylog` (o el `AuditableController` base).
-- [ ] **Form Request `DerivacionStoreRequest`:** Validar: `paciente_id` existe, `area_id` existe, no duplicar expediente abierto en misma área.
-- [ ] **Policy `ExpedientePolicy`:** Método `derivar()`: solo rol `psychosocial_referent`.
-- [ ] **Rutas:** `POST /derivaciones` protegida con middleware `auth` + policy.
-- [ ] **Vista:** `Pages/Derivaciones/Create.vue` — formulario con selector de paciente y área destino, integrado a `ClinicalLayout`.
-- [ ] **Tests:** Feature test cubriendo: derivación exitosa, rechazo de duplicado, acceso no autorizado (403).
+- [x] **Migración:** Agregar columnas al esquema `expedientes`: `estado` (ENUM: `abierto`, `en_atencion`, `cerrado`), `derivado_por_profesional_id` (FK a `profesionales`), `fecha_derivacion` (TIMESTAMPTZ).
+- [x] **Modelo `Expediente`:** Actualizar relaciones: `belongsTo Paciente`, `belongsTo Area`, `belongsTo Profesional` (derivante). Agregar mutador para campo `estado`.
+- [x] **Controlador `DerivacionController`:** Método `store()` para crear expediente. Transacción DB para atomicidad. Registrar evento de auditoría usando el paquete `spatie/laravel-activitylog` (o el `AuditableController` base).
+- [x] **Form Request `DerivacionStoreRequest`:** Validar: `paciente_id` existe, `area_id` existe, no duplicar expediente abierto en misma área.
+- [x] **Policy `ExpedientePolicy`:** Método `derivar()`: solo rol `psychosocial_referent`.
+- [x] **Rutas:** `POST /derivaciones` protegida con middleware `auth` + policy.
+- [x] **Vista:** `Pages/Derivaciones/Create.vue` — formulario con selector de paciente y área destino, integrado a `ClinicalLayout`.
+- [x] **Tests:** Feature test cubriendo: derivación exitosa, rechazo de duplicado, acceso no autorizado (403).
 
 ---
 
