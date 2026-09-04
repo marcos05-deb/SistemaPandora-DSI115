@@ -11,9 +11,7 @@ use RuntimeException;
 
 final readonly class EncryptedFieldCast implements CastsAttributes
 {
-    public function __construct(
-        private AreaEncryptionService $encryptionService,
-    ) {}
+    public function __construct() {}
 
     /**
      * @param  array<string, mixed>  $attributes
@@ -25,8 +23,9 @@ final readonly class EncryptedFieldCast implements CastsAttributes
         }
 
         $areaId = $this->resolveAreaId($model);
+        $encryptionService = app(AreaEncryptionService::class);
 
-        return $this->encryptionService->decrypt((string) $value, $areaId);
+        return $encryptionService->decrypt((string) $value, $areaId);
     }
 
     /**
@@ -39,8 +38,9 @@ final readonly class EncryptedFieldCast implements CastsAttributes
         }
 
         $areaId = $this->resolveAreaId($model);
+        $encryptionService = app(AreaEncryptionService::class);
 
-        return $this->encryptionService->encrypt((string) $value, $areaId);
+        return $encryptionService->encrypt((string) $value, $areaId);
     }
 
     private function resolveAreaId(Model $model): string|int
@@ -51,6 +51,20 @@ final readonly class EncryptedFieldCast implements CastsAttributes
 
         if (method_exists($model, 'area') && $model->area !== null && isset($model->area->id)) {
             return $model->area->id;
+        }
+
+        if (method_exists($model, 'expediente')) {
+            if ($model->relationLoaded('expediente') && $model->expediente !== null && isset($model->expediente->area_id)) {
+                return $model->expediente->area_id;
+            }
+
+            // Lazy load the relationship if we have the foreign key
+            if (isset($model->expediente_id)) {
+                $model->load('expediente');
+                if ($model->expediente !== null && isset($model->expediente->area_id)) {
+                    return $model->expediente->area_id;
+                }
+            }
         }
 
         throw new RuntimeException(

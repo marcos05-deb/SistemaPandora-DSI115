@@ -52,4 +52,9 @@ class Expediente extends Model implements Auditable
     {
         return $this->belongsTo(Profesional::class, 'derivado_por_profesional_id');
     }
+
+    public function consultas(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Consulta::class);
+    }
 }

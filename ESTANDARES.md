@@ -50,6 +50,24 @@ El desarrollo del Sistema Pandora debe realizarse estrictamente sobre las siguie
     *   **Errores 422:** El manejo de errores de validación (HTTP 422) debe centralizarse en los formularios y presentarse bajo los inputs correspondientes de manera unificada usando `useForm` de Inertia.
     *   **Notificaciones:** Cualquier acción exitosa o crítica del sistema debe retroalimentarse al usuario a través de un manejo centralizado de notificaciones tipo *toast*.
 
+### 5.1 Patrones de UI Existentes (Auditoría)
+
+Tras una auditoría del código Vue, se establecen los siguientes patrones reales en uso dentro del repositorio:
+
+*   **Layouts (`resources/js/Layouts/`):** El sistema divide la interfaz principal en áreas mediante layouts dedicados (ej. `AdminLayout.vue` y `ClinicalLayout.vue`). Las páginas se envuelven utilizando `defineOptions({ layout: ClinicalLayout });` al inicio de `<script setup>` (ej. `Pacientes/Index.vue`).
+*   **Componentes Reutilizables (`resources/js/Components/UI/`):** Los elementos base residen en la carpeta `UI` (ej. `PrimaryButton.vue`, `StatusBadge.vue`, `Modal.vue`, `Breadcrumbs.vue`, `FieldTooltip.vue`). Su convención principal es el uso estricto de `defineProps` y estilos predefinidos (no utilitarios Tailwind arbitrarios).
+*   **Estructura de Páginas (`resources/js/Pages/`):** Se organizan en directorios por módulo (ej. `Pacientes/`). Mantienen una convención CRUD de archivos: `Index.vue` para búsqueda/listados, `Create.vue` para formularios completos multi-paso, y `Show.vue` para detalle de registros.
+*   **Formularios y Estados Asíncronos:**
+    *   **Uso de `useForm`:** Todos los formularios de Inertia se manejan con esta utilidad (ej. `const form = useForm({...})` en `Pacientes/Create.vue`).
+    *   **Errores 422:** Se muestran condicionalmente bajo cada input (ej. `v-if="form.errors.carnet"`) usando la clase `text-[var(--aurora-red)]` y un SVG de advertencia. El input modifica su borde a rojo simultáneamente.
+    *   **Loading:** Se usa la propiedad `form.processing` para inhabilitar botones (`:disabled="form.processing"`) e intercambiar el ícono del botón por un SVG giratorio (`animate-spin`).
+*   **Modales vs. Páginas Completas:** Formularios principales y flujos largos (ej. Registrar Paciente en `Create.vue`) se diseñan como **páginas completas** con navegación interna y `Breadcrumbs.vue`. Los componentes de tipo modal (`Modal.vue`) se reservan exclusivamente para la capa de presentación de información rápida o confirmaciones (evitando sobrecargar el DOM y facilitar navegación por URL).
+*   **Paleta Nord y Clases CSS:** En lugar de usar clases Tailwind puras (ej. `bg-blue-500`), el sistema inyecta y utiliza intensivamente variables CSS personalizadas del tema Nord. Ejemplos reales: `bg-[var(--surface)]`, `text-[var(--nord3)]`, `border-[var(--aurora-red)]`. Además, destaca el uso constante de gradientes personalizados para elementos prominentes (ej. `background: linear-gradient(135deg, var(--frost4) 0%, var(--nord9) 100%);` en botones primarios).
+*   **Iconografía:** No se emplea una librería externa tipográfica. Se utilizan cadenas crudas de íconos SVG inline en cada componente (similar a Heroicons integrados manualmente).
+
+#### 5.1.1 Inconsistencias Detectadas
+*   **Notificaciones Toast no abstraídas:** Aunque existe un componente `FlashBanner.vue` en `Components/UI/` para banners estáticos, la lógica asíncrona (barras de progreso y temporizadores) y el diseño visual de los "Toasts" flotantes de éxito/error están programados directamente dentro de la plantilla y lógica de `AdminLayout.vue` (líneas 85-117). Esto rompe el principio DRY, ya que debería ser un componente global independiente (ej. `ToastNotification.vue`).
+
 ## 6. Testing y Control de Calidad
 
 *   **Pruebas de Regresión:** Se establece como estándar obligatorio que ninguna funcionalidad llegue a producción sin pruebas automatizadas. La redacción de *Feature Tests* (bajo Pest) es un requisito estricto y bloqueante para todo endpoint nuevo.

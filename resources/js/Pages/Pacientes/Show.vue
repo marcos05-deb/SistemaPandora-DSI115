@@ -19,6 +19,11 @@ const canSeeFullUuid = computed(() => {
     return roles.includes('sysadmin') || roles.includes('area_coordinator');
 });
 
+const expedienteActivo = computed(() => {
+    if (!props.paciente.expedientes || !Array.isArray(props.paciente.expedientes)) return null;
+    return props.paciente.expedientes.find(e => e.estado !== 'cerrado');
+});
+
 const formatDate = (dateString) => {
     if (!dateString) return 'No registrada';
     return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -264,16 +269,31 @@ const isDerivacionModalOpen = ref(false);
                     </div>
                 </div>
 
-                <!-- Clinical Records (locked) -->
+                <!-- Clinical Records -->
                 <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
-                    <div class="relative px-6 py-8 text-center overflow-hidden">
+                    <div v-if="expedienteActivo" class="px-6 py-6 text-center">
+                        <div class="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[var(--frost4)]/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-[var(--frost4)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-[14px] font-semibold text-[var(--nord0)] mb-1">Módulo de Expedientes</h3>
+                        <p class="text-[12px] text-[var(--nord3)] mb-5 leading-relaxed">
+                            Expediente actual en estado <span class="font-bold">{{ expedienteActivo.estado.replace('_', ' ') }}</span>.
+                        </p>
+                        <Link :href="'/expedientes/' + expedienteActivo.id + '/consultas/create'" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--nord8)] hover:bg-[var(--nord9)] text-white transition-colors shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                            Registrar Consulta Clínica
+                        </Link>
+                    </div>
+                    <div v-else class="relative px-6 py-8 text-center overflow-hidden">
                         <!-- Fondo decorativo -->
                         <div class="absolute inset-0 opacity-[0.03]" style="background: repeating-linear-gradient(45deg, var(--nord0) 0, var(--nord0) 1px, transparent 0, transparent 50%); background-size: 12px 12px;"></div>
                         <div class="relative z-10">
                             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4"
                                 style="background: linear-gradient(135deg, var(--aurora-yellow)/15, var(--aurora-orange)/10); border: 1px solid var(--aurora-yellow)/30; color: var(--aurora-yellow);">
                                 <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
-                                Próximamente
+                                Sin Expediente
                             </div>
                             <div class="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center"
                                 style="background: linear-gradient(135deg, var(--nord4) 0%, var(--nord5) 100%);">
@@ -283,7 +303,7 @@ const isDerivacionModalOpen = ref(false);
                             </div>
                             <h3 class="text-[14px] font-semibold text-[var(--nord0)] mb-1">Módulo de Expedientes</h3>
                             <p class="text-[12px] text-[var(--nord3)] mb-5 leading-relaxed">
-                                El registro de sesiones y evoluciones clínicas<br>estará disponible en el siguiente sprint.
+                                El paciente no tiene un expediente<br>activo en su área clínica.
                             </p>
                             <button disabled class="w-full py-2 text-[12px] font-medium rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
                                 style="background: var(--surface-subtle); color: var(--nord4); border: 1px dashed var(--nord4);">

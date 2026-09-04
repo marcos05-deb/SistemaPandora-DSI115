@@ -129,14 +129,14 @@ Entonces el sistema rechaza la operación indicando que el expediente está cerr
 
 **Tareas Técnicas (Laravel):**
 
-- [ ] **Migración:** Crear tabla `consultas`: `id` (UUID), `expediente_id` (`foreignUuid`), `profesional_id` (`foreignUuid`), `motivo_consulta` (TEXT cifrado), `notas_clinicas` (TEXT cifrado), `diagnostico` (TEXT cifrado), `fecha_consulta` (TIMESTAMPTZ), timestamps, soft deletes.
-- [ ] **Modelo `Consulta`:** Relaciones `belongsTo Expediente`, `belongsTo Profesional`. Aplicar `EncryptedFieldCast` a campos clínicos. Aplicar `SoftDeletes`. Registrar en Log de Auditoría (ej. trait `LogsActivity` de Spatie).
-- [ ] **Controlador `ConsultaController`:** Métodos `create()` y `store()`. Transacción DB. Actualizar estado del expediente. Registrar evento de creación en auditoría.
-- [ ] **Form Request `ConsultaStoreRequest`:** Validar campos obligatorios, verificar que el expediente no esté cerrado.
-- [ ] **Policy `ConsultaPolicy`:** Solo especialistas del área del expediente. Verificar estado del expediente.
-- [ ] **Rutas:** `GET /expedientes/{expediente}/consultas/create`, `POST /expedientes/{expediente}/consultas`. Middleware `auth` + `enforce_area_scope` + policy.
-- [ ] **Vista:** `Pages/Consultas/Create.vue` — formulario con campos clínicos, integrado a `ClinicalLayout`.
-- [ ] **Tests:** Feature test cubriendo: registro exitoso con cifrado, rechazo cross-área, rechazo en expediente cerrado.
+- [x] **Migración:** Crear tabla `consultas`: `id` (UUID), `expediente_id` (`foreignUuid`), `profesional_id` (`foreignUuid`), `motivo_consulta` (TEXT cifrado), `notas_clinicas` (TEXT cifrado), `diagnostico` (TEXT cifrado), `fecha_consulta` (TIMESTAMPTZ), timestamps, soft deletes.
+- [x] **Modelo `Consulta`:** Relaciones `belongsTo Expediente`, `belongsTo Profesional`. Aplicar `EncryptedFieldCast` a campos clínicos. Aplicar `SoftDeletes`. Registrar en Log de Auditoría (ej. trait `LogsActivity` de Spatie).
+- [x] **Controlador `ConsultaController`:** Métodos `create()` y `store()`. Transacción DB. Actualizar estado del expediente. Registrar evento de creación en auditoría.
+- [x] **Form Request `ConsultaStoreRequest`:** Validar campos obligatorios, verificar que el expediente no esté cerrado.
+- [x] **Policy `ConsultaPolicy`:** Solo especialistas del área del expediente. Verificar estado del expediente.
+- [x] **Rutas:** `GET /expedientes/{expediente}/consultas/create`, `POST /expedientes/{expediente}/consultas`. Middleware `auth` + `enforce_area_scope` + policy.
+- [x] **Vista:** `Pages/Consultas/Create.vue` — formulario con campos clínicos, integrado a `ClinicalLayout`.
+- [x] **Tests:** Feature test cubriendo: registro exitoso con cifrado, rechazo cross-área, rechazo en expediente cerrado.
 
 ---
 
