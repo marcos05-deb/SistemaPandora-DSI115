@@ -8,6 +8,7 @@ use App\Models\ContactoPaciente;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Profesional;
+use App\Models\Consulta;
 use Illuminate\Database\Seeder;
 
 class ExpedienteSeeder extends Seeder
@@ -327,10 +328,20 @@ class ExpedienteSeeder extends Seeder
             $area = $areas[$expData['area_key']];
 
             if ($area) {
-                Expediente::create([
+                $expediente = Expediente::create([
                     'paciente_id' => $paciente->codigo,
                     'area_id' => $area->id,
                     'motivo_consulta' => $expData['motivo_consulta'],
+                    'notas_clinicas' => $expData['notas_clinicas'],
+                    'diagnostico' => $expData['diagnostico'],
+                ]);
+
+                // Generar consulta asociada para que US-09 tenga datos visuales en la línea de tiempo
+                Consulta::create([
+                    'expediente_id' => $expediente->id,
+                    'profesional_id' => $profesional->id,
+                    'fecha_consulta' => $paciente->fecha_primera_consulta,
+                    'motivo_consulta' => 'Evaluación inicial: ' . $expData['motivo_consulta'],
                     'notas_clinicas' => $expData['notas_clinicas'],
                     'diagnostico' => $expData['diagnostico'],
                 ]);

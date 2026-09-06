@@ -111,6 +111,8 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         Route::get('/pacientes/{carnet}', [\App\Http\Controllers\PacienteController::class, 'show'])->name('pacientes.show')->middleware('throttle:30,1');
         
         Route::middleware('enforce_area_scope')->group(function () {
+            Route::get('/pacientes/{paciente}/historial', [\App\Http\Controllers\HistorialController::class, 'show'])->name('pacientes.historial');
+            
             Route::get('/expedientes/{expediente}/consultas/create', [\App\Http\Controllers\ConsultaController::class, 'create'])->name('consultas.create');
             Route::post('/expedientes/{expediente}/consultas', [\App\Http\Controllers\ConsultaController::class, 'store'])->name('consultas.store');
         });

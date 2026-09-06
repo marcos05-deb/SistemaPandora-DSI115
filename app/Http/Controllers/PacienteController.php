@@ -166,8 +166,13 @@ class PacienteController extends Controller
             $areasDisponibles = \App\Models\Area::select('id', 'nombre')->orderBy('nombre')->get();
         }
 
+        $hasAnyExpediente = \App\Models\Expediente::withoutGlobalScopes()
+            ->where('paciente_id', $paciente->codigo)
+            ->exists();
+
         return Inertia::render('Pacientes/Show', [
             'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve(),
+            'hasAnyExpediente' => $hasAnyExpediente,
             'areasDisponibles' => $areasDisponibles,
         ]);
     }
