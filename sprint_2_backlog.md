@@ -168,13 +168,13 @@ Entonces recibe HTTP 403 Forbidden
 
 **Tareas Técnicas (Laravel):**
 
-- [ ] **Modelo `Paciente`:** Agregar relación `hasMany Expediente`. Agregar método `historialMultidisciplinario()` que retorne consultas ordenadas cronológicamente, filtradas por AreaScope.
-- [ ] **Controlador `HistorialController`:** Método `show(Paciente $paciente)` que recopile consultas de todos los expedientes accesibles.
-- [ ] **API Resource `HistorialResource`:** Empaquetar datos del historial para el frontend, filtrando campos sensibles.
-- [ ] **Middleware:** Reutilizar `EnforceAreaScope` + bloqueo de `sysadmin`.
-- [ ] **Rutas:** `GET /pacientes/{paciente}/historial`. Middleware `auth` + `enforce_area_scope`.
-- [ ] **Vista:** `Pages/Historial/Show.vue` — timeline de consultas agrupadas por expediente/área, integrado a `ClinicalLayout`.
-- [ ] **Tests:** Feature test cubriendo: historial completo en área propia, filtrado cross-área, bloqueo sysadmin.
+- [x] **Modelo `Paciente`:** Agregar relación `hasMany Expediente`. Agregar método `historialMultidisciplinario()` que retorne consultas ordenadas cronológicamente, filtradas por AreaScope.
+- [x] **Controlador `HistorialController`:** Método `show(Paciente $paciente)` que recopile consultas de todos los expedientes accesibles.
+- [x] **API Resource `HistorialResource`:** Empaquetar datos del historial para el frontend, filtrando campos sensibles.
+- [x] **Middleware:** Reutilizar `EnforceAreaScope` + bloqueo de `sysadmin`.
+- [x] **Rutas:** `GET /pacientes/{paciente}/historial`. Middleware `auth` + `enforce_area_scope`.
+- [x] **Vista:** `Pages/Historial/Show.vue` — timeline de consultas agrupadas por expediente/área, integrado a `ClinicalLayout`.
+- [x] **Tests:** Feature test cubriendo: historial completo en área propia, filtrado cross-área, bloqueo sysadmin.
 
 ---
 

@@ -64,6 +64,7 @@ it('can derivar a patient to an area', function () {
 
     // Act
     $response = $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->from(route('pacientes.index'))
         ->post(route('pacientes.derivar.store', $this->paciente->codigo), [
         'area_id' => $this->area->id,
     ]);
@@ -72,9 +73,9 @@ it('can derivar a patient to an area', function () {
     $response->assertRedirect(route('pacientes.index'));
     $response->assertSessionHas('success', 'Paciente derivado exitosamente.');
     
-    expect(Expediente::count())->toBe(1);
+    expect(Expediente::withoutGlobalScopes()->count())->toBe(1);
     
-    $expediente = Expediente::first();
+    $expediente = Expediente::withoutGlobalScopes()->first();
     expect($expediente->paciente_id)->toBe($this->paciente->codigo)
         ->and($expediente->area_id)->toBe($this->area->id)
         ->and($expediente->estado)->toBe('abierto')
@@ -96,6 +97,7 @@ it('cannot derivar if already open in the same area', function () {
 
     // Act
     $response = $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->from(route('pacientes.index'))
         ->post(route('pacientes.derivar.store', $this->paciente->codigo), [
         'area_id' => $this->area->id,
     ]);
@@ -103,7 +105,7 @@ it('cannot derivar if already open in the same area', function () {
     // Assert
     $response->assertSessionHasErrors(['area_id' => 'El paciente ya tiene un expediente abierto en esta área.']);
     
-    expect(Expediente::count())->toBe(1); // No new one created
+    expect(Expediente::withoutGlobalScopes()->count())->toBe(1); // No new one created
 });
 
 it('forbids non psychosocial_referent to derivar', function () {

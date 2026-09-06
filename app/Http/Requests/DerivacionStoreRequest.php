@@ -38,7 +38,10 @@ class DerivacionStoreRequest extends FormRequest
                     $paciente = $this->route('paciente');
                     $pacienteId = $paciente instanceof Paciente ? $paciente->codigo : $paciente;
 
-                    $exists = Expediente::where('paciente_id', $pacienteId)
+                    // Bypass seguro (ESTANDARES.md Sec 4): Limitado a un booleano (exists) para prevenir
+                    // duplicidad en la creación, sin extraer datos sensibles. El usuario que lo lanza
+                    // ya especificó intencionalmente el $this->area_id como destino.
+                    $exists = Expediente::withoutGlobalScopes()->where('paciente_id', $pacienteId)
                         ->where('area_id', $this->area_id)
                         ->where('estado', 'abierto')
                         ->exists();

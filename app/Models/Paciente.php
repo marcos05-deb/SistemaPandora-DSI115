@@ -51,6 +51,18 @@ class Paciente extends Model
         return $this->hasMany(Expediente::class, 'paciente_id', 'codigo');
     }
 
+    public function historialMultidisciplinario(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Consulta::class,
+            Expediente::class,
+            'paciente_id',
+            'expediente_id',
+            'codigo',
+            'id'
+        )->whereHas('expediente')->orderBy('fecha_consulta', 'desc');
+    }
+
     public function contactos(): HasMany
     {
         return $this->hasMany(ContactoPaciente::class, 'paciente_id', 'codigo');

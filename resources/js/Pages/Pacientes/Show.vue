@@ -9,6 +9,7 @@ defineOptions({ layout: ClinicalLayout });
 
 const props = defineProps({
     paciente: { type: Object, required: true },
+    hasAnyExpediente: { type: Boolean, default: false },
     areasDisponibles: { type: Array, default: () => [] }
 });
 
@@ -281,10 +282,16 @@ const isDerivacionModalOpen = ref(false);
                         <p class="text-[12px] text-[var(--nord3)] mb-5 leading-relaxed">
                             Expediente actual en estado <span class="font-bold">{{ expedienteActivo.estado.replace('_', ' ') }}</span>.
                         </p>
-                        <Link :href="'/expedientes/' + expedienteActivo.id + '/consultas/create'" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--nord8)] hover:bg-[var(--nord9)] text-white transition-colors shadow-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                            Registrar Consulta Clínica
-                        </Link>
+                        <div class="space-y-3">
+                            <Link :href="'/expedientes/' + expedienteActivo.id + '/consultas/create'" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--nord8)] hover:bg-[var(--nord9)] text-white transition-colors shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                Registrar Consulta Clínica
+                            </Link>
+                            <Link v-if="hasAnyExpediente" :href="'/pacientes/' + paciente.codigo + '/historial'" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--surface-subtle)] text-[var(--nord3)] hover:text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                                Ver Historial Multidisciplinario
+                            </Link>
+                        </div>
                     </div>
                     <div v-else class="relative px-6 py-8 text-center overflow-hidden">
                         <!-- Fondo decorativo -->
@@ -305,11 +312,17 @@ const isDerivacionModalOpen = ref(false);
                             <p class="text-[12px] text-[var(--nord3)] mb-5 leading-relaxed">
                                 El paciente no tiene un expediente<br>activo en su área clínica.
                             </p>
-                            <button disabled class="w-full py-2 text-[12px] font-medium rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
-                                style="background: var(--surface-subtle); color: var(--nord4); border: 1px dashed var(--nord4);">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                Crear Nueva Sesión
-                            </button>
+                            <div class="space-y-3">
+                                <button disabled class="w-full py-2 text-[12px] font-medium rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
+                                    style="background: var(--surface-subtle); color: var(--nord4); border: 1px dashed var(--nord4);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                    Crear Nueva Sesión
+                                </button>
+                                <Link v-if="hasAnyExpediente" :href="'/pacientes/' + paciente.codigo + '/historial'" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--surface-subtle)] text-[var(--nord3)] hover:text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                                    Ver Historial Multidisciplinario
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </div>
