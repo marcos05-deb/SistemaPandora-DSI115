@@ -42,6 +42,8 @@ class ConsultaController extends Controller
             $profesionalId
         );
 
+        $expediente->paciente->update(['ultima_accion' => 'Registro de consulta clínica']);
+
         return redirect()->route('pacientes.show', $expediente->paciente->carnet)
             ->with('message', 'Consulta registrada exitosamente.')
             ->with('variant', 'success');

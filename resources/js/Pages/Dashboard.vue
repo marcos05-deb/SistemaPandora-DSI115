@@ -49,6 +49,11 @@ function formatDate(dateStr) {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
 }
+
+const isExpedienteClosed = (paciente) => {
+    if (!paciente.expedientes || paciente.expedientes.length === 0) return false;
+    return paciente.expedientes.every(exp => exp.estado === 'cerrado');
+};
 </script>
 
 <template>
@@ -170,14 +175,26 @@ function formatDate(dateStr) {
                     </thead>
                     <tbody class="divide-y divide-[var(--nord5)]">
                         <tr v-for="(paciente, idx) in pacientes" :key="paciente.carnet"
-                            class="group hover:bg-[var(--nord6)] transition-colors duration-150 text-sm">
+                            class="group transition-colors duration-150 text-sm"
+                            :class="[isExpedienteClosed(paciente) ? 'hover:bg-[var(--nord6)] opacity-75' : 'hover:bg-[var(--nord6)]']">
                             <td class="px-6 py-3.5">
                                 <div class="flex items-center gap-3">
                                     <div class="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold text-white shrink-0 shadow-sm"
+                                        :class="isExpedienteClosed(paciente) ? 'grayscale opacity-70' : ''"
                                         :style="`background: linear-gradient(135deg, hsl(${(idx * 47 + 200) % 360}, 55%, 55%), hsl(${(idx * 47 + 230) % 360}, 50%, 45%));`">
                                         {{ (paciente.nombre_completo || '?').charAt(0).toUpperCase() }}
                                     </div>
-                                    <span class="font-medium text-[var(--nord0)] truncate max-w-[200px]">{{ paciente.nombre_completo }}</span>
+                                    <div class="flex flex-col">
+                                        <span class="font-medium text-[var(--nord0)] truncate max-w-[200px]" :class="{ 'text-[var(--nord3)] line-through decoration-[var(--nord4)]': isExpedienteClosed(paciente) }">
+                                            {{ paciente.nombre_completo }}
+                                        </span>
+                                        <span v-if="isExpedienteClosed(paciente)" class="text-[9px] font-bold text-[var(--aurora-red)] bg-[var(--aurora-red)]/10 px-1.5 py-0.5 rounded w-max mt-0.5 border border-[var(--aurora-red)]/20 uppercase tracking-widest">
+                                            Cerrado
+                                        </span>
+                                        <span v-else class="text-[9px] font-bold text-[var(--aurora-green)] bg-[var(--aurora-green)]/10 px-1.5 py-0.5 rounded w-max mt-0.5 border border-[var(--aurora-green)]/20 uppercase tracking-widest">
+                                            Activo
+                                        </span>
+                                    </div>
                                 </div>
                             </td>
                             <td class="px-6 py-3.5 font-mono text-[var(--nord3)] text-[12px] font-medium">{{ paciente.carnet }}</td>
@@ -185,7 +202,13 @@ function formatDate(dateStr) {
                             <td class="px-6 py-3.5 text-right flex justify-end gap-2 items-center">
                                 <template v-if="canCreatePatient">
                                     <template v-if="paciente.expedientes && paciente.expedientes.length > 0">
-                                        <span class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--nord3)] bg-[var(--surface-subtle)] px-3 py-1.5 rounded-lg border border-[var(--nord4)]">
+                                        <span v-if="isExpedienteClosed(paciente)" class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--nord3)] bg-[var(--surface-subtle)] px-3 py-1.5 rounded-lg border border-[var(--nord4)]">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[var(--aurora-red)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                            </svg>
+                                            Finalizado
+                                        </span>
+                                        <span v-else class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--nord3)] bg-[var(--surface-subtle)] px-3 py-1.5 rounded-lg border border-[var(--nord4)]">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[var(--aurora-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                                             </svg>

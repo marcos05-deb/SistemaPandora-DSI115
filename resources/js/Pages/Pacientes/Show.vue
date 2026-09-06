@@ -3,6 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 import DerivacionModal from '@/Components/Expediente/DerivacionModal.vue';
+import CierreExpedienteModal from '@/Components/Expediente/CierreExpedienteModal.vue';
 import { computed, ref } from 'vue';
 
 defineOptions({ layout: ClinicalLayout });
@@ -10,7 +11,8 @@ defineOptions({ layout: ClinicalLayout });
 const props = defineProps({
     paciente: { type: Object, required: true },
     hasAnyExpediente: { type: Boolean, default: false },
-    areasDisponibles: { type: Array, default: () => [] }
+    areasDisponibles: { type: Array, default: () => [] },
+    can: { type: Object, default: () => ({}) }
 });
 
 const page = usePage();
@@ -36,6 +38,7 @@ const getAreaName = (areaId) => {
 };
 
 const isDerivacionModalOpen = ref(false);
+const isCierreModalOpen = ref(false);
 </script>
 
 <template>
@@ -287,6 +290,10 @@ const isDerivacionModalOpen = ref(false);
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                                 Registrar Consulta Clínica
                             </Link>
+                            <button v-if="can?.closeExpediente" @click="isCierreModalOpen = true" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--aurora-red)] text-[var(--aurora-red)] hover:text-white border border-[var(--aurora-red)] hover:border-transparent transition-colors shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                Cerrar Expediente
+                            </button>
                             <Link v-if="hasAnyExpediente" :href="'/pacientes/' + paciente.codigo + '/historial'" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--surface-subtle)] text-[var(--nord3)] hover:text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                                 Ver Historial Multidisciplinario
@@ -334,6 +341,12 @@ const isDerivacionModalOpen = ref(false);
             :paciente="paciente"
             :areas="areasDisponibles"
             @close="isDerivacionModalOpen = false"
+        />
+
+        <CierreExpedienteModal
+            :show="isCierreModalOpen"
+            :expediente="expedienteActivo"
+            @close="isCierreModalOpen = false"
         />
     </div>
 </template>

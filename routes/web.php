@@ -65,7 +65,7 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
                 'total' => \App\Models\Paciente::where('creado_por_profesional_id', $profesionalId)->count(),
                 'activos' => \App\Models\Expediente::whereHas('paciente', function ($q) use ($profesionalId) {
                     $q->where('creado_por_profesional_id', $profesionalId);
-                })->count(),
+                })->where('estado', '!=', 'cerrado')->count(),
             ];
             
             $areasDisponibles = \App\Models\Area::select('id', 'nombre')->orderBy('nombre')->get();
@@ -87,7 +87,7 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
                 'total' => \App\Models\Paciente::whereHas('expedientes', function ($q) use ($areaIds) {
                     $q->whereIn('area_id', $areaIds);
                 })->count(),
-                'activos' => \App\Models\Expediente::whereIn('area_id', $areaIds)->count(),
+                'activos' => \App\Models\Expediente::whereIn('area_id', $areaIds)->where('estado', '!=', 'cerrado')->count(),
             ];
         }
 
@@ -115,6 +115,7 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
             
             Route::get('/expedientes/{expediente}/consultas/create', [\App\Http\Controllers\ConsultaController::class, 'create'])->name('consultas.create');
             Route::post('/expedientes/{expediente}/consultas', [\App\Http\Controllers\ConsultaController::class, 'store'])->name('consultas.store');
+            Route::post('/expedientes/{expediente}/cerrar', [\App\Http\Controllers\ExpedienteController::class, 'close'])->name('expedientes.cerrar');
         });
     });
 

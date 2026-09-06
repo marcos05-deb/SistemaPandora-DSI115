@@ -92,6 +92,7 @@ class PacienteController extends Controller
                 'referido_por' => $validated['referido_por'],
                 'llevado_por' => $validated['llevado_por'],
                 'motivo_consulta' => $validated['motivo_consulta'],
+                'ultima_accion' => 'Registro de paciente',
             ]);
 
             // Crear Padre
@@ -170,10 +171,16 @@ class PacienteController extends Controller
             ->where('paciente_id', $paciente->codigo)
             ->exists();
 
+        $expedienteActivo = $paciente->expedientes->where('estado', '!=', 'cerrado')->first();
+        $canCloseExpediente = $expedienteActivo ? $user->can('close', $expedienteActivo) : false;
+
         return Inertia::render('Pacientes/Show', [
             'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve(),
             'hasAnyExpediente' => $hasAnyExpediente,
             'areasDisponibles' => $areasDisponibles,
+            'can' => [
+                'closeExpediente' => $canCloseExpediente,
+            ],
         ]);
     }
 }

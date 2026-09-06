@@ -33,7 +33,8 @@ class Paciente extends Model
         'fecha_primera_consulta',
         'referido_por',
         'llevado_por',
-        'motivo_consulta'
+        'motivo_consulta',
+        'ultima_accion'
     ];
 
     protected $casts = [

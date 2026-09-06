@@ -24,6 +24,9 @@ class Expediente extends Model implements Auditable
         'estado',
         'derivado_por_profesional_id',
         'fecha_derivacion',
+        'motivo_cierre',
+        'fecha_cierre',
+        'cerrado_por_profesional_id',
     ];
 
     protected $casts = [
@@ -31,6 +34,8 @@ class Expediente extends Model implements Auditable
         'notas_clinicas'  => \App\Models\Casts\EncryptedFieldCast::class,
         'diagnostico'     => \App\Models\Casts\EncryptedFieldCast::class,
         'fecha_derivacion'=> 'datetime',
+        'motivo_cierre'   => \App\Models\Casts\EncryptedFieldCast::class,
+        'fecha_cierre'    => 'datetime',
     ];
 
     protected static function booted(): void
@@ -56,5 +61,10 @@ class Expediente extends Model implements Auditable
     public function consultas(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Consulta::class);
+    }
+
+    public function cerradoPor(): BelongsTo
+    {
+        return $this->belongsTo(Profesional::class, 'cerrado_por_profesional_id');
     }
 }
