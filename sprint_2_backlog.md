@@ -209,14 +209,14 @@ Entonces el sistema rechaza la operación
 
 **Tareas Técnicas (Laravel):**
 
-- [ ] **Migración:** Agregar a `expedientes`: `motivo_cierre` (TEXT cifrado), `fecha_cierre` (TIMESTAMPTZ), `cerrado_por_profesional_id` (FK).
-- [ ] **Modelo `Expediente`:** Aplicar `EncryptedFieldCast` a `motivo_cierre`. Agregar relación `belongsTo Profesional` (cierre).
-- [ ] **Controlador `ExpedienteController`:** Método `update()` para cambio de estado. Validar transiciones de estado válidas. Registrar evento en log de auditoría (ej. `spatie/laravel-activitylog`).
-- [ ] **Form Request `ExpedienteUpdateRequest`:** Validar estado destino, motivo de cierre obligatorio al cerrar.
-- [ ] **Policy `ExpedientePolicy`:** Método `cerrar()`: solo rol `area_coordinator` del área correspondiente.
-- [ ] **Rutas:** `PUT /expedientes/{expediente}`. Middleware `auth` + `enforce_area_scope` + policy.
-- [ ] **Vista:** `Pages/Expedientes/Edit.vue` — formulario de actualización/cierre con campo de motivo.
-- [ ] **Tests:** Feature test cubriendo: cierre exitoso, rechazo por rol, rechazo de doble cierre.
+- [x] **Migración:** Agregar a `expedientes`: `motivo_cierre` (TEXT cifrado), `fecha_cierre` (TIMESTAMPTZ), `cerrado_por_profesional_id` (FK).
+- [x] **Modelo `Expediente`:** Aplicar `EncryptedFieldCast` a `motivo_cierre`. Agregar relación `belongsTo Profesional` (cierre).
+- [x] **Controlador `ExpedienteController`:** Método `update()` para cambio de estado. Validar transiciones de estado válidas. Registrar evento en log de auditoría (ej. `spatie/laravel-activitylog`).
+- [x] **Form Request `ExpedienteUpdateRequest`:** Validar estado destino, motivo de cierre obligatorio al cerrar.
+- [x] **Policy `ExpedientePolicy`:** Método `cerrar()`: solo rol `area_coordinator` del área correspondiente.
+- [x] **Rutas:** `PUT /expedientes/{expediente}`. Middleware `auth` + `enforce_area_scope` + policy.
+- [x] **Vista:** `Pages/Expedientes/Edit.vue` — formulario de actualización/cierre con campo de motivo.
+- [x] **Tests:** Feature test cubriendo: cierre exitoso, rechazo por rol, rechazo de doble cierre.
 
 ---
 

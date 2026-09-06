@@ -367,6 +367,16 @@
 ### [2026-09-06] Resolución de Vulnerabilidad AreaScope e Implementación de US-09: Historial Multidisciplinario
 - **Agente:** Antigravity (IA)
 - **Contexto:** Antes de proceder con la US-09, se corrigió una vulnerabilidad crítica donde el uso de `withoutGlobalScopes()` en `PacienteController@show` exponía expedientes cruzados al frontend sin filtrado por área. Tras resolver esto, se completó la US-09 para que los especialistas y coordinadores puedan revisar el historial completo de atenciones del paciente estrictamente limitado a sus áreas autorizadas.
+
+### [2026-09-06] Implementación de US-10: Cierre de Expediente Clínico y Mejoras Visuales en el Dashboard
+- **Contexto:** Se desarrolló la historia de usuario US-10 para permitir que el Coordinador de Área cierre formalmente un expediente. 
+- **Desarrollo:** 
+  - Se agregó migración para los campos de cierre (`motivo_cierre`, `fecha_cierre`, `cerrado_por_profesional_id`).
+  - Se configuró la `ExpedientePolicy` asegurando que solo el rol `area_coordinator` del área correcta pueda cerrar expedientes, y esto se comunicó reactivamente al frontend (Inertia Props).
+  - Se añadió la columna `ultima_accion` en la tabla de pacientes para un seguimiento de auditoría eficiente (mostrada en la vista de Sysadmin).
+  - Se corrigió el cálculo de expedientes "activos" en el Dashboard, excluyendo los cerrados.
+  - Se incluyeron diferenciadores visuales elegantes (Nord Theme) en el Dashboard (opacity, escala de grises, badges "Cerrado" / "Activo", nombre tachado) para pacientes con expediente finalizado.
+  - Las pruebas de integración en `CerrarExpedienteTest` aseguran que todos los casos de autorización y estado funcionan a la perfección.
 - **Cambios realizados:**
   - **Hardening de Seguridad (Pre-requisito):** 
     - Se creó la rama efímera `fix/area-scope-leak-pacientes-show` y se corrigió el leak en `PacienteController@show` removiendo `withoutGlobalScope(AreaScope::class)` y delegando el filtrado orgánico al frontend (mediante una propiedad segura `hasAnyExpediente`).
