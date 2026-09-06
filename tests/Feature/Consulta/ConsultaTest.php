@@ -8,7 +8,7 @@ use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Profesional;
 use App\Models\Role;
-use App\Models\User;
+use App\Models\Especialista;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -16,21 +16,22 @@ use Illuminate\Support\Str;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    session(['_sym_key' => str_repeat('a', 32)]);
     $this->area = Area::factory()->create();
     $this->otraArea = Area::factory()->create();
     
     // Create roles
     $this->roleSpecialist = Role::create([
-        'name' => 'Specialist',
+        'nombre' => 'Specialist',
         'slug' => 'specialist',
         'description' => 'Especialista',
         'is_active' => true,
     ]);
 
     // Create user specialist in area
-    $this->userSpecialist = User::factory()->create([
+    $this->userSpecialist = Especialista::factory()->create([
         'password' => Hash::make('password'),
-        'must_change_password' => false,
+        'is_active' => true,
     ]);
     $this->userSpecialist->roles()->attach($this->roleSpecialist->id);
     
@@ -41,9 +42,9 @@ beforeEach(function () {
     ]);
     
     // Create another specialist in another area
-    $this->otraAreaSpecialist = User::factory()->create([
+    $this->otraAreaSpecialist = Especialista::factory()->create([
         'password' => Hash::make('password'),
-        'must_change_password' => false,
+        'is_active' => true,
     ]);
     $this->otraAreaSpecialist->roles()->attach($this->roleSpecialist->id);
     
@@ -75,7 +76,8 @@ it('can registrar una consulta exitosamente y cifrar datos', function () {
     ];
 
     // Act
-    $response = $this->post(route('consultas.store', $this->expediente->id), $payload);
+    $response = $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('consultas.store', $this->expediente->id), $payload);
 
     // Assert
     $response->assertRedirect(route('pacientes.show', $this->paciente->codigo));
@@ -111,7 +113,8 @@ it('rejects cross-area consultation registration', function () {
     ];
 
     // Act
-    $response = $this->post(route('consultas.store', $this->expediente->id), $payload);
+    $response = $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('consultas.store', $this->expediente->id), $payload);
 
     // Assert
     $response->assertForbidden();
@@ -130,7 +133,8 @@ it('rejects registering consultation if expediente is closed', function () {
     ];
 
     // Act
-    $response = $this->post(route('consultas.store', $this->expediente->id), $payload);
+    $response = $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('consultas.store', $this->expediente->id), $payload);
 
     // Assert
     $response->assertForbidden();
