@@ -143,13 +143,20 @@ class PacienteController extends Controller
      */
     public function show($carnet): Response
     {
-        $paciente = Paciente::with(['contactos', 'carrera.facultad', 'expedientes' => function ($q) {
-            $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class);
-        }])
-            ->where('carnet', $carnet)
-            ->firstOrFail();
-
         $user = auth()->user();
+
+        $pacienteQuery = Paciente::with(['contactos', 'carrera.facultad']);
+
+        if ($user->hasRole('psychosocial_referent')) {
+            $pacienteQuery->with(['expedientes' => function ($q) {
+                $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class)
+                  ->select('id', 'paciente_id', 'area_id', 'estado', 'created_at', 'updated_at');
+            }]);
+        } else {
+            $pacienteQuery->with('expedientes');
+        }
+
+        $paciente = $pacienteQuery->where('carnet', $carnet)->firstOrFail();
 
         // Aplicamos la política IDOR
         $this->authorize('view', $paciente);

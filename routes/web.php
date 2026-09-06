@@ -51,7 +51,8 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
             $profesionalId = $user->profesional->id;
 
             $pacientesQuery = \App\Models\Paciente::with(['expedientes' => function ($q) {
-                $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class);
+                $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class)
+                  ->select('id', 'paciente_id', 'area_id', 'estado', 'created_at', 'updated_at');
             }])
                 ->where('creado_por_profesional_id', $profesionalId)
                 ->orderBy('created_at', 'desc')
