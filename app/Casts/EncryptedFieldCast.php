@@ -1,74 +1,51 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Casts;
 
-use App\Services\AreaEncryptionService;
+use App\Exceptions\DecryptionException;
+use App\Services\Crypto\EncryptionContextService;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
-use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
 
-final readonly class EncryptedFieldCast implements CastsAttributes
+class EncryptedFieldCast implements CastsAttributes
 {
-    public function __construct() {}
-
-    /**
-     * @param  array<string, mixed>  $attributes
-     */
-    public function get(Model $model, string $key, mixed $value, array $attributes): mixed
+    public function get($model, string $key, $value, $attributes): ?string
     {
-        if ($value === null) {
+        if (is_null($value)) {
             return null;
         }
-
-        $areaId = $this->resolveAreaId($model);
-        $encryptionService = app(AreaEncryptionService::class);
-
-        return $encryptionService->decrypt((string) $value, $areaId);
+        $encKey = app(EncryptionContextService::class)->getKey();
+        return $this->decryptField($value, $encKey);
     }
 
-    /**
-     * @param  array<string, mixed>  $attributes
-     */
-    public function set(Model $model, string $key, mixed $value, array $attributes): mixed
+    public function set($model, string $key, $value, $attributes): ?string
     {
-        if ($value === null) {
+        if (is_null($value)) {
             return null;
         }
-
-        $areaId = $this->resolveAreaId($model);
-        $encryptionService = app(AreaEncryptionService::class);
-
-        return $encryptionService->encrypt((string) $value, $areaId);
+        $encKey = app(EncryptionContextService::class)->getKey();
+        return $this->encryptField($value, $encKey);
     }
 
-    private function resolveAreaId(Model $model): string|int
+    private function encryptField(string $plaintext, string $encKey): string
     {
-        if (isset($model->area_id)) {
-            return $model->area_id;
+        $nonce      = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+        $ciphertext = sodium_crypto_secretbox($plaintext, $nonce, $encKey);
+        return base64_encode($nonce . $ciphertext);
+    }
+
+    private function decryptField(string $encoded, string $encKey): string
+    {
+        $decoded = base64_decode($encoded, strict: true);
+        if ($decoded === false) {
+            throw new DecryptionException("El valor cifrado del campo está malformado (base64 inválido).");
         }
-
-        if (method_exists($model, 'area') && $model->area !== null && isset($model->area->id)) {
-            return $model->area->id;
+        $nonce      = substr($decoded, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+        $ciphertext = substr($decoded, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+        
+        $plaintext  = sodium_crypto_secretbox_open($ciphertext, $nonce, $encKey);
+        if ($plaintext === false) {
+            throw new DecryptionException("No se pudo descifrar el campo. Posible corrupción o clave incorrecta.");
         }
-
-        if (method_exists($model, 'expediente')) {
-            if ($model->relationLoaded('expediente') && $model->expediente !== null && isset($model->expediente->area_id)) {
-                return $model->expediente->area_id;
-            }
-
-            // Lazy load the relationship if we have the foreign key
-            if (isset($model->expediente_id)) {
-                $model->load('expediente');
-                if ($model->expediente !== null && isset($model->expediente->area_id)) {
-                    return $model->expediente->area_id;
-                }
-            }
-        }
-
-        throw new RuntimeException(
-            sprintf('No se pudo resolver el area_id para el cifrado en el modelo %s.', $model::class)
-        );
+        return $plaintext;
     }
 }

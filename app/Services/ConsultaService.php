@@ -22,6 +22,10 @@ class ConsultaService
                 'motivo_consulta' => $data['motivo_consulta'],
                 'notas_clinicas'  => $data['notas_clinicas'],
                 'diagnostico'     => $data['diagnostico'],
+                'tecnica_utilizada' => $data['tecnica_utilizada'],
+                'antecedentes_problema' => $data['antecedentes_problema'] ?? null,
+                'etiquetas_motivo' => $data['etiquetas_motivo'] ?? [],
+                'evaluacion_inicial' => $data['evaluacion_inicial'] ?? null,
                 'fecha_consulta'  => now(),
             ]);
             $consulta->save();

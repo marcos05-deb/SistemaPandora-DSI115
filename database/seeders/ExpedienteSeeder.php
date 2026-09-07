@@ -285,7 +285,7 @@ class ExpedienteSeeder extends Seeder
             ],
         ];
 
-        foreach ($pacientes as $data) {
+        foreach ($pacientes as $index => $data) {
             $carrera = Carrera::where('nombre', $data['carrera_nombre'])
                 ->whereHas('facultad', function ($q) use ($data) {
                     $q->where('nombre', $data['facultad_nombre']);
@@ -324,6 +324,10 @@ class ExpedienteSeeder extends Seeder
                 ]);
             }
 
+            if ($index >= 6) {
+                continue; // Dejamos estos 4 pacientes sin expediente, listos para que el usuario los cree manualmente
+            }
+
             $expData = $data['expediente'];
             $area = $areas[$expData['area_key']];
 
@@ -336,6 +340,15 @@ class ExpedienteSeeder extends Seeder
                     'diagnostico' => $expData['diagnostico'],
                 ]);
 
+                // Actualizar paciente con las etiquetas para simular que se añadieron en su registro
+                $paciente->update([
+                    'etiquetas_motivo' => ['Violencia Familiar', 'Problemas de Adaptación']
+                ]);
+
+                if ($index >= 4) {
+                    continue; // Dejamos estos 2 pacientes con expediente, pero sin consultas ni citas
+                }
+
                 // Generar consulta asociada para que US-09 tenga datos visuales en la línea de tiempo
                 Consulta::create([
                     'expediente_id' => $expediente->id,
@@ -344,6 +357,18 @@ class ExpedienteSeeder extends Seeder
                     'motivo_consulta' => 'Evaluación inicial: ' . $expData['motivo_consulta'],
                     'notas_clinicas' => $expData['notas_clinicas'],
                     'diagnostico' => $expData['diagnostico'],
+                    'tecnica_utilizada' => 'Entrevista y Observación Clínica',
+                    'evaluacion_inicial' => [
+                        'apariencia_externa' => 'Adecuada',
+                        'voz' => 'Tono normal',
+                        'patrones_habla' => 'Fluido',
+                        'expresiones_faciales' => 'Congruentes',
+                        'ademanes' => 'Tranquilos',
+                        'actitudes_tratamiento' => 'Colaborador',
+                        'impresion' => 'Paciente orientado',
+                        'plan_tratamiento' => 'Seguimiento quincenal',
+                        'pronostico' => 'Favorable',
+                    ],
                 ]);
                 
                 // Generar Cita programada para pruebas de conflicto de horario (US-11)

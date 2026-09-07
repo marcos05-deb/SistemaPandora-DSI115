@@ -30,11 +30,11 @@ class Expediente extends Model implements Auditable
     ];
 
     protected $casts = [
-        'motivo_consulta' => \App\Models\Casts\EncryptedFieldCast::class,
-        'notas_clinicas'  => \App\Models\Casts\EncryptedFieldCast::class,
-        'diagnostico'     => \App\Models\Casts\EncryptedFieldCast::class,
+        'motivo_consulta' => \App\Casts\EncryptedFieldCast::class,
+        'notas_clinicas'  => \App\Casts\EncryptedFieldCast::class,
+        'diagnostico'     => \App\Casts\EncryptedFieldCast::class,
         'fecha_derivacion'=> 'datetime',
-        'motivo_cierre'   => \App\Models\Casts\EncryptedFieldCast::class,
+        'motivo_cierre'   => \App\Casts\EncryptedFieldCast::class,
         'fecha_cierre'    => 'datetime',
     ];
 

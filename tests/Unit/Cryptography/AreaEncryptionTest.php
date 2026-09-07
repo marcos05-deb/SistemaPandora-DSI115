@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Casts\EncryptedFieldCast;
+use App\Casts\AreaEncryptedFieldCast;
 use App\Services\AreaEncryptionService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
@@ -60,7 +60,7 @@ test('falla si se intenta usar la clave de un area distinta', function () {
         ->toThrow(RuntimeException::class, 'Decryption failed');
 });
 
-test('EncryptedFieldCast resuelve area_id e inyecta el servicio correctamente', function () {
+test('AreaEncryptedFieldCast resuelve area_id e inyecta el servicio correctamente', function () {
     // Arrange
     Config::set('app.area_key_secret', 'secreto-maestro-super-seguro');
     
@@ -68,7 +68,7 @@ test('EncryptedFieldCast resuelve area_id e inyecta el servicio correctamente', 
         public int $area_id = 42;
     };
     
-    $cast = app(EncryptedFieldCast::class);
+    $cast = app(AreaEncryptedFieldCast::class);
     $plaintext = 'informacion_sensible';
 
     // Act

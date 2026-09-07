@@ -73,6 +73,18 @@ it('can registrar una consulta exitosamente y cifrar datos', function () {
         'motivo_consulta' => 'Dolor de cabeza crónico',
         'notas_clinicas' => 'El paciente reporta molestias continuas por 3 meses.',
         'diagnostico' => 'Cefalea tensional',
+        'tecnica_utilizada' => 'Entrevista clínica',
+        'evaluacion_inicial' => [
+            'apariencia_externa' => 'Normal',
+            'voz' => 'Normal',
+            'patrones_habla' => 'Normal',
+            'expresiones_faciales' => 'Normal',
+            'ademanes' => 'Normal',
+            'actitudes_tratamiento' => 'Normal',
+            'impresion' => 'Normal',
+            'plan_tratamiento' => 'Normal',
+            'pronostico' => 'Normal',
+        ],
     ];
 
     // Act
@@ -107,9 +119,21 @@ it('rejects cross-area consultation registration', function () {
     $this->actingAs($this->otraAreaSpecialist);
     
     $payload = [
-        'motivo_consulta' => 'Intento ilegal',
-        'notas_clinicas' => 'Cruzando áreas',
-        'diagnostico' => 'Invalido',
+        'motivo_consulta' => 'Dolor de cabeza crónico',
+        'notas_clinicas' => 'El paciente reporta molestias continuas por 3 meses.',
+        'diagnostico' => 'Cefalea tensional',
+        'tecnica_utilizada' => 'Entrevista clínica',
+        'evaluacion_inicial' => [
+            'apariencia_externa' => 'Normal',
+            'voz' => 'Normal',
+            'patrones_habla' => 'Normal',
+            'expresiones_faciales' => 'Normal',
+            'ademanes' => 'Normal',
+            'actitudes_tratamiento' => 'Normal',
+            'impresion' => 'Normal',
+            'plan_tratamiento' => 'Normal',
+            'pronostico' => 'Normal',
+        ],
     ];
 
     // Act
@@ -126,9 +150,21 @@ it('rejects registering consultation if expediente is closed', function () {
     $this->expediente->update(['estado' => 'cerrado']);
     
     $payload = [
-        'motivo_consulta' => 'Motivo',
-        'notas_clinicas' => 'Notas',
-        'diagnostico' => 'Diag',
+        'motivo_consulta' => 'Dolor de cabeza crónico',
+        'notas_clinicas' => 'El paciente reporta molestias continuas por 3 meses.',
+        'diagnostico' => 'Cefalea tensional',
+        'tecnica_utilizada' => 'Entrevista clínica',
+        'evaluacion_inicial' => [
+            'apariencia_externa' => 'Normal',
+            'voz' => 'Normal',
+            'patrones_habla' => 'Normal',
+            'expresiones_faciales' => 'Normal',
+            'ademanes' => 'Normal',
+            'actitudes_tratamiento' => 'Normal',
+            'impresion' => 'Normal',
+            'plan_tratamiento' => 'Normal',
+            'pronostico' => 'Normal',
+        ],
     ];
 
     // Act

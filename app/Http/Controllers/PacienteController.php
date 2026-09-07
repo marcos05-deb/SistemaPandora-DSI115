@@ -70,7 +70,8 @@ class PacienteController extends Controller
         $facultades = Facultad::with('carreras')->get();
 
         return Inertia::render('Pacientes/Create', [
-            'facultades' => $facultades
+            'facultades' => $facultades,
+            'etiquetasValidas' => \App\Http\Requests\StorePacienteRequest::ETIQUETAS_VALIDAS
         ]);
     }
 
@@ -96,6 +97,7 @@ class PacienteController extends Controller
                 'referido_por' => $validated['referido_por'],
                 'llevado_por' => $validated['llevado_por'],
                 'motivo_consulta' => $validated['motivo_consulta'],
+                'etiquetas_motivo' => $validated['etiquetas_motivo'] ?? null,
                 'ultima_accion' => 'Registro de paciente',
             ]);
 

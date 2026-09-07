@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Casts\EncryptedFieldCast;
+use App\Casts\AreaEncryptedFieldCast;
+use App\Casts\EncryptedArrayCast;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,13 +30,17 @@ class Consulta extends Model implements AuditableContract
         'notas_clinicas',
         'diagnostico',
         'fecha_consulta',
+        'tecnica_utilizada',
+        'evaluacion_inicial',
     ];
 
     protected $casts = [
         'fecha_consulta' => 'datetime',
-        'motivo_consulta' => EncryptedFieldCast::class,
-        'notas_clinicas' => EncryptedFieldCast::class,
-        'diagnostico' => EncryptedFieldCast::class,
+        'motivo_consulta' => AreaEncryptedFieldCast::class,
+        'notas_clinicas' => AreaEncryptedFieldCast::class,
+        'diagnostico' => AreaEncryptedFieldCast::class,
+        'tecnica_utilizada' => AreaEncryptedFieldCast::class,
+        'evaluacion_inicial' => EncryptedArrayCast::class,
     ];
 
     public function expediente(): BelongsTo

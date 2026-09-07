@@ -38,8 +38,8 @@ class Cita extends Model implements Auditable
     protected $casts = [
         'fecha_hora' => 'datetime',
         'fecha_registro_asistencia' => 'datetime',
-        'motivo'     => \App\Models\Casts\EncryptedFieldCast::class,
-        'motivo_cancelacion' => \App\Models\Casts\EncryptedFieldCast::class,
+        'motivo'     => \App\Casts\EncryptedFieldCast::class,
+        'motivo_cancelacion' => \App\Casts\EncryptedFieldCast::class,
     ];
 
     public function expediente(): BelongsTo

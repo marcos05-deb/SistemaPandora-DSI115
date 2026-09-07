@@ -25,8 +25,17 @@ class ConsultaController extends Controller
     {
         Gate::authorize('create', [\App\Models\Consulta::class, $expediente]);
 
+        $isFirstConsulta = !$expediente->consultas()->exists();
+
         return Inertia::render('Consultas/Create', [
-            'expediente' => $expediente->load('paciente'),
+            'expediente' => [
+                'id' => $expediente->id,
+                'paciente' => [
+                    'carnet' => $expediente->paciente->carnet,
+                    'nombre_completo' => $expediente->paciente->nombre_completo,
+                ]
+            ],
+            'esPrimeraConsulta' => $isFirstConsulta
         ]);
     }
 
