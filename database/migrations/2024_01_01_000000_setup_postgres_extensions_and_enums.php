@@ -20,6 +20,15 @@ return new class extends Migration
         
         DB::statement("DROP TYPE IF EXISTS parentesco_enum CASCADE;");
         DB::statement("CREATE TYPE parentesco_enum AS ENUM ('Padre', 'Madre', 'Tutor', 'Otro');");
+
+        // Enforce minimum privileges for the application user on any new tables created by the admin
+        $appUser = config('database.connections.pgsql.username');
+        $adminUser = config('database.connections.pgsql_admin.username');
+        
+        if ($appUser && $appUser !== $adminUser) {
+            DB::statement("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {$appUser};");
+            DB::statement("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO {$appUser};");
+        }
     }
 
     /**
