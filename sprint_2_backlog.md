@@ -248,14 +248,14 @@ Entonces el sistema rechaza la operación
 
 **Tareas Técnicas (Laravel):**
 
-- [ ] **Migración:** Crear tabla `citas`: `id` (UUID), `expediente_id` (`foreignUuid`), `profesional_id` (`foreignUuid`), `area_id` (`foreignUuid` - desnormalizado para optimización de queries), `fecha_hora` (TIMESTAMPTZ), `motivo` (TEXT cifrado), `estado` (ENUM: `programada`, `asistio`, `no_asistio`, `cancelada`, `reprogramada`), timestamps, soft deletes.
-- [ ] **Modelo `Cita`:** Relaciones `belongsTo Expediente`, `belongsTo Profesional`, `belongsTo Area`. `EncryptedFieldCast` en `motivo`. `SoftDeletes`. Agregar trait para Audit Log (`LogsActivity`).
-- [ ] **Controlador `CitaController`:** Método `store()`. Validar que no haya conflicto de horario. Registrar evento de auditoría.
-- [ ] **Form Request `CitaStoreRequest`:** Validar fecha futura, horario sin conflictos, expediente no cerrado.
-- [ ] **Policy `CitaPolicy`:** Solo especialistas del área del expediente.
-- [ ] **Rutas:** `POST /expedientes/{expediente}/citas`. Middleware `auth` + `enforce_area_scope`.
-- [ ] **Vista:** `Pages/Citas/Create.vue` — formulario con date-time picker y motivo.
-- [ ] **Tests:** Feature test cubriendo: creación exitosa, conflicto de horario, rechazo en expediente cerrado.
+- [x] **Migración:** Crear tabla `citas`: `id` (UUID), `expediente_id` (`foreignUuid`), `profesional_id` (`foreignUuid`), `area_id` (`foreignUuid` - desnormalizado para optimización de queries), `fecha_hora` (TIMESTAMPTZ), `motivo` (TEXT cifrado), `estado` (ENUM: `programada`, `asistio`, `no_asistio`, `cancelada`, `reprogramada`), timestamps, soft deletes.
+- [x] **Modelo `Cita`:** Relaciones `belongsTo Expediente`, `belongsTo Profesional`, `belongsTo Area`. `EncryptedFieldCast` en `motivo`. `SoftDeletes`. Agregar trait para Audit Log (`LogsActivity`).
+- [x] **Controlador `CitaController`:** Método `store()`. Validar que no haya conflicto de horario. Registrar evento de auditoría.
+- [x] **Form Request `CitaStoreRequest`:** Validar fecha futura, horario sin conflictos, expediente no cerrado.
+- [x] **Policy `CitaPolicy`:** Solo especialistas del área del expediente.
+- [x] **Rutas:** `POST /expedientes/{expediente}/citas`. Middleware `auth` + `enforce_area_scope`.
+- [x] **Vista:** `Pages/Citas/Create.vue` — formulario con date-time picker y motivo.
+- [x] **Tests:** Feature test cubriendo: creación exitosa, conflicto de horario, rechazo en expediente cerrado.
 
 ---
 
