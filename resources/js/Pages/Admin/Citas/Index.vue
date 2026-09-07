@@ -236,7 +236,7 @@ const getCitasCount = (dateObj) => {
                                         <p class="text-[13px] font-semibold text-[var(--nord0)] mb-0.5">{{ cita.paciente?.nombre_completo || 'Paciente Anónimo' }}</p>
                                         <p class="text-[11px] text-[var(--nord3)] flex items-center gap-1">
                                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                            Atendido por: <span class="font-medium text-[var(--nord2)]">{{ cita.profesional?.especialista?.name || 'Profesional Anónimo' }}</span>
+                                            Atendido por: <span class="font-medium text-[var(--nord2)]">{{ cita.profesional?.nombre || 'Profesional Anónimo' }}</span>
                                         </p>
                                     </div>
                                 </div>

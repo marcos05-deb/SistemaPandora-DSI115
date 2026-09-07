@@ -41,6 +41,13 @@ class CitaResource extends JsonResource
                 ];
             }),
             
+            'area' => $this->whenLoaded('area', function () {
+                return [
+                    'id' => $this->area->id,
+                    'nombre' => $this->area->nombre,
+                ];
+            }),
+            
             'registrado_por' => $this->whenLoaded('registradoPor', function () {
                 return [
                     'id' => $this->registradoPor->id,
