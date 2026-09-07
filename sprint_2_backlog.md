@@ -374,13 +374,15 @@ Entonces solo se retornan citas vinculadas a expedientes de las áreas autorizad
 
 **Tareas Técnicas (Laravel):**
 
-- [ ] **Modelo `Cita`:** Aplicar Global Scope `AreaScope` apuntando directamente a la columna local `area_id` para evitar subconsultas (WHERE EXISTS) hacia la tabla de expedientes. Agregar scopes locales: `programadas()`, `porFecha()`, `porEstado()`.
-- [ ] **Controlador `CitaController`:** Método `index()` con filtros. Para coordinadores: cargar citas de todos los profesionales del área. Paginación.
-- [ ] **API Resource `CitaResource`:** Empaquetar datos para el frontend: código de privacidad del paciente (no nombre), fecha, estado, motivo descifrado.
-- [ ] **Middleware:** Reutilizar `EnforceAreaScope` + bloqueo de `sysadmin`.
-- [ ] **Rutas:** `GET /citas`. Middleware `auth` + `enforce_area_scope`.
-- [ ] **Vista:** `Pages/Citas/Index.vue` — tabla con filtros de estado/fecha/especialista, paginación, integrado a `ClinicalLayout`. Diseño Nord.
-- [ ] **Tests:** Feature test cubriendo: listado propio (especialista), listado completo de área (coordinador), filtros, bloqueo sysadmin, filtrado cross-área.
+- [x] **Modelo `Cita`:** Aplicar Global Scope `AreaScope` apuntando directamente a la columna local `area_id` para evitar subconsultas (WHERE EXISTS) hacia la tabla de expedientes. Agregar scopes locales: `programadas()`, `porFecha()`, `porEstado()`.
+- [x] **Controlador `CitaController`:** Método `index()` con filtros. Para coordinadores: cargar citas de todos los profesionales del área. Paginación.
+- [x] **API Resource `CitaResource`:** Empaquetar datos para el frontend: código de privacidad del paciente (no nombre), fecha, estado, motivo descifrado.
+- [x] **Middleware:** Reutilizar `EnforceAreaScope` + bloqueo de `sysadmin`.
+- [x] **Rutas:** `GET /citas`. Middleware `auth` + `enforce_area_scope`.
+- [x] **Vista:** `Pages/Citas/Index.vue` — tabla con filtros de estado/fecha/especialista, paginación, integrado a `ClinicalLayout`. Diseño Nord.
+- [x] **Tests:** Feature test cubriendo: listado propio (especialista), listado completo de área (coordinador), filtros, bloqueo sysadmin, filtrado cross-área.
+
+*(Nota: Adicional a los criterios de esta HU, se construyó el Calendario de Citas de Administración (`Admin/CitaController`) con Day.js, Inertia y Axios para que el Sysadmin pueda visualizar todo el sistema mediante un rango de fechas con límite estricto de 45 días, superando las especificaciones iniciales).*
 
 ---
 

@@ -425,3 +425,20 @@
   - **Controlador y Políticas:** Se implementaron los métodos `CitaController@reprogramar` y `cancelar` encapsulados en transacciones atómicas (`DB::transaction`). La `CitaPolicy` se actualizó autorizando las modificaciones al titular de la cita o al coordinador del área.
   - **Frontend UI/UX:** Se construyó el componente `GestionarCitaModal.vue`, que se integra directamente al listado de "Citas Pendientes" en la vista `Pacientes/Show.vue`. Presenta un formulario reactivo con campos dinámicos (datepicker y textarea para motivos).
   - **Test Suite y Datos Semilla:** Se incluyó el script `ReprogramarCancelarCitaTest.php` abarcando todas las excepciones de negocio (Conflictos de fecha, rechazos por permisos, clonación exitosa). Se nutrieron los datos en el `ExpedienteSeeder` con escenarios listos para pruebas de reprogramación en el paciente `RM24033`.
+
+### [2026-09-07] Implementación de US-14: Consultar citas asignadas e historial de asistencia
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se desarrolló la historia de usuario final del Sprint 2 (US-14), habilitando la consulta integral de citas para Especialistas y Coordinadores mediante vistas tabulares y paginadas. Además, a solicitud expresa de mejora arquitectónica, se incorporó un módulo visual de alto rendimiento ("Calendario de Citas") dedicado exclusivamente para el rol de `sysadmin`, superando las especificaciones iniciales.
+- **Cambios realizados:**
+  - **Eficiencia Estructural y Paginación (CitaController):** Se construyó el listado tabular para roles clínicos. Los Especialistas ven su propia agenda, y los Coordinadores obtienen una visión global de su área, empleando el método `paginate(15)` en conjunto con Local Scopes (`scopeProgramadas`, `scopePorFecha`, `scopePorEstado`) y respetando el cerrojo estructural de `AreaScope`.
+  - **Recursos API Ultra-seguros:** El `CitaResource` se optimizó rigurosamente para exponer el código de paciente (anonimizado), el estado, fecha y el nombre público del profesional a cargo de la atención, protegiendo todo dato adicional ajeno a la necesidad de agenda.
+  - **Arquitectura de Alto Rendimiento (Calendario Admin):** 
+    - Se creó un controlador dedicado `Admin\CitaController` para eludir conflictos lógicos y de carga. 
+    - Se incluyó una migración explícita para generar un **Índice B-Tree** sobre la columna `fecha_hora` en la tabla de citas.
+    - Las consultas en base de datos emplean fronteras calculadas mediante `whereBetween()` utilizando objetos `CarbonImmutable` convertidos nativamente a zona horaria UTC, evitando bloqueos de Table Scans completos.
+  - **Seguridad Anticolapso (FormRequests):** Se desarrollaron `IndexCitasRequest` y `CitasPorDiaRequest`, introduciendo un límite estricto que rechaza solicitudes de rangos temporales mayores a 45 días (prevención de Denegación de Servicio), y sobrescribiendo `prepareForValidation` para sanear parámetros nativos de URL.
+  - **Frontend Resiliente y Preciso (Vue + Day.js + Inertia):** 
+    - Se reemplazó el objeto nativo Date de JavaScript por **Day.js** (y sus plugins `utc` y `timezone` configurados en `America/El_Salvador`), logrando un emparejamiento milimétrico con el timestamp `toIso8601String` devuelto por los API Resources, erradicando fallos de desfase a medianoche.
+    - La cuadrícula visual aplica _Padding_ (relleno) calculando orgánicamente fechas extremas (lunes inicial a domingo final).
+    - **Control de Condiciones de Carrera:** El módulo de detalles invocado al dar clic (Axios) implementa la clase nativa `AbortController`, anulando inmediatamente peticiones desfasadas o concurrentes provocadas por el doble clic rápido de los usuarios, previniendo inconsistencias de UI.
+  - **Test Suite y Privilegios DML:** Se consolidaron las pruebas con `ConsultarCitasTest.php`, simulando interacciones entre todos los roles e intentando forzar visibilidad cross-area, aprobando con cobertura 100%. Adicionalmente se fusionaron los parches definitivos de Postgres asegurando Privilegios Mínimos para el demonio de la App.
