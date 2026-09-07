@@ -5,6 +5,7 @@ import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 import DerivacionModal from '@/Components/Expediente/DerivacionModal.vue';
 import CierreExpedienteModal from '@/Components/Expediente/CierreExpedienteModal.vue';
 import AgendarCitaModal from '@/Components/Expediente/AgendarCitaModal.vue';
+import GestionarCitaModal from '@/Components/Expediente/GestionarCitaModal.vue';
 import { computed, ref, onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 
@@ -43,6 +44,15 @@ const getAreaName = (areaId) => {
 const isDerivacionModalOpen = ref(false);
 const isCierreModalOpen = ref(false);
 const isCitaModalOpen = ref(false);
+const isGestionarCitaModalOpen = ref(false);
+const gestionarCitaMode = ref('reprogramar');
+const selectedCita = ref(null);
+
+const openGestionarCitaModal = (cita, mode) => {
+    selectedCita.value = cita;
+    gestionarCitaMode.value = mode;
+    isGestionarCitaModalOpen.value = true;
+};
 
 const marcarAsistencia = (citaId, estado) => {
     if (!props.can?.updateCita || !expedienteActivo.value) return;
@@ -315,13 +325,23 @@ onMounted(() => {
                                 </div>
                                 <p class="text-[13px] text-[var(--nord0)] font-medium mt-1">{{ cita.motivo }}</p>
                                 
-                                <div v-if="can?.updateCita" class="flex items-center gap-3 mt-3 pt-3 border-t border-[var(--nord4)]/60">
-                                    <button @click="marcarAsistencia(cita.id, 'asistio')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-green)] hover:bg-[#8FBCBB] text-white transition-colors">
-                                        Asistió
-                                    </button>
-                                    <button @click="marcarAsistencia(cita.id, 'no_asistio')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-red)] hover:bg-[#BF616A] text-white transition-colors">
-                                        No asistió
-                                    </button>
+                                <div v-if="can?.updateCita" class="flex flex-col gap-2 mt-3 pt-3 border-t border-[var(--nord4)]/60">
+                                    <div class="flex items-center gap-2">
+                                        <button @click="marcarAsistencia(cita.id, 'asistio')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-green)] hover:bg-[#8FBCBB] text-white transition-colors">
+                                            Asistió
+                                        </button>
+                                        <button @click="marcarAsistencia(cita.id, 'no_asistio')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-red)] hover:bg-[#BF616A] text-white transition-colors">
+                                            No asistió
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button @click="openGestionarCitaModal(cita, 'reprogramar')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--nord8)] border border-[var(--nord8)] transition-colors">
+                                            Reprogramar
+                                        </button>
+                                        <button @click="openGestionarCitaModal(cita, 'cancelar')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--aurora-red)] border border-[var(--aurora-red)] transition-colors">
+                                            Cancelar
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -414,6 +434,15 @@ onMounted(() => {
             :show="isCitaModalOpen"
             :expediente="expedienteActivo"
             @close="isCitaModalOpen = false"
+        />
+
+        <GestionarCitaModal
+            v-if="selectedCita && expedienteActivo"
+            :show="isGestionarCitaModalOpen"
+            :mode="gestionarCitaMode"
+            :cita="selectedCita"
+            :expediente="expedienteActivo"
+            @close="isGestionarCitaModalOpen = false"
         />
     </div>
 </template>

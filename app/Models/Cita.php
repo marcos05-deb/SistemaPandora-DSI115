@@ -22,12 +22,15 @@ class Cita extends Model implements Auditable
         'estado',
         'fecha_registro_asistencia',
         'registrado_por_profesional_id',
+        'motivo_cancelacion',
+        'cita_origen_id',
     ];
 
     protected $casts = [
         'fecha_hora' => 'datetime',
         'fecha_registro_asistencia' => 'datetime',
         'motivo'     => \App\Models\Casts\EncryptedFieldCast::class,
+        'motivo_cancelacion' => \App\Models\Casts\EncryptedFieldCast::class,
     ];
 
     public function expediente(): BelongsTo
@@ -56,5 +59,10 @@ class Cita extends Model implements Auditable
         $this->registrado_por_profesional_id = $profesionalId;
         $this->fecha_registro_asistencia = now();
         $this->save();
+    }
+
+    public function citaOrigen(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'cita_origen_id');
     }
 }

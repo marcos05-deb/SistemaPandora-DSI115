@@ -22,6 +22,7 @@ Este documento resume lo aprendido durante la ejecución de las historias US-08,
 | 12 | Un hallazgo de "falso positivo" en ISO 27001 se basó en inspeccionar el `.env` del host en vez de las variables reales del contenedor Docker donde corre el test | Auditoría de tests | Para reclamos de infraestructura (roles de BD, permisos, variables de entorno) siempre verificar el entorno de ejecución real, nunca el archivo de configuración que el agente asume que aplica |
 | 13 | El agente propuso un cambio estructural mayor (consultas obligatoriamente ligadas a una cita previa) a mitad de sprint, sin analizar el impacto en historias ya cerradas (US-08, US-11, US-12) ni resolver sus propias preguntas de negocio abiertas antes de proponer el esquema de base de datos | Propuesta fuera de sprint | Todo cambio de arquitectura o de reglas de negocio que afecte historias ya implementadas debe presentarse primero como análisis de impacto (qué historias se reabren, qué preguntas de negocio quedan sin responder) — nunca como plan técnico de migración antes de que el dueño del producto decida si el cambio procede y cuándo |
 | 14 | La propuesta de citas obligatorias sugería `migrate:fresh` como solución aceptable "porque estamos en desarrollo", a pesar de que ya existían datos de seed acumulados de varias historias | Propuesta fuera de sprint | Nunca tratar la pérdida de datos de desarrollo/seed como algo trivial; cualquier migración estructural debe plantearse como transformación de datos, no como borrón y cuenta nueva, incluso en entornos de desarrollo |
+| 15 | El agente solo extendía el seeder con los datos de la historia nueva en cada entrega. Como el trabajo normal de desarrollo (migraciones, `RefreshDatabase` en tests, `migrate:fresh` local) borra la base de datos completa, el usuario terminaba con un seed parcial y tenía que reconstruir manualmente los datos de historias anteriores para poder probar de punta a punta | Recurrente desde US-08 | El seeder debe ser siempre un **único punto de verdad acumulativo**: cada entrega debe dejar sembrados los datos de **todas** las historias completadas hasta el momento (pacientes, expedientes en distintos estados, consultas, citas en sus distintas variantes), no solo los de la historia actual. Nunca asumir que el usuario conservará el seed de la ronda anterior |
 
 ---
 
@@ -47,12 +48,13 @@ Todo prompt para implementar una historia de usuario en PANDORA debe forzar al a
 
 ### Fase 4 — Tests (ver sección 3, más estricta a partir de ahora)
 
-### Fase 5 — Seed de base de datos antes de presentar resultados (nuevo)
+### Fase 5 — Seed de base de datos antes de presentar resultados (nuevo, y ahora acumulativo)
 Antes de dar por terminada la historia y presentar resultados:
-- Ejecutar o actualizar el **seeder** correspondiente para que existan datos de prueba representativos del nuevo flujo (ej. pacientes con expedientes en distintos estados, especialistas y coordinadores de distintas áreas, consultas ya registradas).
-- El seed debe permitir que el usuario, sin ejecutar nada adicional, entre a la aplicación y **pruebe manualmente la historia completa de punta a punta** (incluyendo los casos de rechazo, no solo el camino feliz — por ejemplo, un expediente ya cerrado listo para intentar cerrarlo de nuevo).
-- Confirmar en el resumen final qué credenciales/usuarios de prueba corresponden a qué rol, para que no haya que adivinar con quién iniciar sesión.
-- Si el seed ya existía, extenderlo — no crear un seeder paralelo duplicado.
+- El seeder debe dejar la base de datos con **datos de prueba de todas las historias completadas hasta el momento**, no solo de la historia actual. El trabajo normal de desarrollo (migraciones nuevas, `RefreshDatabase` en tests, `migrate:fresh` local) borra la base completa, así que un seed parcial obliga al usuario a reconstruir manualmente lo que ya se había probado antes — esto no es aceptable.
+- Concretamente, cada entrega debe verificar y, si falta, **agregar** al seeder (no reemplazar) los datos de: pacientes con distintos estados de expediente (abierto, en_atención, cerrado), consultas ya registradas, citas en sus distintas variantes relevantes (programada pasada, programada hoy, programada futura, asistida, no asistida, cancelada, reprogramada — según qué historias ya estén implementadas), y usuarios de cada rol (especialista, coordinador, referente psicosocial).
+- Antes de presentar resultados, ejecutar `migrate:fresh --seed` (o el comando equivalente del proyecto) desde cero y confirmar que el sistema queda listo para probar **todas** las historias completadas hasta ahora de punta a punta, no solo la más reciente.
+- Confirmar en el resumen final qué credenciales/usuarios de prueba corresponden a qué rol y qué escenario de cada historia, para que no haya que adivinar ni reconstruir nada.
+- Si el seeder ya existía, extenderlo — no crear un seeder paralelo duplicado ni dejar huérfanos los datos de historias anteriores.
 
 ### Fase 6 — Control de versiones
 - Todo el trabajo va en una rama nueva desde `dev`. Nunca commits directos a `dev` o `main`, sin excepción, incluso para fixes triviales o urgentes.

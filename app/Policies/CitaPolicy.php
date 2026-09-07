@@ -23,4 +23,18 @@ class CitaPolicy
     {
         return $user->profesional && $user->profesional->id === $cita->profesional_id;
     }
+
+    public function reprogramar(Especialista $user, Cita $cita): bool
+    {
+        $isAssignedSpecialist = $user->hasRole('specialist') && $user->profesional && $user->profesional->id === $cita->profesional_id;
+        $isCoordinator = $user->hasRole('area_coordinator') && $user->profesional && $user->profesional->area_id === $cita->area_id;
+        
+        return $isAssignedSpecialist || $isCoordinator;
+    }
+
+    public function cancelar(Especialista $user, Cita $cita): bool
+    {
+        // Misma lógica de autorización que reprogramar
+        return $this->reprogramar($user, $cita);
+    }
 }

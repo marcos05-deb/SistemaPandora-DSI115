@@ -119,6 +119,8 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
             
             Route::post('/expedientes/{expediente}/citas', [\App\Http\Controllers\CitaController::class, 'store'])->name('citas.store');
             Route::patch('/expedientes/{expediente}/citas/{cita}/asistencia', [\App\Http\Controllers\CitaController::class, 'actualizarAsistencia'])->name('citas.asistencia');
+            Route::patch('/expedientes/{expediente}/citas/{cita}/reprogramar', [\App\Http\Controllers\CitaController::class, 'reprogramar'])->name('citas.reprogramar');
+            Route::patch('/expedientes/{expediente}/citas/{cita}/cancelar', [\App\Http\Controllers\CitaController::class, 'cancelar'])->name('citas.cancelar');
         });
     });
 

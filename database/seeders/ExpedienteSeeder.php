@@ -402,6 +402,33 @@ class ExpedienteSeeder extends Seeder
                     $this->command?->info("Variantes: Pasada, Hoy-Futura, Futura-en-días");
                     $this->command?->info("==========================================");
                 }
+
+                if ($data['carnet'] === 'RM24033') {
+                    // Cita para probar reprogramar
+                    \App\Models\Cita::create([
+                        'expediente_id' => $expediente->id,
+                        'profesional_id' => $profesional->id,
+                        'area_id' => $area->id,
+                        'fecha_hora' => now()->addDays(5)->setTime(10, 0)->format('Y-m-d H:i:s'),
+                        'motivo' => 'Cita de control nutricional (Para reprogramar)',
+                        'estado' => 'programada',
+                    ]);
+                    
+                    // Cita para probar cancelar
+                    \App\Models\Cita::create([
+                        'expediente_id' => $expediente->id,
+                        'profesional_id' => $profesional->id,
+                        'area_id' => $area->id,
+                        'fecha_hora' => now()->addDays(6)->setTime(11, 0)->format('Y-m-d H:i:s'),
+                        'motivo' => 'Cita de seguimiento (Para cancelar)',
+                        'estado' => 'programada',
+                    ]);
+                    
+                    $this->command?->info("==> CITAS GENERADAS PARA PRUEBAS US-13 <==");
+                    $this->command?->info("Paciente: {$data['nombre_completo']} ({$data['carnet']})");
+                    $this->command?->info("Variantes: Para Reprogramar, Para Cancelar");
+                    $this->command?->info("==========================================");
+                }
             }
         }
 
