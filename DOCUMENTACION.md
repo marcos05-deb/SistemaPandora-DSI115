@@ -408,3 +408,13 @@
   - **Controlador y Respuestas:** El método en `CitaController` despacha la acción y emite notificaciones Toast unificadas hacia el cliente.
   - **Auditoría (Compliance):** Los eventos de estado activan los disparadores de trazabilidad (`laravel-auditing`), resguardando criptográficamente quién ejecutó el marcado.
   - **Test Suite y Datos Semilla:** Se crearon 5 tests en `AsistenciaTest.php` comprobando cada una de las bifurcaciones lógicas. Se agregaron datos enriquecidos en `ExpedienteSeeder` con 3 tipos de citas (pasada, presente, futura) para pruebas visuales en el paciente FL22067.
+
+### [2026-09-06] Implementación de US-13: Reprogramar o cancelar una cita
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se desarrolló la historia de usuario US-13 que permite a los Especialistas Clínicos y Coordinadores gestionar la agenda reprogramando o cancelando citas previamente agendadas, garantizando la trazabilidad histórica de los cambios (audit logging) y previniendo colisiones de horario.
+- **Cambios realizados:**
+  - **Corrección de Bug US-11 (Índice Único Parcial):** Se identificó y resolvió un defecto retroactivo heredado de US-11 donde el `unique(['profesional_id', 'fecha_hora'])` bloqueaba incondicionalmente un horario, incluso si la cita había sido cancelada. Se reemplazó con un índice único parcial condicionado a `estado = 'programada' AND deleted_at IS NULL`.
+  - **Ampliación del Modelo y Migraciones:** Se introdujeron los campos `motivo_cancelacion` (cifrado con `EncryptedFieldCast`) y `cita_origen_id` (para vincular la nueva cita con la reprogramada) en la tabla `citas`.
+  - **Controlador y Políticas:** Se implementaron los métodos `CitaController@reprogramar` y `cancelar` encapsulados en transacciones atómicas (`DB::transaction`). La `CitaPolicy` se actualizó autorizando las modificaciones al titular de la cita o al coordinador del área.
+  - **Frontend UI/UX:** Se construyó el componente `GestionarCitaModal.vue`, que se integra directamente al listado de "Citas Pendientes" en la vista `Pacientes/Show.vue`. Presenta un formulario reactivo con campos dinámicos (datepicker y textarea para motivos).
+  - **Test Suite y Datos Semilla:** Se incluyó el script `ReprogramarCancelarCitaTest.php` abarcando todas las excepciones de negocio (Conflictos de fecha, rechazos por permisos, clonación exitosa). Se nutrieron los datos en el `ExpedienteSeeder` con escenarios listos para pruebas de reprogramación en el paciente `RM24033`.

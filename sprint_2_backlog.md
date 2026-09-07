@@ -330,15 +330,15 @@ Entonces el sistema rechaza la operación
 
 **Tareas Técnicas (Laravel):**
 
-- [ ] **Migración:** Agregar a `citas`: `motivo_cancelacion` (TEXT cifrado, nullable), `cita_origen_id` (`foreignUuid` nullable, FK self-referencing para reprogramación).
-- [ ] **Modelo `Cita`:** Relación `belongsTo Cita` (origen). `EncryptedFieldCast` en `motivo_cancelacion`. Método `reprogramar()` y `cancelar()`.
-- [ ] **Controlador `CitaController`:** Métodos `reprogramar()` y `cancelar()`. Transacción DB para reprogramación (marcar antigua + crear nueva). Registrar eventos en audit log.
-- [ ] **Form Request `CitaReprogramarRequest`:** Validar nueva fecha futura, sin conflicto de horario.
-- [ ] **Form Request `CitaCancelarRequest`:** Validar motivo obligatorio.
-- [ ] **Policy `CitaPolicy`:** Métodos `reprogramar()` y `cancelar()`: solo especialista asignado o coordinador del área.
-- [ ] **Rutas:** `PATCH /citas/{cita}/reprogramar`, `PATCH /citas/{cita}/cancelar`. Middleware `auth` + policy.
-- [ ] **Vista:** Modal o página con formulario de reprogramación / cancelación.
-- [ ] **Tests:** Feature test cubriendo: reprogramación exitosa (cita antigua + nueva), cancelación con motivo, rechazo por estado.
+- [x] **Migración:** Agregar a `citas`: `motivo_cancelacion` (TEXT cifrado, nullable), `cita_origen_id` (`foreignUuid` nullable, FK self-referencing para reprogramación).
+- [x] **Modelo `Cita`:** Relación `belongsTo Cita` (origen). `EncryptedFieldCast` en `motivo_cancelacion`. Método `reprogramar()` y `cancelar()`.
+- [x] **Controlador `CitaController`:** Métodos `reprogramar()` y `cancelar()`. Transacción DB para reprogramación (marcar antigua + crear nueva). Registrar eventos en audit log.
+- [x] **Form Request `CitaReprogramarRequest`:** Validar nueva fecha futura, sin conflicto de horario.
+- [x] **Form Request `CitaCancelarRequest`:** Validar motivo obligatorio.
+- [x] **Policy `CitaPolicy`:** Métodos `reprogramar()` y `cancelar()`: solo especialista asignado o coordinador del área.
+- [x] **Rutas:** `PATCH /citas/{cita}/reprogramar`, `PATCH /citas/{cita}/cancelar`. Middleware `auth` + policy.
+- [x] **Vista:** Modal o página con formulario de reprogramación / cancelación.
+- [x] **Tests:** Feature test cubriendo: reprogramación exitosa (cita antigua + nueva), cancelación con motivo, rechazo por estado.
 
 ---
 
