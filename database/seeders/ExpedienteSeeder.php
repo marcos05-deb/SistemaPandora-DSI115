@@ -36,8 +36,9 @@ class ExpedienteSeeder extends Seeder
         $psicosocial = $profByEmail['psicosocial@pandora.com'] ?? null;
         $especialista = $profByEmail['especialista@pandora.com'] ?? null;
         $especialistaNutri = $profByEmail['especialista-nutri@pandora.com'] ?? null;
+        $especialistaPsi = $profByEmail['especialista-psi@pandora.com'] ?? null;
 
-        if (!$psicosocial || !$especialista || !$especialistaNutri) {
+        if (!$psicosocial || !$especialista || !$especialistaNutri || !$especialistaPsi) {
             $this->command?->warn('Faltan profesionales. Ejecute DatabaseSeeder primero.');
             return;
         }
@@ -48,6 +49,14 @@ class ExpedienteSeeder extends Seeder
             'medicina_general' => $especialista,
             'nutricion'        => $especialistaNutri,
             'trabajo_social'   => $psicosocial,
+        ];
+
+        // Mapa: area_key => profesional que atiende (especialista)
+        $especialistaPorArea = [
+            'psicologia'       => $especialistaPsi,
+            'medicina_general' => $especialista,
+            'nutricion'        => $especialistaNutri,
+            'trabajo_social'   => null,
         ];
 
         $pacientes = [
@@ -349,10 +358,16 @@ class ExpedienteSeeder extends Seeder
                     continue; // Dejamos estos 2 pacientes con expediente, pero sin consultas ni citas
                 }
 
+                $atendedor = $especialistaPorArea[$expData['area_key']];
+                
+                if (!$atendedor) {
+                    continue; // Si no hay especialista configurado para el área (ej. trabajo social no tiene especialista clínico), saltamos.
+                }
+
                 // Generar consulta asociada para que US-09 tenga datos visuales en la línea de tiempo
                 Consulta::create([
                     'expediente_id' => $expediente->id,
-                    'profesional_id' => $profesional->id,
+                    'profesional_id' => $atendedor->id,
                     'fecha_consulta' => $paciente->fecha_primera_consulta,
                     'motivo_consulta' => 'Evaluación inicial: ' . $expData['motivo_consulta'],
                     'notas_clinicas' => $expData['notas_clinicas'],
@@ -372,12 +387,12 @@ class ExpedienteSeeder extends Seeder
                 ]);
                 
                 // Generar Cita programada para pruebas de conflicto de horario (US-11)
-                // Se agenda para MT20045 con psicosocial@pandora.com (Trabajo Social / Psicología)
+                // Se agenda para MT20045 con especialista-psi@pandora.com (Psicología)
                 if ($data['carnet'] === 'MT20045') {
                     $fechaCitaConflicto = now()->addDays(2)->setTime(10, 0)->format('Y-m-d H:i:s');
                     \App\Models\Cita::create([
                         'expediente_id' => $expediente->id,
-                        'profesional_id' => $profesional->id,
+                        'profesional_id' => $atendedor->id,
                         'area_id' => $area->id,
                         'fecha_hora' => $fechaCitaConflicto,
                         'motivo' => 'Cita de seguimiento pre-agendada para test de conflicto',
@@ -385,7 +400,7 @@ class ExpedienteSeeder extends Seeder
                     ]);
                     $this->command?->info("==> CITA GENERADA PARA PRUEBAS US-11 <==");
                     $this->command?->info("Paciente: {$data['nombre_completo']} ({$data['carnet']})");
-                    $this->command?->info("Especialista: psicosocial@pandora.com");
+                    $this->command?->info("Especialista: {$atendedor->especialista->email}");
                     $this->command?->info("Fecha y Hora ocupada: {$fechaCitaConflicto}");
                     $this->command?->info("==========================================");
                 }
@@ -394,7 +409,7 @@ class ExpedienteSeeder extends Seeder
                     // Cita pasada
                     \App\Models\Cita::create([
                         'expediente_id' => $expediente->id,
-                        'profesional_id' => $profesional->id,
+                        'profesional_id' => $atendedor->id,
                         'area_id' => $area->id,
                         'fecha_hora' => now()->subDays(1)->setTime(14, 0)->format('Y-m-d H:i:s'),
                         'motivo' => 'Cita de seguimiento atrasada (Pasada)',
@@ -404,7 +419,7 @@ class ExpedienteSeeder extends Seeder
                     // Cita hoy (futura en horas)
                     \App\Models\Cita::create([
                         'expediente_id' => $expediente->id,
-                        'profesional_id' => $profesional->id,
+                        'profesional_id' => $atendedor->id,
                         'area_id' => $area->id,
                         'fecha_hora' => now()->setTime(23, 59)->format('Y-m-d H:i:s'),
                         'motivo' => 'Cita para hoy más tarde (Límite Mismo Día)',
@@ -414,7 +429,7 @@ class ExpedienteSeeder extends Seeder
                     // Cita futura en días
                     \App\Models\Cita::create([
                         'expediente_id' => $expediente->id,
-                        'profesional_id' => $profesional->id,
+                        'profesional_id' => $atendedor->id,
                         'area_id' => $area->id,
                         'fecha_hora' => now()->addDays(2)->setTime(9, 0)->format('Y-m-d H:i:s'),
                         'motivo' => 'Cita en días futuros (No accionable)',
@@ -423,7 +438,7 @@ class ExpedienteSeeder extends Seeder
                     
                     $this->command?->info("==> CITAS GENERADAS PARA PRUEBAS US-12 <==");
                     $this->command?->info("Paciente: {$data['nombre_completo']} ({$data['carnet']})");
-                    $this->command?->info("Especialista: {$profesional->especialista->email}");
+                    $this->command?->info("Especialista: {$atendedor->especialista->email}");
                     $this->command?->info("Variantes: Pasada, Hoy-Futura, Futura-en-días");
                     $this->command?->info("==========================================");
                 }
@@ -432,7 +447,7 @@ class ExpedienteSeeder extends Seeder
                     // Cita para probar reprogramar
                     \App\Models\Cita::create([
                         'expediente_id' => $expediente->id,
-                        'profesional_id' => $profesional->id,
+                        'profesional_id' => $atendedor->id,
                         'area_id' => $area->id,
                         'fecha_hora' => now()->addDays(5)->setTime(10, 0)->format('Y-m-d H:i:s'),
                         'motivo' => 'Cita de control nutricional (Para reprogramar)',
@@ -442,7 +457,7 @@ class ExpedienteSeeder extends Seeder
                     // Cita para probar cancelar
                     \App\Models\Cita::create([
                         'expediente_id' => $expediente->id,
-                        'profesional_id' => $profesional->id,
+                        'profesional_id' => $atendedor->id,
                         'area_id' => $area->id,
                         'fecha_hora' => now()->addDays(6)->setTime(11, 0)->format('Y-m-d H:i:s'),
                         'motivo' => 'Cita de seguimiento (Para cancelar)',

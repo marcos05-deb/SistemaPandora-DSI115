@@ -172,6 +172,11 @@ onMounted(() => {
                             <div class="min-w-0 flex-1">
                                 <p class="text-[10px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Motivo de Consulta</p>
                                 <p class="text-[13px] text-[var(--nord0)] whitespace-pre-line leading-relaxed">{{ paciente.motivo_consulta }}</p>
+                                <div v-if="paciente.etiquetas_motivo && paciente.etiquetas_motivo.length > 0" class="flex flex-wrap gap-1.5 mt-2">
+                                    <span v-for="tag in paciente.etiquetas_motivo" :key="tag" class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--nord10)] text-white shadow-sm">
+                                        {{ tag }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         <!-- Dirección -->
