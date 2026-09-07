@@ -345,6 +345,25 @@ class ExpedienteSeeder extends Seeder
                     'notas_clinicas' => $expData['notas_clinicas'],
                     'diagnostico' => $expData['diagnostico'],
                 ]);
+                
+                // Generar Cita programada para pruebas de conflicto de horario (US-11)
+                // Se agenda para MT20045 con psicosocial@pandora.com (Trabajo Social / Psicología)
+                if ($data['carnet'] === 'MT20045') {
+                    $fechaCitaConflicto = now()->addDays(2)->setTime(10, 0)->format('Y-m-d H:i:s');
+                    \App\Models\Cita::create([
+                        'expediente_id' => $expediente->id,
+                        'profesional_id' => $profesional->id,
+                        'area_id' => $area->id,
+                        'fecha_hora' => $fechaCitaConflicto,
+                        'motivo' => 'Cita de seguimiento pre-agendada para test de conflicto',
+                        'estado' => 'programada',
+                    ]);
+                    $this->command?->info("==> CITA GENERADA PARA PRUEBAS US-11 <==");
+                    $this->command?->info("Paciente: {$data['nombre_completo']} ({$data['carnet']})");
+                    $this->command?->info("Especialista: psicosocial@pandora.com");
+                    $this->command?->info("Fecha y Hora ocupada: {$fechaCitaConflicto}");
+                    $this->command?->info("==========================================");
+                }
             }
         }
 

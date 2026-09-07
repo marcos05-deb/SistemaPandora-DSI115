@@ -4,7 +4,7 @@ use App\Models\Especialista;
 use App\Services\Crypto\KeyDerivationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
+
 
 /**
  * Tests de HU-01: Autenticación JWT y Criptografía Base.

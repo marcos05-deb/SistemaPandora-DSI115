@@ -67,4 +67,9 @@ class Expediente extends Model implements Auditable
     {
         return $this->belongsTo(Profesional::class, 'cerrado_por_profesional_id');
     }
+
+    public function citas(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Cita::class);
+    }
 }

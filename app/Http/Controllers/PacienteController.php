@@ -173,6 +173,7 @@ class PacienteController extends Controller
 
         $expedienteActivo = $paciente->expedientes->where('estado', '!=', 'cerrado')->first();
         $canCloseExpediente = $expedienteActivo ? $user->can('close', $expedienteActivo) : false;
+        $canAssignCita = $expedienteActivo ? $user->can('create', [\App\Models\Cita::class, $expedienteActivo]) : false;
 
         return Inertia::render('Pacientes/Show', [
             'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve(),
@@ -180,6 +181,7 @@ class PacienteController extends Controller
             'areasDisponibles' => $areasDisponibles,
             'can' => [
                 'closeExpediente' => $canCloseExpediente,
+                'assignCita' => $canAssignCita,
             ],
         ]);
     }

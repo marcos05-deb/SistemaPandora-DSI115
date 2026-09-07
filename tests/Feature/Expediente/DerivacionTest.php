@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-uses(RefreshDatabase::class);
+
 
 beforeEach(function () {
     session(['_sym_key' => str_repeat('a', 32)]);

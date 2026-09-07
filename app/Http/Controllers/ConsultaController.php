@@ -46,6 +46,7 @@ class ConsultaController extends Controller
 
         return redirect()->route('pacientes.show', $expediente->paciente->carnet)
             ->with('message', 'Consulta registrada exitosamente.')
-            ->with('variant', 'success');
+            ->with('variant', 'success')
+            ->with('prompt_cita_expediente_id', $expediente->id);
     }
 }

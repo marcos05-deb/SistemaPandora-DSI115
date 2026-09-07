@@ -4,7 +4,8 @@ import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 import DerivacionModal from '@/Components/Expediente/DerivacionModal.vue';
 import CierreExpedienteModal from '@/Components/Expediente/CierreExpedienteModal.vue';
-import { computed, ref } from 'vue';
+import AgendarCitaModal from '@/Components/Expediente/AgendarCitaModal.vue';
+import { computed, ref, onMounted } from 'vue';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -39,6 +40,15 @@ const getAreaName = (areaId) => {
 
 const isDerivacionModalOpen = ref(false);
 const isCierreModalOpen = ref(false);
+const isCitaModalOpen = ref(false);
+
+onMounted(() => {
+    if (page.props.flash?.prompt_cita_expediente_id && expedienteActivo.value?.id === page.props.flash.prompt_cita_expediente_id) {
+        if (props.can?.assignCita) {
+            isCitaModalOpen.value = true;
+        }
+    }
+});
 </script>
 
 <template>
@@ -290,6 +300,12 @@ const isCierreModalOpen = ref(false);
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                                 Registrar Consulta Clínica
                             </Link>
+                            
+                            <button v-if="can?.assignCita" @click="isCitaModalOpen = true" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                Agendar Próxima Cita
+                            </button>
+                            
                             <button v-if="can?.closeExpediente" @click="isCierreModalOpen = true" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--aurora-red)] text-[var(--aurora-red)] hover:text-white border border-[var(--aurora-red)] hover:border-transparent transition-colors shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                                 Cerrar Expediente
@@ -347,6 +363,12 @@ const isCierreModalOpen = ref(false);
             :show="isCierreModalOpen"
             :expediente="expedienteActivo"
             @close="isCierreModalOpen = false"
+        />
+        
+        <AgendarCitaModal
+            :show="isCitaModalOpen"
+            :expediente="expedienteActivo"
+            @close="isCitaModalOpen = false"
         />
     </div>
 </template>
