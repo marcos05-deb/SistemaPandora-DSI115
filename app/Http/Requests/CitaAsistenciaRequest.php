@@ -23,7 +23,7 @@ class CitaAsistenciaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'estado' => ['required', 'string', 'in:asistio,no_asistio'],
+            'estado' => ['required', 'string', 'in:asistida,ausente'],
         ];
     }
 

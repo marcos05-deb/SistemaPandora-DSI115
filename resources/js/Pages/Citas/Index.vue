@@ -26,7 +26,7 @@ const isCoordinator = computed(() => {
 });
 
 const form = useForm({
-    estado: props.filtros.estado || '',
+    estado: props.filtros.estado || 'todos',
     fecha: props.filtros.fecha || '',
     especialista_id: props.filtros.especialista_id || '',
 });
@@ -44,7 +44,7 @@ watch(() => form.fecha, applyFilters);
 watch(() => form.especialista_id, applyFilters);
 
 function clearFilters() {
-    form.estado = '';
+    form.estado = 'todos';
     form.fecha = '';
     form.especialista_id = '';
 }
@@ -99,7 +99,7 @@ const statusLabels = {
                 </div>
                 <div class="relative">
                     <select v-model="form.estado" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 pr-8 focus:ring-2 focus:ring-[var(--frost4)] transition-shadow appearance-none cursor-pointer">
-                        <option value="">Todos los estados</option>
+                        <option value="todos">Todos los estados</option>
                         <option v-for="(label, key) in statusLabels" :key="key" :value="key">{{ label }}</option>
                     </select>
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--nord3)]">
@@ -116,7 +116,7 @@ const statusLabels = {
                     </div>
                 </div>
                 
-                <button v-if="form.fecha || form.estado || form.especialista_id" @click="clearFilters" 
+                <button v-if="form.fecha || (form.estado && form.estado !== 'todos') || form.especialista_id" @click="clearFilters" 
                     class="p-2 text-[var(--nord3)] hover:text-[var(--aurora-red)] hover:bg-[var(--aurora-red)]/10 rounded-xl transition-colors" title="Limpiar filtros">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

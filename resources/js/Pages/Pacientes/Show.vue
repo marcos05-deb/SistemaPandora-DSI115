@@ -332,10 +332,10 @@ onMounted(() => {
                                 
                                 <div v-if="can?.updateCita" class="flex flex-col gap-2 mt-3 pt-3 border-t border-[var(--nord4)]/60">
                                     <div class="flex items-center gap-2">
-                                        <button @click="marcarAsistencia(cita.id, 'asistio')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-green)] hover:bg-[#8FBCBB] text-white transition-colors">
+                                        <button @click="marcarAsistencia(cita.id, 'asistida')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-green)] hover:bg-[#8FBCBB] text-white transition-colors">
                                             Asistió
                                         </button>
-                                        <button @click="marcarAsistencia(cita.id, 'no_asistio')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-red)] hover:bg-[#BF616A] text-white transition-colors">
+                                        <button @click="marcarAsistencia(cita.id, 'ausente')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-red)] hover:bg-[#BF616A] text-white transition-colors">
                                             No asistió
                                         </button>
                                     </div>

@@ -27,6 +27,13 @@ class CitaController extends Controller
             return redirect()->route('admin.dashboard'); // sysadmin is bounced out
         }
 
+        $estado = $request->query('estado', 'programada');
+        if ($estado === 'todos') {
+            $estado = null;
+        }
+
+        $request->merge(['estado' => $estado]);
+
         $validated = $request->validate([
             'especialista_id' => 'nullable|uuid|exists:profesionales,id',
             'estado' => 'nullable|string|in:programada,asistida,ausente,reprogramada,cancelada',
