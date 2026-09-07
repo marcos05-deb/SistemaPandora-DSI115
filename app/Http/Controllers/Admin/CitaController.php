@@ -36,7 +36,7 @@ class CitaController extends Controller
             ->get();
 
         return Inertia::render('Admin/Citas/Index', [
-            'citasBase' => CitaGridResource::collection($citas)
+            'citasBase' => CitaGridResource::collection($citas)->resolve()
         ]);
     }
 

@@ -23,8 +23,8 @@ class IndexCitasRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'start' => ['required', 'date_format:Y-m-d'],
-            'end' => ['required', 'date_format:Y-m-d', 'after_or_equal:start'],
+            'start' => ['nullable', 'date_format:Y-m-d'],
+            'end' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start'],
         ];
     }
 
@@ -34,7 +34,7 @@ class IndexCitasRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            if (!$validator->failed()) {
+            if (!$validator->failed() && $this->has('start') && $this->has('end')) {
                 $start = CarbonImmutable::createFromFormat('Y-m-d', $this->start);
                 $end = CarbonImmutable::createFromFormat('Y-m-d', $this->end);
 
