@@ -333,6 +333,11 @@ class ExpedienteSeeder extends Seeder
                 ]);
             }
 
+            // Actualizar paciente con las etiquetas para simular que se añadieron en su registro
+            $paciente->update([
+                'etiquetas_motivo' => ['Violencia Familiar', 'Problemas de Adaptación']
+            ]);
+
             if ($index >= 6) {
                 continue; // Dejamos estos 4 pacientes sin expediente, listos para que el usuario los cree manualmente
             }
@@ -347,11 +352,6 @@ class ExpedienteSeeder extends Seeder
                     'motivo_consulta' => $expData['motivo_consulta'],
                     'notas_clinicas' => $expData['notas_clinicas'],
                     'diagnostico' => $expData['diagnostico'],
-                ]);
-
-                // Actualizar paciente con las etiquetas para simular que se añadieron en su registro
-                $paciente->update([
-                    'etiquetas_motivo' => ['Violencia Familiar', 'Problemas de Adaptación']
                 ]);
 
                 if ($index >= 4) {

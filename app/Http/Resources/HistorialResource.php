@@ -22,6 +22,8 @@ class HistorialResource extends JsonResource
             'motivo_consulta' => $this->motivo_consulta,
             'notas_clinicas' => $this->notas_clinicas,
             'diagnostico' => $this->diagnostico,
+            'evaluacion_inicial' => $this->evaluacion_inicial,
+            'tecnica_utilizada' => $this->tecnica_utilizada,
             'profesional' => [
                 'id' => $this->profesional->id,
                 'nombre' => $this->profesional->especialista->name ?? 'Profesional Desconocido',
