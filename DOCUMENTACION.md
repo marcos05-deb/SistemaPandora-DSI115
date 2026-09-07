@@ -397,3 +397,14 @@
   - **Frontend UI/UX:** Se desarrolló el componente modal estandarizado `AgendarCitaModal.vue`, acoplándolo armónicamente al flujo post-consulta a través del estado efímero del servidor (`$page.props.flash.prompt_cita_expediente_id`) en conjunto con un trigger manual (botón flotante) en la vista `Show.vue`.
   - **Resolución de Bugs en el Frontend:** Durante el despliegue del modal, se solventó una anomalía de Renderizado Crítico (Pantalla Blanca de la Muerte) originada por el desacoplamiento global del inyector de propiedades inerciales `$page` en Vue 3 `<script setup>`. Se subsanó mediante la importación explícita del composable `usePage()`. Además, se rediseñó el contenedor emergente ajustando sus propiedades (opacity, blur y z-index) para sincronizarlo estrictamente a las convenciones estéticas *Nord* de los demás modales institucionales.
   - **Testing Continuo:** La batería de pruebas `CitaTest.php` certifica la indemnidad funcional del sistema verificando exhaustivamente las secuencias exitosas, denegación ante colisión de horarios, vulneraciones transversales (cross-area) y resiliencia lógica.
+
+### [2026-09-06] Implementación de US-12: Registrar asistencia o ausencia a una cita
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se implementó la historia de usuario US-12, permitiendo a los Especialistas Clínicos marcar si un paciente asistió o faltó a una cita programada.
+- **Cambios realizados:**
+  - **Base de Datos y Modelo:** Se agregaron los campos `registrado_por_profesional_id` (UUID) y `fecha_registro_asistencia` (timestamp) a la tabla `citas` mediante una nueva migración. Se definió el método `registrarAsistencia()` en el modelo `Cita`.
+  - **Lógica de Negocio y Validación:** Se creó el form request `CitaAsistenciaRequest`, implementando validación estricta de la fecha: solo se puede marcar asistencia en citas pasadas o del día en curso (usando `startOfDay()` para permitir marcados tempranos en el mismo día, acorde a las directrices de negocio). Se valida estrictamente que la cita esté en estado `programada`.
+  - **Políticas de Acceso (RBAC):** Se actualizó `CitaPolicy` (`update`) restringiendo la acción exclusivamente al profesional dueño de la cita en cuestión.
+  - **Controlador y Respuestas:** El método en `CitaController` despacha la acción y emite notificaciones Toast unificadas hacia el cliente.
+  - **Auditoría (Compliance):** Los eventos de estado activan los disparadores de trazabilidad (`laravel-auditing`), resguardando criptográficamente quién ejecutó el marcado.
+  - **Test Suite y Datos Semilla:** Se crearon 5 tests en `AsistenciaTest.php` comprobando cada una de las bifurcaciones lógicas. Se agregaron datos enriquecidos en `ExpedienteSeeder` con 3 tipos de citas (pasada, presente, futura) para pruebas visuales en el paciente FL22067.

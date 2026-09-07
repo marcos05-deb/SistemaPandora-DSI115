@@ -288,14 +288,14 @@ Entonces recibe HTTP 403 Forbidden
 
 **Tareas Técnicas (Laravel):**
 
-- [ ] **Migración:** Agregar a `citas`: `fecha_registro_asistencia` (TIMESTAMPTZ nullable), `registrado_por_profesional_id` (`foreignUuid` nullable).
-- [ ] **Modelo `Cita`:** Agregar método `registrarAsistencia($estado)` con validación de transición de estado.
-- [ ] **Controlador `CitaController`:** Método `registrarAsistencia()`. Validar que la fecha de la cita ya pasó o es hoy. Registrar cambio en audit log.
-- [ ] **Form Request `CitaAsistenciaRequest`:** Validar estado destino (`asistio` o `no_asistio`), fecha válida.
-- [ ] **Policy `CitaPolicy`:** Método `registrarAsistencia()`: solo el especialista asignado.
-- [ ] **Rutas:** `PATCH /citas/{cita}/asistencia`. Middleware `auth` + policy.
-- [ ] **Vista:** Botones de acción en `Pages/Citas/Show.vue` o `Index.vue` para marcar asistencia.
-- [ ] **Tests:** Feature test cubriendo: registro exitoso, rechazo por estado, rechazo por especialista no asignado.
+- [x] **Migración:** Agregar a `citas`: `fecha_registro_asistencia` (TIMESTAMPTZ nullable), `registrado_por_profesional_id` (`foreignUuid` nullable).
+- [x] **Modelo `Cita`:** Agregar método `registrarAsistencia($estado)` con validación de transición de estado.
+- [x] **Controlador `CitaController`:** Método `registrarAsistencia()`. Validar que la fecha de la cita ya pasó o es hoy. Registrar cambio en audit log.
+- [x] **Form Request `CitaAsistenciaRequest`:** Validar estado destino (`asistio` o `no_asistio`), fecha válida.
+- [x] **Policy `CitaPolicy`:** Método `registrarAsistencia()`: solo el especialista asignado.
+- [x] **Rutas:** `PATCH /citas/{cita}/asistencia`. Middleware `auth` + policy.
+- [x] **Vista:** Botones de acción en `Pages/Citas/Show.vue` o `Index.vue` para marcar asistencia.
+- [x] **Tests:** Feature test cubriendo: registro exitoso, rechazo por estado, rechazo por especialista no asignado.
 
 ---
 
