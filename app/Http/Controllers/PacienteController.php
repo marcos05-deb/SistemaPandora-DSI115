@@ -179,6 +179,7 @@ class PacienteController extends Controller
         $expedienteActivo = $paciente->expedientes->where('estado', '!=', 'cerrado')->first();
         $canCloseExpediente = $expedienteActivo ? $user->can('close', $expedienteActivo) : false;
         $canAssignCita = $expedienteActivo ? $user->can('create', [\App\Models\Cita::class, $expedienteActivo]) : false;
+        $canCreateConsulta = $expedienteActivo ? $user->can('create', [\App\Models\Consulta::class, $expedienteActivo]) : false;
         
         $citasPendientes = [];
         $canUpdateCita = false;
@@ -200,6 +201,7 @@ class PacienteController extends Controller
                 'closeExpediente' => $canCloseExpediente,
                 'assignCita' => $canAssignCita,
                 'updateCita' => $canUpdateCita,
+                'createConsulta' => $canCreateConsulta,
             ],
         ]);
     }

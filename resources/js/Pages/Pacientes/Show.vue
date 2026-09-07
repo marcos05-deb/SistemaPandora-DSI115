@@ -361,7 +361,7 @@ onMounted(() => {
                             Expediente actual en estado <span class="font-bold">{{ expedienteActivo.estado.replace('_', ' ') }}</span>.
                         </p>
                         <div class="space-y-3">
-                            <Link :href="'/expedientes/' + expedienteActivo.id + '/consultas/create'" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--nord8)] hover:bg-[var(--nord9)] text-white transition-colors shadow-sm">
+                            <Link v-if="can?.createConsulta" :href="'/expedientes/' + expedienteActivo.id + '/consultas/create'" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--nord8)] hover:bg-[var(--nord9)] text-white transition-colors shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                                 Registrar Consulta Clínica
                             </Link>

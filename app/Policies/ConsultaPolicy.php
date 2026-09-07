@@ -29,7 +29,10 @@ class ConsultaPolicy
         // 2. El expediente no puede estar cerrado
         $estaAbierto = $expediente->estado !== 'cerrado';
 
-        return $perteneceArea && $estaAbierto;
+        // 3. El referente psicosocial no registra consultas clínicas
+        $noEsPsicosocial = !$user->hasRole('psychosocial_referent');
+
+        return $perteneceArea && $estaAbierto && $noEsPsicosocial;
     }
 
     /**
