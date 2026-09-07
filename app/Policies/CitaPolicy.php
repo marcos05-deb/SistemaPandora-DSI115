@@ -18,4 +18,9 @@ class CitaPolicy
         // Solo los profesionales asignados a las áreas del expediente pueden agendar citas
         return $hasValidRole && $user->areas()->where('areas.id', $expediente->area_id)->exists();
     }
+
+    public function update(Especialista $user, Cita $cita): bool
+    {
+        return $user->profesional && $user->profesional->id === $cita->profesional_id;
+    }
 }

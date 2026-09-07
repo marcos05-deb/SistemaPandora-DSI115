@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Expediente;
 use App\Models\Cita;
 use App\Http\Requests\CitaStoreRequest;
+use App\Http\Requests\CitaAsistenciaRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -36,5 +37,19 @@ class CitaController extends Controller
                 'fecha_hora' => 'El horario seleccionado ya no está disponible o existe un conflicto en la agenda del especialista.'
             ])->withInput();
         }
+    }
+
+    public function actualizarAsistencia(CitaAsistenciaRequest $request, Expediente $expediente, Cita $cita): RedirectResponse
+    {
+        $this->authorize('update', $cita);
+
+        $cita->registrarAsistencia(
+            $request->validated('estado'),
+            $request->user()->profesional->id
+        );
+
+        return redirect()->back()
+            ->with('message', 'Asistencia registrada exitosamente.')
+            ->with('variant', 'success');
     }
 }

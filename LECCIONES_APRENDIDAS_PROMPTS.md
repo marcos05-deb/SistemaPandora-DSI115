@@ -17,6 +17,11 @@ Este documento resume lo aprendido durante la ejecución de las historias US-08,
 | 7 | Colisión de códigos de error: la Policy y el controlador competían por decidir 403 vs 422 para el mismo caso | US-10 (primer intento) | Cada código de error debe tener una única fuente de verdad explícita y declarada antes de codear |
 | 8 | Bug de sintaxis (`!==` en un `where()` de Collection) que habría fallado en runtime | US-10 (segundo intento) | Los planes en Markdown no se ejecutan; siempre verificar sintaxis real antes de aprobar |
 | 9 | Uso de `User` en vez de `Especialista` como type-hint, dependiente de `config('auth.providers.users.model')` | Recurrente | Cualquier type-hint de modelo autenticable debe verificarse contra la configuración real, no asumirse por convención de Laravel |
+| 10 | `DerivacionTest` fallaba intermitentemente (🔴 en un diagnóstico, 🟢 en otro) por diferencias de entorno de ejecución (credenciales DML vs DDL en `RefreshDatabase`), sin que el agente marcara la inconsistencia como hallazgo hasta que se le exigió correr el mismo comando 3 veces | Auditoría de tests | Un resultado de test que cambia entre corridas sin cambios de código de por medio es en sí mismo un hallazgo crítico (no determinismo), y debe reportarse como tal, no explicarse post-hoc como "no hay problema" |
+| 11 | El fix de infraestructura de testing (mover `RefreshDatabase` a `TestCase.php`) tuvo un efecto colateral real: destapó un bug preexistente en `LoginTest` (JWT) que estaba oculto porque el `setUp()` moría antes de llegar a la aserción real | Auditoría de tests | Cuando un test empieza a fallar justo después de un cambio de infraestructura, no se asume "es ajeno" — se compara explícitamente el comportamiento antes/después del cambio antes de archivarlo como no relacionado |
+| 12 | Un hallazgo de "falso positivo" en ISO 27001 se basó en inspeccionar el `.env` del host en vez de las variables reales del contenedor Docker donde corre el test | Auditoría de tests | Para reclamos de infraestructura (roles de BD, permisos, variables de entorno) siempre verificar el entorno de ejecución real, nunca el archivo de configuración que el agente asume que aplica |
+| 13 | El agente propuso un cambio estructural mayor (consultas obligatoriamente ligadas a una cita previa) a mitad de sprint, sin analizar el impacto en historias ya cerradas (US-08, US-11, US-12) ni resolver sus propias preguntas de negocio abiertas antes de proponer el esquema de base de datos | Propuesta fuera de sprint | Todo cambio de arquitectura o de reglas de negocio que afecte historias ya implementadas debe presentarse primero como análisis de impacto (qué historias se reabren, qué preguntas de negocio quedan sin responder) — nunca como plan técnico de migración antes de que el dueño del producto decida si el cambio procede y cuándo |
+| 14 | La propuesta de citas obligatorias sugería `migrate:fresh` como solución aceptable "porque estamos en desarrollo", a pesar de que ya existían datos de seed acumulados de varias historias | Propuesta fuera de sprint | Nunca tratar la pérdida de datos de desarrollo/seed como algo trivial; cualquier migración estructural debe plantearse como transformación de datos, no como borrón y cuenta nueva, incluso en entornos de desarrollo |
 
 ---
 
@@ -53,6 +58,21 @@ Antes de dar por terminada la historia y presentar resultados:
 - Todo el trabajo va en una rama nueva desde `dev`. Nunca commits directos a `dev` o `main`, sin excepción, incluso para fixes triviales o urgentes.
 - El merge se hace vía Pull Request.
 - El agente puede *proponer* cambios de alcance al backlog (nuevas historias, reordenamientos), pero nunca los escribe directamente sobre los archivos de planeación sin aprobación explícita.
+
+---
+
+## 2.1 Manejo de propuestas de cambio estructural o de alcance a mitad de sprint
+
+Cuando el agente (o el propio equipo) identifica una posible mejora de arquitectura o de reglas de negocio que **afecta historias ya implementadas o el flujo general del sistema**, no se trata como una historia más a implementar de inmediato. Se sigue este proceso:
+
+1. **Nunca se presenta primero como plan técnico.** Antes de proponer migraciones, modelos o controladores, se presenta como un análisis de impacto:
+   - Qué historias ya cerradas quedarían afectadas o tendrían que reabrirse.
+   - Qué preguntas de negocio deben responderse antes de que el esquema de datos tenga sentido (si esas preguntas quedan sin responder, es señal de que el diseño no está listo).
+   - Si el cambio es una restricción fuerte (ej. relación `unique`/`NOT NULL` nueva) o un acoplamiento suave (ej. relación opcional), y por qué se eligió ese nivel de rigidez.
+2. **Se evalúa si el problema real tiene una solución más simple ya prevista en el backlog** antes de proponer una restricción estructural nueva. Muchas veces el backlog ya contempla el mecanismo correcto en otra historia (ej. el seguimiento de adherencia vía asistencia a citas, en vez de bloquear el registro clínico con una cita obligatoria).
+3. **Nunca se usa `migrate:fresh` o cualquier operación destructiva como solución "porque estamos en desarrollo"** si ya existen datos de seed acumulados útiles para pruebas manuales. Toda migración estructural se diseña como transformación de datos.
+4. **Se documenta como propuesta separada** (archivo aparte, nunca escrito directo sobre el backlog activo) y se decide explícitamente si entra al sprint actual o queda para uno futuro — nunca se asume que "ya que se identificó, hay que resolverlo ya".
+5. El dueño del producto decide el timing; terminar el sprint en curso sobre una base ya validada tiene prioridad sobre absorber cambios estructurales a mitad de camino, salvo que el hallazgo sea un problema de seguridad o cumplimiento (en cuyo caso aplica el protocolo de incidente, no este proceso).
 
 ---
 

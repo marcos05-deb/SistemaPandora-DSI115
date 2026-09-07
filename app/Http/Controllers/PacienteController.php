@@ -151,10 +151,11 @@ class PacienteController extends Controller
         if ($user->hasRole('psychosocial_referent')) {
             $pacienteQuery->with(['expedientes' => function ($q) {
                 $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class)
+                  ->with('citas')
                   ->select('id', 'paciente_id', 'area_id', 'estado', 'created_at', 'updated_at');
             }]);
         } else {
-            $pacienteQuery->with('expedientes');
+            $pacienteQuery->with(['expedientes.citas']);
         }
 
         $paciente = $pacienteQuery->where('carnet', $carnet)->firstOrFail();
@@ -174,14 +175,27 @@ class PacienteController extends Controller
         $expedienteActivo = $paciente->expedientes->where('estado', '!=', 'cerrado')->first();
         $canCloseExpediente = $expedienteActivo ? $user->can('close', $expedienteActivo) : false;
         $canAssignCita = $expedienteActivo ? $user->can('create', [\App\Models\Cita::class, $expedienteActivo]) : false;
+        
+        $citasPendientes = [];
+        $canUpdateCita = false;
+        if ($expedienteActivo) {
+            $citasPendientes = $expedienteActivo->citas->where('estado', 'programada')->values()->all();
+            if (count($citasPendientes) > 0) {
+                // Se asume que todas las citas pendientes de un expediente activo son administradas por la misma política. 
+                // Autorizamos con la primera cita (se evalúa la de profesional asignado).
+                $canUpdateCita = $user->can('update', $citasPendientes[0]);
+            }
+        }
 
         return Inertia::render('Pacientes/Show', [
             'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve(),
             'hasAnyExpediente' => $hasAnyExpediente,
             'areasDisponibles' => $areasDisponibles,
+            'citasPendientes' => $citasPendientes,
             'can' => [
                 'closeExpediente' => $canCloseExpediente,
                 'assignCita' => $canAssignCita,
+                'updateCita' => $canUpdateCita,
             ],
         ]);
     }

@@ -6,6 +6,7 @@ import DerivacionModal from '@/Components/Expediente/DerivacionModal.vue';
 import CierreExpedienteModal from '@/Components/Expediente/CierreExpedienteModal.vue';
 import AgendarCitaModal from '@/Components/Expediente/AgendarCitaModal.vue';
 import { computed, ref, onMounted } from 'vue';
+import { router } from '@inertiajs/vue3';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -13,6 +14,7 @@ const props = defineProps({
     paciente: { type: Object, required: true },
     hasAnyExpediente: { type: Boolean, default: false },
     areasDisponibles: { type: Array, default: () => [] },
+    citasPendientes: { type: Array, default: () => [] },
     can: { type: Object, default: () => ({}) }
 });
 
@@ -41,6 +43,16 @@ const getAreaName = (areaId) => {
 const isDerivacionModalOpen = ref(false);
 const isCierreModalOpen = ref(false);
 const isCitaModalOpen = ref(false);
+
+const marcarAsistencia = (citaId, estado) => {
+    if (!props.can?.updateCita || !expedienteActivo.value) return;
+    
+    router.patch(`/expedientes/${expedienteActivo.value.id}/citas/${citaId}/asistencia`, {
+        estado: estado
+    }, {
+        preserveScroll: true
+    });
+};
 
 onMounted(() => {
     if (page.props.flash?.prompt_cita_expediente_id && expedienteActivo.value?.id === page.props.flash.prompt_cita_expediente_id) {
@@ -279,6 +291,39 @@ onMounted(() => {
                                 </svg>
                             </div>
                             No hay familiares registrados.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Citas Pendientes -->
+                <div v-if="citasPendientes && citasPendientes.length > 0" class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
+                    <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--surface-header)]">
+                        <h2 class="text-[14px] font-medium text-[var(--nord0)] flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[var(--aurora-purple)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Citas Pendientes
+                        </h2>
+                    </div>
+                    <div class="p-0">
+                        <div v-for="cita in citasPendientes" :key="cita.id" class="p-5 border-b border-[var(--nord4)] last:border-0">
+                            <div class="flex flex-col gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-[var(--surface-header)] text-[var(--nord3)] border border-[var(--nord4)]">
+                                        {{ formatDate(cita.fecha_hora) }} a las {{ new Date(cita.fecha_hora).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}) }}
+                                    </span>
+                                </div>
+                                <p class="text-[13px] text-[var(--nord0)] font-medium mt-1">{{ cita.motivo }}</p>
+                                
+                                <div v-if="can?.updateCita" class="flex items-center gap-3 mt-3 pt-3 border-t border-[var(--nord4)]/60">
+                                    <button @click="marcarAsistencia(cita.id, 'asistio')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-green)] hover:bg-[#8FBCBB] text-white transition-colors">
+                                        Asistió
+                                    </button>
+                                    <button @click="marcarAsistencia(cita.id, 'no_asistio')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-red)] hover:bg-[#BF616A] text-white transition-colors">
+                                        No asistió
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

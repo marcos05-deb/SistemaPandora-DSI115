@@ -20,10 +20,13 @@ class Cita extends Model implements Auditable
         'fecha_hora',
         'motivo',
         'estado',
+        'fecha_registro_asistencia',
+        'registrado_por_profesional_id',
     ];
 
     protected $casts = [
         'fecha_hora' => 'datetime',
+        'fecha_registro_asistencia' => 'datetime',
         'motivo'     => \App\Models\Casts\EncryptedFieldCast::class,
     ];
 
@@ -40,5 +43,18 @@ class Cita extends Model implements Auditable
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
+    }
+
+    public function registradoPor(): BelongsTo
+    {
+        return $this->belongsTo(Profesional::class, 'registrado_por_profesional_id');
+    }
+
+    public function registrarAsistencia(string $estado, string $profesionalId): void
+    {
+        $this->estado = $estado;
+        $this->registrado_por_profesional_id = $profesionalId;
+        $this->fecha_registro_asistencia = now();
+        $this->save();
     }
 }

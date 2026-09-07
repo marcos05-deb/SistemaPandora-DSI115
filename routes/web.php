@@ -118,6 +118,7 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
             Route::post('/expedientes/{expediente}/cerrar', [\App\Http\Controllers\ExpedienteController::class, 'close'])->name('expedientes.cerrar');
             
             Route::post('/expedientes/{expediente}/citas', [\App\Http\Controllers\CitaController::class, 'store'])->name('citas.store');
+            Route::patch('/expedientes/{expediente}/citas/{cita}/asistencia', [\App\Http\Controllers\CitaController::class, 'actualizarAsistencia'])->name('citas.asistencia');
         });
     });
 

@@ -364,6 +364,44 @@ class ExpedienteSeeder extends Seeder
                     $this->command?->info("Fecha y Hora ocupada: {$fechaCitaConflicto}");
                     $this->command?->info("==========================================");
                 }
+
+                if ($data['carnet'] === 'FL22067') {
+                    // Cita pasada
+                    \App\Models\Cita::create([
+                        'expediente_id' => $expediente->id,
+                        'profesional_id' => $profesional->id,
+                        'area_id' => $area->id,
+                        'fecha_hora' => now()->subDays(1)->setTime(14, 0)->format('Y-m-d H:i:s'),
+                        'motivo' => 'Cita de seguimiento atrasada (Pasada)',
+                        'estado' => 'programada',
+                    ]);
+                    
+                    // Cita hoy (futura en horas)
+                    \App\Models\Cita::create([
+                        'expediente_id' => $expediente->id,
+                        'profesional_id' => $profesional->id,
+                        'area_id' => $area->id,
+                        'fecha_hora' => now()->setTime(23, 59)->format('Y-m-d H:i:s'),
+                        'motivo' => 'Cita para hoy más tarde (Límite Mismo Día)',
+                        'estado' => 'programada',
+                    ]);
+                    
+                    // Cita futura en días
+                    \App\Models\Cita::create([
+                        'expediente_id' => $expediente->id,
+                        'profesional_id' => $profesional->id,
+                        'area_id' => $area->id,
+                        'fecha_hora' => now()->addDays(2)->setTime(9, 0)->format('Y-m-d H:i:s'),
+                        'motivo' => 'Cita en días futuros (No accionable)',
+                        'estado' => 'programada',
+                    ]);
+                    
+                    $this->command?->info("==> CITAS GENERADAS PARA PRUEBAS US-12 <==");
+                    $this->command?->info("Paciente: {$data['nombre_completo']} ({$data['carnet']})");
+                    $this->command?->info("Especialista: {$profesional->especialista->email}");
+                    $this->command?->info("Variantes: Pasada, Hoy-Futura, Futura-en-días");
+                    $this->command?->info("==========================================");
+                }
             }
         }
 
