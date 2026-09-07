@@ -20,6 +20,10 @@ class PacienteController extends Controller
     {
         $user = auth()->user();
 
+        if ($user->hasRole('sysadmin')) {
+            abort(403);
+        }
+
         if ($user->hasRole('area_coordinator')) {
             return redirect()->route('busqueda-segura');
         }

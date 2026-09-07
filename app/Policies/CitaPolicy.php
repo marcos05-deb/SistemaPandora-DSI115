@@ -12,8 +12,7 @@ class CitaPolicy
     {
         // Roles permitidos según US-11 (y referente para Trabajo Social)
         $hasValidRole = $user->hasRole('specialist') || 
-                        $user->hasRole('area_coordinator') || 
-                        $user->hasRole('psychosocial_referent');
+                        $user->hasRole('area_coordinator');
                         
         // Solo los profesionales asignados a las áreas del expediente pueden agendar citas
         return $hasValidRole && $user->areas()->where('areas.id', $expediente->area_id)->exists();

@@ -8,10 +8,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use OwenIt\Auditing\Contracts\Auditable;
+use App\Models\Scopes\AreaScope;
 
 class Cita extends Model implements Auditable
 {
     use HasFactory, SoftDeletes, HasUuids, \OwenIt\Auditing\Auditable;
+
+    /**
+     * Aplica el AreaScope a nivel global para aislar las citas por área clínica.
+     */
+    protected static function booted()
+    {
+        static::addGlobalScope(new AreaScope);
+    }
 
     protected $fillable = [
         'expediente_id',

@@ -409,6 +409,13 @@
   - **Auditoría (Compliance):** Los eventos de estado activan los disparadores de trazabilidad (`laravel-auditing`), resguardando criptográficamente quién ejecutó el marcado.
   - **Test Suite y Datos Semilla:** Se crearon 5 tests en `AsistenciaTest.php` comprobando cada una de las bifurcaciones lógicas. Se agregaron datos enriquecidos en `ExpedienteSeeder` con 3 tipos de citas (pasada, presente, futura) para pruebas visuales en el paciente FL22067.
 
+### [2026-09-06] Resolución de Deuda de Infraestructura/Compliance (ISO 27001 A.14)
+- **Agente:** Antigravity (IA)
+- **Contexto:** Durante las verificaciones de la suite completa antes de abordar la US-14, se determinó que la base de datos de test (`testing`) no aplicaba correctamente el principio de Mínimo Privilegio sobre el rol de la aplicación (`pandora_app`) en versiones de PostgreSQL 15+. Existía un bypass manual (`GRANT ALL PRIVILEGES`) temporal que corrompía la prueba de aislamiento estructural `InfrastructureIsolationTest`.
+- **Cambios realizados:**
+  - **Inyección Transparente de Políticas:** Se resolvió de raíz en la base del sistema. En la migración inicial `2024_01_01_000000_setup_postgres_extensions_and_enums.php`, se insertaron comandos `ALTER DEFAULT PRIVILEGES` que aseguran que `pandora_app` reciba permisos restrictivos de DML (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) de forma automática en toda la base de datos, en todas las ejecuciones.
+  - **Test de Regresión Permanente:** Se programó la suite `PrivilegesTest.php`, la cual verifica exhaustivamente que operaciones destructivas DDL y `TRUNCATE` sean denegadas con códigos `42501` (Permission Denied), blindando el contenedor. (Este fix está encapsulado en la rama `fix/compliance-db-least-privilege` para trazabilidad pura en CI/CD).
+
 ### [2026-09-06] Implementación de US-13: Reprogramar o cancelar una cita
 - **Agente:** Antigravity (IA)
 - **Contexto:** Se desarrolló la historia de usuario US-13 que permite a los Especialistas Clínicos y Coordinadores gestionar la agenda reprogramando o cancelando citas previamente agendadas, garantizando la trazabilidad histórica de los cambios (audit logging) y previniendo colisiones de horario.

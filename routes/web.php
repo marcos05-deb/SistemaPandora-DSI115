@@ -106,11 +106,12 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         Route::post('/pacientes/{paciente}/derivar', [\App\Http\Controllers\DerivacionController::class, 'store'])->name('pacientes.derivar.store');
     });
 
-    Route::middleware('role:psychosocial_referent|specialist|area_coordinator')->group(function () {
+    Route::middleware('role:psychosocial_referent|specialist|area_coordinator|sysadmin')->group(function () {
         Route::get('/pacientes', [\App\Http\Controllers\PacienteController::class, 'index'])->name('pacientes.index')->middleware('throttle:30,1');
         Route::get('/pacientes/{carnet}', [\App\Http\Controllers\PacienteController::class, 'show'])->name('pacientes.show')->middleware('throttle:30,1');
         
         Route::middleware('enforce_area_scope')->group(function () {
+            Route::get('/citas', [\App\Http\Controllers\CitaController::class, 'index'])->name('citas.index');
             Route::get('/pacientes/{paciente}/historial', [\App\Http\Controllers\HistorialController::class, 'show'])->name('pacientes.historial');
             
             Route::get('/expedientes/{expediente}/consultas/create', [\App\Http\Controllers\ConsultaController::class, 'create'])->name('consultas.create');
