@@ -146,6 +146,10 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
 
         // Organigrama
         Route::get('/organigrama', [\App\Http\Controllers\Admin\OrganigramaController::class, 'index'])->name('admin.organigrama.index');
+        
+        // Calendario de Citas
+        Route::get('/citas', [\App\Http\Controllers\Admin\CitaController::class, 'index'])->name('admin.citas');
+        Route::get('/api/citas/{date}', [\App\Http\Controllers\Admin\CitaController::class, 'citasPorDia'])->name('admin.api.citas.dia');
     });
 
     Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout');
