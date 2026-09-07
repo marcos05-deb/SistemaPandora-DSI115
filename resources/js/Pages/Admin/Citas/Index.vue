@@ -116,12 +116,52 @@ const fetchCitasPorDia = async (dateObj) => {
     }
 };
 
-// Helpers para la grilla
 const getCitasCount = (dateObj) => {
     const dateStr = dateObj.format('YYYY-MM-DD');
-    // Las citasBase vienen con fecha_hora en ISO8601 (UTC)
-    // Convertimos a timezone local para emparejar
     return props.citasBase.filter(c => dayjs(c.fecha_hora).tz("America/El_Salvador").format('YYYY-MM-DD') === dateStr).length;
+};
+
+const statusColors = {
+    programada: 'bg-[var(--nord9)]/10 text-[var(--nord9)]',
+    asistida: 'bg-[var(--aurora-green)]/10 text-[var(--aurora-green)]',
+    ausente: 'bg-[var(--aurora-orange)]/10 text-[var(--aurora-orange)]',
+    reprogramada: 'bg-[var(--aurora-purple)]/10 text-[var(--aurora-purple)]',
+    cancelada: 'bg-[var(--aurora-red)]/10 text-[var(--aurora-red)]',
+};
+
+const statusDotColors = {
+    programada: 'bg-[var(--nord9)]',
+    asistida: 'bg-[var(--aurora-green)]',
+    ausente: 'bg-[var(--aurora-orange)]',
+    reprogramada: 'bg-[var(--aurora-purple)]',
+    cancelada: 'bg-[var(--aurora-red)]',
+};
+
+const statusLabels = {
+    programada: 'Programadas',
+    asistida: 'Asistidas',
+    ausente: 'Ausentes',
+    reprogramada: 'Reprogramadas',
+    cancelada: 'Canceladas',
+};
+
+const getCitasBreakdown = (dateObj) => {
+    const dateStr = dateObj.format('YYYY-MM-DD');
+    const citasDelDia = props.citasBase.filter(c => dayjs(c.fecha_hora).tz("America/El_Salvador").format('YYYY-MM-DD') === dateStr);
+    if (citasDelDia.length === 0) return null;
+    
+    const breakdown = {};
+    citasDelDia.forEach(c => {
+        breakdown[c.estado] = (breakdown[c.estado] || 0) + 1;
+    });
+    
+    return Object.keys(breakdown).map(estado => ({
+        estado,
+        count: breakdown[estado],
+        label: statusLabels[estado] || estado,
+        colorClass: statusColors[estado] || 'bg-[var(--nord4)]/10 text-[var(--nord3)]',
+        dotClass: statusDotColors[estado] || 'bg-[var(--nord3)]'
+    }));
 };
 </script>
 
@@ -180,10 +220,15 @@ const getCitasCount = (dateObj) => {
                         </div>
                         
                         <!-- Indicadores de citas -->
-                        <div class="mt-2" v-if="getCitasCount(date) > 0">
-                            <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-[var(--aurora-purple)]/10 text-[var(--aurora-purple)] text-[11px] font-bold">
-                                <span class="w-1.5 h-1.5 rounded-full bg-[var(--aurora-purple)]"></span>
-                                {{ getCitasCount(date) }} citas
+                        <div class="mt-2 flex flex-col gap-1 w-full" v-if="getCitasCount(date) > 0">
+                            <div v-for="stat in getCitasBreakdown(date)" :key="stat.estado"
+                                 class="inline-flex items-center justify-between px-1.5 py-0.5 rounded text-[10px] font-bold"
+                                 :class="stat.colorClass">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full" :class="stat.dotClass"></span>
+                                    <span class="truncate max-w-[65px]" :title="stat.label">{{ stat.label }}</span>
+                                </div>
+                                <span>{{ stat.count }}</span>
                             </div>
                         </div>
                     </div>
@@ -223,8 +268,9 @@ const getCitasCount = (dateObj) => {
                                             <span class="text-[12px] font-bold text-[var(--aurora-purple)]">
                                                 {{ dayjs(cita.fecha_hora).tz("America/El_Salvador").format('hh:mm A') }}
                                             </span>
-                                            <span class="text-[11px] font-medium px-2 py-0.5 rounded bg-[var(--nord6)] text-[var(--nord3)] mt-1 w-max">
-                                                {{ cita.estado.toUpperCase() }}
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded mt-1 w-max"
+                                                  :class="statusColors[cita.estado] || 'bg-[var(--nord6)] text-[var(--nord3)]'">
+                                                {{ (statusLabels[cita.estado] || cita.estado).toUpperCase() }}
                                             </span>
                                         </div>
                                         <span class="text-[10px] font-bold uppercase tracking-wider text-white px-2 py-1 rounded"
