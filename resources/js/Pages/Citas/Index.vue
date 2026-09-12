@@ -141,6 +141,11 @@ const statusLabels = {
                         title="Fecha exacta"
                     >
                 </div>
+                <div v-if="form.vista === 'lista'" class="flex items-center gap-2">
+                    <input type="date" v-model="form.fecha_desde" title="Desde" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" />
+                    <span class="text-[11px] text-[var(--nord3)]">a</span>
+                    <input type="date" v-model="form.fecha_hasta" title="Hasta" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" />
+                </div>
                 <input type="text" v-model="form.paciente" placeholder="Código/carnet" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 w-36" />
                 <div class="relative">
                     <select v-model="form.estado" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 pr-8 focus:ring-2 focus:ring-[var(--frost4)] transition-shadow appearance-none cursor-pointer">
