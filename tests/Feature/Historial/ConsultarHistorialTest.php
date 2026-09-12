@@ -172,3 +172,56 @@ it('allows coordinator to see history from all their authorized areas', function
         ->where('historial.data.1.motivo_consulta', 'Ansiedad generalizada')
     );
 });
+
+it('filtra historial por período y área autorizada', function () {
+    $this->actingAs($this->userCoordinator);
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->get(route('pacientes.historial', [
+            'paciente' => $this->paciente->codigo,
+            'fecha_desde' => now()->subDays(7)->toDateString(),
+            'fecha_hasta' => now()->toDateString(),
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('historial.data', 1)
+            ->where('historial.data.0.motivo_consulta', 'Caries dental')
+        );
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->get(route('pacientes.historial', [
+            'paciente' => $this->paciente->codigo,
+            'area_id' => $this->area->id,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('historial.data', 1)
+            ->where('historial.data.0.area.nombre', 'Psicología')
+        );
+});
+
+it('rechaza filtro por área no autorizada', function () {
+    $this->actingAs($this->userSpecialist);
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->get(route('pacientes.historial', [
+            'paciente' => $this->paciente->codigo,
+            'area_id' => $this->otraArea->id,
+        ]))
+        ->assertSessionHasErrors('area_id');
+});
+
+it('filtra por tipo de atención consulta', function () {
+    $this->actingAs($this->userSpecialist);
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->get(route('pacientes.historial', [
+            'paciente' => $this->paciente->codigo,
+            'tipo_atencion' => 'consulta',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('historial.data', 1)
+            ->where('historial.data.0.tipo_atencion', 'consulta')
+        );
+});

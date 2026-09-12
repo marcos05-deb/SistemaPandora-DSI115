@@ -1,14 +1,48 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 
 defineOptions({ layout: ClinicalLayout });
 
-defineProps({
+const props = defineProps({
     paciente: { type: Object, required: true },
-    historial: { type: Object, required: true }
+    historial: { type: Object, required: true },
+    filtros: { type: Object, default: () => ({}) },
+    areasAutorizadas: { type: Array, default: () => [] },
+    tiposAtencion: { type: Array, default: () => [] },
+    historialVacio: { type: Boolean, default: false },
+    filtrosSinResultados: { type: Boolean, default: false },
+    orden: { type: String, default: 'desc' },
 });
+
+const form = useForm({
+    fecha_desde: props.filtros.fecha_desde || '',
+    fecha_hasta: props.filtros.fecha_hasta || '',
+    area_id: props.filtros.area_id || '',
+    tipo_atencion: props.filtros.tipo_atencion || '',
+});
+
+const tieneFiltros = computed(() =>
+    !!(form.fecha_desde || form.fecha_hasta || form.area_id || form.tipo_atencion)
+);
+
+const aplicarFiltros = () => {
+    form.get(`/pacientes/${props.paciente.carnet}/historial`, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+};
+
+const limpiarFiltros = () => {
+    form.fecha_desde = '';
+    form.fecha_hasta = '';
+    form.area_id = '';
+    form.tipo_atencion = '';
+    aplicarFiltros();
+};
 </script>
 
 <template>
@@ -38,6 +72,41 @@ defineProps({
                 <p class="text-[15px] font-bold text-[var(--nord0)]">{{ paciente.nombre_completo }}</p>
                 <p class="text-[13px] text-[var(--nord3)] font-mono mt-0.5">{{ paciente.carnet }}</p>
             </div>
+        </div>
+
+        <!-- Filtros HU-09 -->
+        <div class="bg-white rounded-[12px] p-4 shadow-sm border border-[var(--nord4)] space-y-3">
+            <div class="flex flex-wrap items-end gap-3">
+                <div>
+                    <label class="block text-[11px] font-semibold text-[var(--nord3)] uppercase mb-1">Desde</label>
+                    <input type="date" v-model="form.fecha_desde" class="rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[13px] text-[var(--nord0)]" />
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-[var(--nord3)] uppercase mb-1">Hasta</label>
+                    <input type="date" v-model="form.fecha_hasta" class="rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[13px] text-[var(--nord0)]" />
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-[var(--nord3)] uppercase mb-1">Área</label>
+                    <select v-model="form.area_id" class="rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[13px] text-[var(--nord0)] min-w-[160px]">
+                        <option value="">Todas las autorizadas</option>
+                        <option v-for="area in areasAutorizadas" :key="area.id" :value="area.id">{{ area.nombre }}</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-[var(--nord3)] uppercase mb-1">Tipo de atención</label>
+                    <select v-model="form.tipo_atencion" class="rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[13px] text-[var(--nord0)] min-w-[160px]">
+                        <option value="">Todos</option>
+                        <option v-for="tipo in tiposAtencion" :key="tipo.value" :value="tipo.value">{{ tipo.label }}</option>
+                    </select>
+                </div>
+                <button type="button" @click="aplicarFiltros" class="px-4 py-2 rounded-lg bg-[var(--nord8)] text-white text-[13px] font-medium hover:bg-[var(--nord9)] transition-colors">
+                    Filtrar
+                </button>
+                <button v-if="tieneFiltros" type="button" @click="limpiarFiltros" class="px-4 py-2 rounded-lg border border-[var(--nord4)] text-[13px] text-[var(--nord3)] hover:text-[var(--aurora-red)] transition-colors">
+                    Limpiar filtros
+                </button>
+            </div>
+            <p class="text-[11px] text-[var(--nord3)]">Orden: más reciente primero.</p>
         </div>
 
         <!-- Timeline -->
@@ -135,6 +204,16 @@ defineProps({
                                 </h3>
                                 <p class="text-[14px] font-medium text-[var(--nord0)]">{{ consulta.diagnostico }}</p>
                             </div>
+
+                            <div v-if="consulta.plan_atencion" class="p-4 rounded-[8px] bg-[var(--nord8)]/5 border border-[var(--nord8)]/20">
+                                <h3 class="text-[11px] font-bold text-[var(--nord3)] uppercase tracking-wider mb-2 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[var(--nord8)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                    </svg>
+                                    Plan de Atención
+                                </h3>
+                                <p class="text-[13px] text-[var(--nord0)] whitespace-pre-line leading-relaxed">{{ consulta.plan_atencion }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -148,11 +227,21 @@ defineProps({
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
             </div>
-            <h3 class="text-[16px] font-bold text-[var(--nord0)] mb-2">Sin Registros Clínicos</h3>
+            <h3 class="text-[16px] font-bold text-[var(--nord0)] mb-2">
+                {{ filtrosSinResultados ? 'Sin resultados para los filtros' : 'Sin Registros Clínicos' }}
+            </h3>
             <p class="text-[14px] text-[var(--nord3)] max-w-md mx-auto leading-relaxed">
-                No se encontraron registros de consultas previas para este paciente en las áreas a las que tienes acceso autorizado.
+                <template v-if="filtrosSinResultados">
+                    No hay atenciones que coincidan con el período, área o tipo seleccionados. Pruebe ampliar el rango o limpiar filtros.
+                </template>
+                <template v-else>
+                    No se encontraron registros de consultas previas para este paciente en las áreas a las que tienes acceso autorizado.
+                </template>
             </p>
-            <div class="mt-6">
+            <div class="mt-6 flex items-center justify-center gap-3">
+                <button v-if="filtrosSinResultados" type="button" @click="limpiarFiltros" class="px-5 py-2.5 bg-[var(--nord8)] hover:bg-[var(--nord9)] text-white text-[13px] font-medium rounded-lg transition-colors">
+                    Limpiar filtros
+                </button>
                 <Link :href="`/pacientes/${paciente.carnet}`" class="px-5 py-2.5 bg-[var(--surface-header)] hover:bg-[var(--surface-subtle)] text-[var(--nord0)] text-[13px] font-medium rounded-lg border border-[var(--nord4)] transition-colors shadow-sm inline-flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     Volver al Perfil
