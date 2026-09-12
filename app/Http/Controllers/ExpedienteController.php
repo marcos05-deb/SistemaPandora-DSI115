@@ -16,8 +16,9 @@ class ExpedienteController extends Controller
         Gate::authorize('close', $expediente);
 
         $expediente->update([
-            'estado' => 'cerrado',
-            'motivo_cierre' => $request->motivo_cierre,
+            'estado' => Expediente::ESTADO_CERRADO,
+            'resultado_final' => $request->validated('resultado_final'),
+            'motivo_cierre' => $request->validated('motivo_cierre'),
             'fecha_cierre' => now(),
             'cerrado_por_profesional_id' => $request->user()->profesional->id,
         ]);

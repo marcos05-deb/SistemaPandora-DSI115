@@ -17,6 +17,7 @@ const emit = defineEmits(['close']);
 
 const form = useForm({
     motivo_cierre: '',
+    resultado_final: '',
     confirmacion_irreversible: false,
 });
 
@@ -85,13 +86,30 @@ const submit = () => {
 
                             <form @submit.prevent="submit" class="mt-5 space-y-4 text-left">
                                 <div>
+                                    <label for="resultado_final" class="block text-sm font-medium text-[var(--nord0)] mb-1">
+                                        Resultado final <span class="text-[var(--aurora-red)]">*</span>
+                                    </label>
+                                    <textarea
+                                        id="resultado_final"
+                                        v-model="form.resultado_final"
+                                        rows="3"
+                                        class="block w-full border text-[var(--nord0)] text-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-[var(--aurora-red)] focus:border-[var(--aurora-red)] transition-colors duration-200"
+                                        :class="{'border-[var(--aurora-red)] bg-red-50': form.errors.resultado_final, 'border-[var(--nord4)] bg-[var(--surface)]': !form.errors.resultado_final}"
+                                        :disabled="isSubmitting"
+                                        placeholder="Describa el resultado clínico final del proceso de atención..."
+                                    ></textarea>
+                                    <p v-if="form.errors.resultado_final" class="mt-1.5 text-xs text-[var(--aurora-red)]">
+                                        {{ form.errors.resultado_final }}
+                                    </p>
+                                </div>
+                                <div>
                                     <label for="motivo_cierre" class="block text-sm font-medium text-[var(--nord0)] mb-1">
                                         Motivo de Cierre Clínico <span class="text-[var(--aurora-red)]">*</span>
                                     </label>
                                     <textarea
                                         id="motivo_cierre"
                                         v-model="form.motivo_cierre"
-                                        rows="4"
+                                        rows="3"
                                         class="block w-full border text-[var(--nord0)] text-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-[var(--aurora-red)] focus:border-[var(--aurora-red)] transition-colors duration-200"
                                         :class="{'border-[var(--aurora-red)] bg-red-50': form.errors.motivo_cierre, 'border-[var(--nord4)] bg-[var(--surface)]': !form.errors.motivo_cierre}"
                                         :disabled="isSubmitting"
@@ -107,7 +125,7 @@ const submit = () => {
                                             id="confirmacion_irreversible"
                                             v-model="form.confirmacion_irreversible"
                                             type="checkbox"
-                                            class="w-4 h-4 text-[var(--aurora-red)] bg-gray-100 border-gray-300 rounded focus:ring-[var(--aurora-red)] focus:ring-2"
+                                            class="w-4 h-4 text-[var(--aurora-red)] bg-[var(--surface)] border-[var(--nord4)] rounded focus:ring-[var(--aurora-red)] focus:ring-2"
                                             :class="{'border-[var(--aurora-red)]': form.errors.confirmacion_irreversible}"
                                         >
                                     </div>
@@ -133,7 +151,7 @@ const submit = () => {
                     <button
                         type="button"
                         @click="submit"
-                        :disabled="isSubmitting || !form.motivo_cierre || !form.confirmacion_irreversible"
+                        :disabled="isSubmitting || !form.motivo_cierre || !form.resultado_final || !form.confirmacion_irreversible"
                         class="w-full sm:w-auto inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-[var(--aurora-red)] text-sm font-medium text-white hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--aurora-red)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
