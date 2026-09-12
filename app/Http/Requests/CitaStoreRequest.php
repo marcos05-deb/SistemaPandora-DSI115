@@ -79,6 +79,26 @@ class CitaStoreRequest extends FormRequest
                     'consulta_id',
                     'La consulta de origen no pertenece a este expediente.'
                 );
+
+                return;
+            }
+
+            $consultaActiva = Consulta::activaParaExpediente($expediente);
+
+            if (! $consultaActiva) {
+                $validator->errors()->add(
+                    'consulta_id',
+                    'Debe agendar la cita desde una consulta activa. No hay consultas registradas en este expediente.'
+                );
+
+                return;
+            }
+
+            if ($consultaActiva->id !== $consulta->id) {
+                $validator->errors()->add(
+                    'consulta_id',
+                    'Debe agendar la cita desde la consulta activa (la más reciente del expediente).'
+                );
             }
         });
     }

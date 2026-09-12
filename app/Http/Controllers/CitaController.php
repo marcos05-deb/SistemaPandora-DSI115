@@ -10,13 +10,17 @@ use App\Http\Requests\CitaReprogramarRequest;
 use App\Http\Requests\CitaCancelarRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Http\Resources\CitaResource;
 use Inertia\Inertia;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class CitaController extends Controller
 {
+    private const MENSAJE_CONFLICTO_HORARIO = 'El horario seleccionado ya no está disponible o existe un conflicto en la agenda del especialista.';
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -96,7 +100,19 @@ class CitaController extends Controller
             }
         }
 
-        $citas = $query->orderBy('fecha_hora', $vista === 'lista' ? 'desc' : 'asc')->paginate(30)->withQueryString();
+        // NH-06: diaria/semanal cargan el rango completo (sin truncar en página de 30).
+        if ($vista === 'diaria' || $vista === 'semanal') {
+            $items = $query->orderBy('fecha_hora', 'asc')->get();
+            $citas = new LengthAwarePaginator(
+                $items,
+                $items->count(),
+                max($items->count(), 1),
+                1,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+        } else {
+            $citas = $query->orderBy('fecha_hora', 'desc')->paginate(30)->withQueryString();
+        }
 
         $especialistas = [];
         if ($user->hasRole('area_coordinator')) {
@@ -146,6 +162,7 @@ class CitaController extends Controller
             ],
         ]);
     }
+
     public function store(CitaStoreRequest $request, Expediente $expediente): RedirectResponse
     {
         $this->authorize('create', [Cita::class, $expediente]);
@@ -154,6 +171,8 @@ class CitaController extends Controller
             DB::transaction(function () use ($request, $expediente) {
                 $fechaHora = \Illuminate\Support\Carbon::parse($request->validated('fecha_hora'));
                 $profesionalId = $request->user()->profesional->id;
+
+                $this->bloquearAgendaProfesional($profesionalId);
 
                 if (Cita::hayConflictoHorario($profesionalId, $fechaHora)) {
                     throw \Illuminate\Validation\ValidationException::withMessages([
@@ -175,8 +194,16 @@ class CitaController extends Controller
             return redirect()->back()->with('success', 'Cita agendada exitosamente.');
         } catch (UniqueConstraintViolationException $e) {
             return redirect()->back()->withErrors([
-                'fecha_hora' => 'El horario seleccionado ya no está disponible o existe un conflicto en la agenda del especialista.'
+                'fecha_hora' => self::MENSAJE_CONFLICTO_HORARIO,
             ])->withInput();
+        } catch (QueryException $e) {
+            if ($this->esViolacionExclusionAgenda($e)) {
+                return redirect()->back()->withErrors([
+                    'fecha_hora' => self::MENSAJE_CONFLICTO_HORARIO,
+                ])->withInput();
+            }
+
+            throw $e;
         }
     }
 
@@ -209,6 +236,8 @@ class CitaController extends Controller
                     ->whereKey($cita->getKey())
                     ->lockForUpdate()
                     ->firstOrFail();
+
+                $this->bloquearAgendaProfesional($citaBloqueada->profesional_id);
 
                 if ($citaBloqueada->estado !== \App\Enums\EstadoCita::Programada->value) {
                     throw \Illuminate\Validation\ValidationException::withMessages([
@@ -255,8 +284,16 @@ class CitaController extends Controller
             return redirect()->back()->with('success', 'Cita reprogramada exitosamente.');
         } catch (UniqueConstraintViolationException $e) {
             return redirect()->back()->withErrors([
-                'fecha_hora' => 'El horario seleccionado ya no está disponible o existe un conflicto en la agenda del especialista.'
+                'fecha_hora' => self::MENSAJE_CONFLICTO_HORARIO,
             ])->withInput();
+        } catch (QueryException $e) {
+            if ($this->esViolacionExclusionAgenda($e)) {
+                return redirect()->back()->withErrors([
+                    'fecha_hora' => self::MENSAJE_CONFLICTO_HORARIO,
+                ])->withInput();
+            }
+
+            throw $e;
         }
     }
 
@@ -289,5 +326,23 @@ class CitaController extends Controller
         });
 
         return redirect()->back()->with('success', 'Cita cancelada exitosamente.');
+    }
+
+    /**
+     * Serializa mutaciones de agenda por profesional (NH-05).
+     */
+    private function bloquearAgendaProfesional(string $profesionalId): void
+    {
+        $lockKey = crc32('cita-agenda:'.$profesionalId);
+        DB::select('SELECT pg_advisory_xact_lock(?)', [$lockKey]);
+    }
+
+    private function esViolacionExclusionAgenda(QueryException $e): bool
+    {
+        $sqlState = $e->errorInfo[0] ?? null;
+
+        return $sqlState === '23P01'
+            || str_contains($e->getMessage(), 'citas_no_solapamiento_programada')
+            || str_contains($e->getMessage(), 'exclusion constraint');
     }
 }

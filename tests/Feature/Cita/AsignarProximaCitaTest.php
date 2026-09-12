@@ -240,3 +240,85 @@ it('audits cita creation', function () {
         ->and($audit->user_id)->toBe($this->userSpecialist->id)
         ->and($audit->new_values['consulta_id'] ?? null)->toBe($this->consulta->id);
 });
+
+it('rejects scheduling from a previous consulta of the same expediente', function () {
+    $consultaAntigua = Consulta::create([
+        'expediente_id' => $this->expediente->id,
+        'profesional_id' => $this->profesional->id,
+        'motivo_consulta' => 'Primera consulta',
+        'notas_clinicas' => 'Inicio',
+        'diagnostico' => 'Inicial',
+        'plan_atencion' => 'Plan inicial de atención clínica',
+        'tecnica_utilizada' => 'Entrevista',
+        'fecha_consulta' => now()->subDays(5),
+    ]);
+
+    // Asegura que $this->consulta sea la activa (más reciente).
+    $this->consulta->update(['fecha_consulta' => now()]);
+
+    $this->actingAs($this->userSpecialist)
+        ->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->from(route('pacientes.show', $this->paciente->carnet))
+        ->post(route('citas.store', $this->expediente->id), [
+            'consulta_id' => $consultaAntigua->id,
+            'fecha_hora' => now()->addDays(2)->format('Y-m-d H:i:s'),
+            'motivo' => 'Intento con consulta anterior',
+        ])
+        ->assertSessionHasErrors('consulta_id');
+
+    expect(Cita::count())->toBe(0);
+});
+
+it('allows scheduling only with the most recent active consulta', function () {
+    $this->consulta->update(['fecha_consulta' => now()->subDays(3)]);
+
+    $consultaNueva = Consulta::create([
+        'expediente_id' => $this->expediente->id,
+        'profesional_id' => $this->profesional->id,
+        'motivo_consulta' => 'Consulta activa actual',
+        'notas_clinicas' => 'Reciente',
+        'diagnostico' => 'Actual',
+        'plan_atencion' => 'Plan actual de atención clínica',
+        'tecnica_utilizada' => 'Entrevista',
+        'fecha_consulta' => now(),
+    ]);
+
+    $this->actingAs($this->userSpecialist)
+        ->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('citas.store', $this->expediente->id), [
+            'consulta_id' => $consultaNueva->id,
+            'fecha_hora' => now()->addDays(4)->format('Y-m-d H:i:s'),
+            'motivo' => 'Desde consulta activa',
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    expect(Cita::first()->consulta_id)->toBe($consultaNueva->id);
+});
+it('rejects concurrent overlapping intervals for the same professional', function () {
+    $this->actingAs($this->userSpecialist);
+    $base = now()->addDays(5)->setTime(10, 0);
+
+    $ok = 0;
+    $fail = 0;
+
+    foreach ([0, 30] as $offset) {
+        $response = $this->withSession(['_sym_key' => str_repeat('a', 32)])
+            ->from(route('pacientes.show', $this->paciente->carnet))
+            ->post(route('citas.store', $this->expediente->id), [
+                'consulta_id' => $this->consulta->id,
+                'fecha_hora' => $base->copy()->addMinutes($offset)->format('Y-m-d H:i:s'),
+                'motivo' => "Cita offset {$offset}",
+            ]);
+
+        if ($response->getSession()->has('errors')) {
+            $fail++;
+        } else {
+            $ok++;
+        }
+    }
+
+    expect($ok)->toBe(1)
+        ->and($fail)->toBe(1)
+        ->and(Cita::count())->toBe(1);
+});
