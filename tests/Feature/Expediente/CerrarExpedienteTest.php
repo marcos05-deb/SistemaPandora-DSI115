@@ -160,4 +160,50 @@ class CerrarExpedienteTest extends TestCase
 
         $response->assertStatus(422);
     }
+
+    public function test_actualizacion_exitosa_con_motivo_de_cambio_y_auditoria(): void
+    {
+        $this->post('/login', [
+            'email' => $this->especialista->email,
+            'password' => $this->testPassword,
+        ]);
+
+        $response = $this->patch(route('expedientes.update', $this->expediente->id), [
+            'motivo_consulta' => 'Motivo actualizado por evolución clínica',
+            'notas_clinicas' => 'Notas revisadas tras segunda sesión',
+            'motivo_cambio' => 'Actualización por reevaluación diagnóstica del caso.',
+        ]);
+
+        $response->assertRedirect();
+        $this->expediente->refresh();
+        $this->assertEquals('Motivo actualizado por evolución clínica', $this->expediente->motivo_consulta);
+
+        $audit = $this->expediente->audits()->latest('id')->first();
+        $this->assertNotNull($audit);
+        $this->assertEquals(
+            'Actualización por reevaluación diagnóstica del caso.',
+            $audit->new_values['motivo_cambio'] ?? null
+        );
+        $this->assertArrayHasKey('motivo_consulta', $audit->old_values ?? []);
+    }
+
+    public function test_rechaza_actualizacion_de_expediente_cerrado(): void
+    {
+        $this->expediente->update([
+            'estado' => Expediente::ESTADO_CERRADO,
+            'resultado_final' => $this->resultadoFinal,
+            'motivo_cierre' => $this->motivoCierre,
+            'fecha_cierre' => now(),
+        ]);
+
+        $this->post('/login', [
+            'email' => $this->especialista->email,
+            'password' => $this->testPassword,
+        ]);
+
+        $this->patch(route('expedientes.update', $this->expediente->id), [
+            'motivo_consulta' => 'Intento ilegal',
+            'motivo_cambio' => 'No debería aplicarse en expediente cerrado.',
+        ])->assertForbidden();
+    }
 }

@@ -1,13 +1,50 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ExpedienteCloseRequest;
+use App\Http\Requests\ExpedienteUpdateRequest;
 use App\Models\Expediente;
 use Illuminate\Support\Facades\Gate;
 
 class ExpedienteController extends Controller
 {
+    /**
+     * Actualizar campos clínicos permitidos del expediente (HU-10).
+     */
+    public function update(ExpedienteUpdateRequest $request, Expediente $expediente)
+    {
+        Gate::authorize('update', $expediente);
+
+        $validated = $request->validated();
+        $motivoCambio = $validated['motivo_cambio'];
+        unset($validated['motivo_cambio']);
+
+        $payload = [];
+        foreach (['motivo_consulta', 'notas_clinicas', 'diagnostico'] as $campo) {
+            if (array_key_exists($campo, $validated)) {
+                $payload[$campo] = $validated[$campo];
+            }
+        }
+
+        $expediente->update($payload);
+
+        $ultimoAudit = $expediente->audits()->latest('id')->first();
+        if ($ultimoAudit) {
+            $newValues = $ultimoAudit->new_values ?? [];
+            $newValues['motivo_cambio'] = $motivoCambio;
+            $ultimoAudit->update(['new_values' => $newValues]);
+        }
+
+        $expediente->paciente->update(['ultima_accion' => 'Actualización de expediente clínico']);
+
+        return redirect()->back()
+            ->with('message', 'Expediente actualizado correctamente.')
+            ->with('variant', 'success');
+    }
+
     /**
      * Close the specified Expediente.
      */

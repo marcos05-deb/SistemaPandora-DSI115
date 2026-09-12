@@ -4,6 +4,7 @@ import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 import DerivacionModal from '@/Components/Expediente/DerivacionModal.vue';
 import CierreExpedienteModal from '@/Components/Expediente/CierreExpedienteModal.vue';
+import ActualizarExpedienteModal from '@/Components/Expediente/ActualizarExpedienteModal.vue';
 import AgendarCitaModal from '@/Components/Expediente/AgendarCitaModal.vue';
 import GestionarCitaModal from '@/Components/Expediente/GestionarCitaModal.vue';
 import { computed, ref, onMounted } from 'vue';
@@ -17,6 +18,7 @@ const props = defineProps({
     areasDisponibles: { type: Array, default: () => [] },
     citasPendientes: { type: Array, default: () => [] },
     consultaActivaId: { type: String, default: null },
+    expedienteCerrado: { type: Object, default: null },
     can: { type: Object, default: () => ({}) }
 });
 
@@ -37,6 +39,13 @@ const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 };
 
+const formatDateTime = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleString('es-ES', {
+        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+};
+
 const getAreaName = (areaId) => {
     const area = props.areasDisponibles.find(a => a.id === areaId);
     return area ? area.nombre : 'Área';
@@ -44,6 +53,7 @@ const getAreaName = (areaId) => {
 
 const isDerivacionModalOpen = ref(false);
 const isCierreModalOpen = ref(false);
+const isActualizarModalOpen = ref(false);
 const isCitaModalOpen = ref(false);
 const isGestionarCitaModalOpen = ref(false);
 const gestionarCitaMode = ref('reprogramar');
@@ -360,6 +370,15 @@ onMounted(() => {
                                     </span>
                                 </div>
                                 <p class="text-[13px] text-[var(--nord0)] font-medium mt-1">{{ cita.motivo }}</p>
+                                <div v-if="cita.cita_origen" class="mt-2 rounded-lg border border-[var(--aurora-purple)]/30 bg-[var(--aurora-purple)]/5 px-3 py-2 text-left">
+                                    <p class="text-[11px] font-bold uppercase tracking-wide text-[var(--aurora-purple)]">Historial de reprogramación</p>
+                                    <p class="text-[12px] text-[var(--nord0)] mt-1">
+                                        Antes: {{ formatDateTime(cita.cita_origen.fecha_hora) }}
+                                    </p>
+                                    <p v-if="cita.cita_origen.motivo_reprogramacion" class="text-[12px] text-[var(--nord3)] mt-0.5">
+                                        Motivo: {{ cita.cita_origen.motivo_reprogramacion }}
+                                    </p>
+                                </div>
                                 
                                 <div v-if="can?.updateCita" class="flex flex-col gap-2 mt-3 pt-3 border-t border-[var(--nord4)]/60">
                                     <p v-if="!puedeRegistrarAsistencia(cita)" class="text-[11px] text-[var(--nord3)]">
@@ -414,6 +433,11 @@ onMounted(() => {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                                 Registrar Consulta Clínica
                             </Link>
+
+                            <button v-if="can?.updateExpediente" @click="isActualizarModalOpen = true" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                Actualizar Expediente
+                            </button>
                             
                             <button v-if="can?.assignCita" @click="isCitaModalOpen = true" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -429,6 +453,33 @@ onMounted(() => {
                                 Ver Historial Multidisciplinario
                             </Link>
                         </div>
+                    </div>
+                    <div v-else-if="expedienteCerrado" class="px-6 py-6">
+                        <div class="text-center mb-4">
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-3"
+                                style="background: linear-gradient(135deg, var(--nord4)/20, var(--nord3)/10); border: 1px solid var(--nord4); color: var(--nord3);">
+                                Expediente cerrado
+                            </div>
+                            <h3 class="text-[14px] font-semibold text-[var(--nord0)] mb-1">Modo consulta</h3>
+                            <p class="text-[12px] text-[var(--nord3)]">Solo lectura. No se permiten nuevas ediciones clínicas.</p>
+                        </div>
+                        <div class="space-y-3 text-left rounded-xl border border-[var(--nord4)] bg-[var(--surface-subtle)] p-4">
+                            <div>
+                                <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--nord3)]">Resultado final</p>
+                                <p class="text-[13px] text-[var(--nord0)] mt-1 whitespace-pre-line">{{ expedienteCerrado.resultado_final || 'No registrado' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--nord3)]">Motivo de cierre</p>
+                                <p class="text-[13px] text-[var(--nord0)] mt-1 whitespace-pre-line">{{ expedienteCerrado.motivo_cierre || '—' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--nord3)]">Fecha de cierre</p>
+                                <p class="text-[13px] text-[var(--nord0)] mt-1">{{ formatDateTime(expedienteCerrado.fecha_cierre) || '—' }}</p>
+                            </div>
+                        </div>
+                        <Link v-if="hasAnyExpediente" :href="'/pacientes/' + paciente.codigo + '/historial'" class="mt-4 w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--surface-subtle)] text-[var(--nord3)] hover:text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm">
+                            Ver Historial Multidisciplinario
+                        </Link>
                     </div>
                     <div v-else class="relative px-6 py-8 text-center overflow-hidden">
                         <!-- Fondo decorativo -->
@@ -477,6 +528,12 @@ onMounted(() => {
             :show="isCierreModalOpen"
             :expediente="expedienteActivo"
             @close="isCierreModalOpen = false"
+        />
+
+        <ActualizarExpedienteModal
+            :show="isActualizarModalOpen"
+            :expediente="expedienteActivo"
+            @close="isActualizarModalOpen = false"
         />
         
         <AgendarCitaModal

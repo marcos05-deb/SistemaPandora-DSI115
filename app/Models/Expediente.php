@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Casts\AreaEncryptedFieldCast;
-use App\Casts\EncryptedFieldCast;
 use App\Models\Scopes\AreaScope;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -63,13 +62,13 @@ class Expediente extends Model implements Auditable
     ];
 
     protected $casts = [
-        'motivo_consulta' => EncryptedFieldCast::class,
-        'notas_clinicas'  => EncryptedFieldCast::class,
-        'diagnostico'     => EncryptedFieldCast::class,
+        'motivo_consulta' => AreaEncryptedFieldCast::class,
+        'notas_clinicas'  => AreaEncryptedFieldCast::class,
+        'diagnostico'     => AreaEncryptedFieldCast::class,
         'fecha_derivacion'=> 'datetime',
         'motivo_derivacion' => AreaEncryptedFieldCast::class,
-        'motivo_cierre'   => EncryptedFieldCast::class,
-        'resultado_final' => EncryptedFieldCast::class,
+        'motivo_cierre'   => AreaEncryptedFieldCast::class,
+        'resultado_final' => AreaEncryptedFieldCast::class,
         'fecha_cierre'    => 'datetime',
     ];
 
@@ -82,7 +81,7 @@ class Expediente extends Model implements Auditable
     public function transformAudit(array $data): array
     {
         foreach (['old_values', 'new_values'] as $bucket) {
-            foreach (['motivo_derivacion', 'resultado_final', 'motivo_cierre'] as $campo) {
+            foreach (['motivo_derivacion', 'resultado_final', 'motivo_cierre', 'motivo_consulta', 'notas_clinicas', 'diagnostico'] as $campo) {
                 if (isset($data[$bucket][$campo])) {
                     $data[$bucket][$campo] = '[CIFRADO]';
                 }

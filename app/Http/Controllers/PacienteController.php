@@ -159,7 +159,7 @@ class PacienteController extends Controller
                 // Bypass seguro (ESTANDARES.md Sec 4): columnas de trazabilidad de derivación
                 // (incluye motivo cifrado; el cast descifra solo en lectura autorizada del referente).
                 $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class)
-                  ->with('citas')
+                  ->with(['citas.citaOrigen'])
                   ->select(
                       'id',
                       'paciente_id',
@@ -167,12 +167,20 @@ class PacienteController extends Controller
                       'estado',
                       'fecha_derivacion',
                       'motivo_derivacion',
+                      'motivo_consulta',
+                      'notas_clinicas',
+                      'diagnostico',
+                      'resultado_final',
+                      'motivo_cierre',
+                      'fecha_cierre',
                       'created_at',
                       'updated_at'
                   );
             }]);
         } else {
-            $pacienteQuery->with(['expedientes.citas']);
+            $pacienteQuery->with(['expedientes' => function ($q) {
+                $q->with(['citas.citaOrigen']);
+            }]);
         }
 
         $paciente = $pacienteQuery->where('carnet', $carnet)->firstOrFail();
@@ -190,7 +198,11 @@ class PacienteController extends Controller
             ->exists();
 
         $expedienteActivo = $paciente->expedientes->where('estado', '!=', 'cerrado')->first();
+        $expedienteCerrado = $expedienteActivo
+            ? null
+            : $paciente->expedientes->where('estado', 'cerrado')->sortByDesc('fecha_cierre')->first();
         $canCloseExpediente = $expedienteActivo ? $user->can('close', $expedienteActivo) : false;
+        $canUpdateExpediente = $expedienteActivo ? $user->can('update', $expedienteActivo) : false;
         $canAssignCita = $expedienteActivo ? $user->can('create', [\App\Models\Cita::class, $expedienteActivo]) : false;
         $canCreateConsulta = $expedienteActivo ? $user->can('create', [\App\Models\Consulta::class, $expedienteActivo]) : false;
         
@@ -200,13 +212,10 @@ class PacienteController extends Controller
         if ($expedienteActivo) {
             $citasPendientes = $expedienteActivo->citas->where('estado', 'programada')->values()->all();
             if (count($citasPendientes) > 0) {
-                // Se asume que todas las citas pendientes de un expediente activo son administradas por la misma política. 
-                // Autorizamos con la primera cita (se evalúa la de profesional asignado).
                 $canUpdateCita = $user->can('update', $citasPendientes[0]);
             }
 
             $consultaActivaId = \App\Models\Consulta::activaParaExpediente($expedienteActivo)?->id;
-            // Solo permitir agendar si hay consulta origen vinculable.
             $canAssignCita = $canAssignCita && $consultaActivaId !== null;
         }
 
@@ -216,8 +225,10 @@ class PacienteController extends Controller
             'areasDisponibles' => $areasDisponibles,
             'citasPendientes' => $citasPendientes,
             'consultaActivaId' => $consultaActivaId,
+            'expedienteCerrado' => $expedienteCerrado,
             'can' => [
                 'closeExpediente' => $canCloseExpediente,
+                'updateExpediente' => $canUpdateExpediente,
                 'assignCita' => $canAssignCita,
                 'updateCita' => $canUpdateCita,
                 'createConsulta' => $canCreateConsulta,
