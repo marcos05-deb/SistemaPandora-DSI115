@@ -33,7 +33,13 @@ class ConsultaPolicy
             return false;
         }
 
-        if ((int) $user->profesional->area_id !== (int) $expediente->area_id) {
+        $areasAutorizadas = $user->areas()->pluck('areas.id')->map(fn ($id) => (int) $id);
+
+        if ($areasAutorizadas->isEmpty() && $user->profesional->area_id) {
+            $areasAutorizadas = collect([(int) $user->profesional->area_id]);
+        }
+
+        if (! $areasAutorizadas->contains((int) $expediente->area_id)) {
             return false;
         }
 

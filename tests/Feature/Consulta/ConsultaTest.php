@@ -302,3 +302,45 @@ it('allows a second specialist of the same area to read the consultation', funct
             ->where('historial.data.0.motivo_consulta', 'Dolor de cabeza crónico')
         );
 });
+
+it('allows a multi-area specialist to register consultations in both authorized areas', function () {
+    $segundaArea = Area::factory()->create();
+    Profesional::factory()->create([
+        'user_id' => $this->userSpecialist->id,
+        'area_id' => $segundaArea->id,
+    ]);
+
+    $expedienteSegunda = Expediente::create([
+        'paciente_id' => $this->paciente->codigo,
+        'area_id' => $segundaArea->id,
+        'estado' => 'abierto',
+        'fecha_derivacion' => now(),
+    ]);
+
+    $this->actingAs($this->userSpecialist);
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('consultas.store', $this->expediente->id), payloadConsulta([
+            'motivo_consulta' => 'Consulta área 1',
+        ]))
+        ->assertRedirect();
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('consultas.store', $expedienteSegunda->id), payloadConsulta([
+            'motivo_consulta' => 'Consulta área 2',
+        ]))
+        ->assertRedirect();
+
+    expect(Consulta::withoutGlobalScopes()->count())->toBe(2);
+
+    $terceraArea = Area::factory()->create();
+    $expedienteTercera = Expediente::withoutGlobalScopes()->create([
+        'paciente_id' => $this->paciente->codigo,
+        'area_id' => $terceraArea->id,
+        'estado' => 'abierto',
+        'fecha_derivacion' => now(),
+    ]);
+
+    // AreaScope ocultaría el expediente; forzamos autorización directa de policy.
+    expect($this->userSpecialist->can('create', [Consulta::class, $expedienteTercera]))->toBeFalse();
+});
