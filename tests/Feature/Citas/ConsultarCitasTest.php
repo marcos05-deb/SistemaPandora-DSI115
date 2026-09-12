@@ -212,11 +212,62 @@ it('muestra más de 30 citas en la vista semanal sin truncar por paginación', f
     $response->assertOk();
     $citas = $response->viewData('page')['props']['citas']['data'];
     $porDia = $response->viewData('page')['props']['citasPorDia'];
+    $meta = $response->viewData('page')['props']['agendaMeta'];
 
     expect(count($citas))->toBeGreaterThanOrEqual(31)
         ->and($porDia)->not->toBeEmpty()
-        ->and($response->viewData('page')['props']['agendaMeta']['truncada'] ?? true)->toBeFalse();
+        ->and($meta['truncada'] ?? true)->toBeFalse()
+        ->and($meta['total'] ?? 0)->toBeGreaterThanOrEqual(31)
+        ->and($meta['rangoLista']['fecha_desde'] ?? null)->not->toBeNull();
 
     $totalAgrupadas = collect($porDia)->sum(fn ($dia) => count($dia['citas']));
     expect($totalAgrupadas)->toBe(count($citas));
+});
+
+it('expone total real, paginación y enlace a lista cuando se supera el tope', function () {
+    config(['citas.limite_vista_agenda' => 3]);
+    actingAs($this->coordinadorPsicologia);
+
+    $inicioSemana = now()->startOfWeek()->addDay()->setTime(8, 0);
+    for ($i = 0; $i < 4; $i++) {
+        Cita::factory()->create([
+            'expediente_id' => $this->expedientePsico->id,
+            'profesional_id' => $this->profesionalPsico1->id,
+            'area_id' => $this->areaPsicologia->id,
+            'fecha_hora' => $inicioSemana->copy()->addMinutes($i * 90),
+            'estado' => 'programada',
+        ]);
+    }
+
+    $response = get(route('citas.index', [
+        'vista' => 'semanal',
+        'referencia' => $inicioSemana->toDateString(),
+        'page' => 1,
+    ]));
+
+    $response->assertOk();
+    $props = $response->viewData('page')['props'];
+    expect($props['agendaMeta']['truncada'])->toBeTrue()
+        ->and($props['agendaMeta']['total'])->toBeGreaterThanOrEqual(4)
+        ->and($props['agendaMeta']['limite'])->toBe(3)
+        ->and(count($props['citas']['data']))->toBe(3)
+        ->and(($props['citas']['meta']['last_page'] ?? $props['citas']['last_page'] ?? 1))->toBeGreaterThanOrEqual(2);
+
+    $page2 = get(route('citas.index', [
+        'vista' => 'semanal',
+        'referencia' => $inicioSemana->toDateString(),
+        'page' => 2,
+    ]));
+    $page2Count = count($page2->viewData('page')['props']['citas']['data']);
+    expect($page2Count)->toBeGreaterThanOrEqual(1)
+        ->and($page2Count)->toBeLessThanOrEqual(3);
+
+    $lista = get(route('citas.index', [
+        'vista' => 'lista',
+        'fecha_desde' => $props['agendaMeta']['rangoLista']['fecha_desde'],
+        'fecha_hasta' => $props['agendaMeta']['rangoLista']['fecha_hasta'],
+    ]));
+    $lista->assertOk();
+    expect($lista->viewData('page')['props']['citas']['total'] ?? $lista->viewData('page')['props']['citas']['meta']['total'] ?? 0)
+        ->toBeGreaterThanOrEqual(4);
 });

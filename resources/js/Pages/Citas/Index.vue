@@ -38,6 +38,7 @@ const form = useForm({
     paciente: props.filtros.paciente || '',
     vista: props.filtros.vista || 'lista',
     referencia: props.filtros.referencia || '',
+    page: 1,
 });
 
 const applyFilters = debounce(() => {
@@ -79,6 +80,21 @@ function setVista(vista) {
 
 function navegar(referencia) {
     form.referencia = referencia;
+    applyFilters();
+}
+
+function verRangoEnLista() {
+    if (!props.agendaMeta?.rangoLista) return;
+    form.vista = 'lista';
+    form.fecha = '';
+    form.fecha_desde = props.agendaMeta.rangoLista.fecha_desde;
+    form.fecha_hasta = props.agendaMeta.rangoLista.fecha_hasta;
+    form.page = 1;
+    applyFilters();
+}
+
+function cambiarPaginaAgenda(page) {
+    form.page = page;
     applyFilters();
 }
 
@@ -128,8 +144,40 @@ const statusLabels = {
                     v-if="agendaMeta?.truncada"
                     class="mt-2 text-[12px] text-[var(--aurora-orange)] font-medium"
                 >
-                    Se muestran las primeras {{ agendaMeta.limite }} citas del rango; hay más resultados. Ajuste filtros o el período.
+                    Se muestran {{ citas?.data?.length || 0 }} de {{ agendaMeta.total }} citas del rango (máx. {{ agendaMeta.limite }} por página).
+                    <button
+                        v-if="agendaMeta.rangoLista"
+                        type="button"
+                        class="underline ml-1"
+                        @click="verRangoEnLista"
+                    >
+                        Ver resultados restantes en lista
+                    </button>
                 </p>
+                <div
+                    v-if="agendaMeta?.truncada && (citas?.meta?.last_page || citas?.last_page || 1) > 1"
+                    class="mt-2 flex items-center gap-2 text-[12px]"
+                >
+                    <button
+                        type="button"
+                        class="px-2 py-1 rounded border border-[var(--nord4)] disabled:opacity-40"
+                        :disabled="(citas?.meta?.current_page || citas?.current_page || 1) <= 1"
+                        @click="cambiarPaginaAgenda((citas?.meta?.current_page || citas?.current_page || 1) - 1)"
+                    >
+                        Anterior
+                    </button>
+                    <span class="text-[var(--nord3)]">
+                        Página {{ citas?.meta?.current_page || citas?.current_page || 1 }} de {{ citas?.meta?.last_page || citas?.last_page || 1 }}
+                    </span>
+                    <button
+                        type="button"
+                        class="px-2 py-1 rounded border border-[var(--nord4)] disabled:opacity-40"
+                        :disabled="(citas?.meta?.current_page || citas?.current_page || 1) >= (citas?.meta?.last_page || citas?.last_page || 1)"
+                        @click="cambiarPaginaAgenda((citas?.meta?.current_page || citas?.current_page || 1) + 1)"
+                    >
+                        Siguiente
+                    </button>
+                </div>
             </div>
             
             <!-- Filters -->
