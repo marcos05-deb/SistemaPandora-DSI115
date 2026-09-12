@@ -1,45 +1,70 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests;
 
+use App\Enums\EstadoCita;
+use App\Models\Cita;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class CitaAsistenciaRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return true; // Authorizations are handled in the controller via Policy
+        $cita = $this->route('cita');
+
+        return $cita instanceof Cita && $this->user()->can('update', $cita);
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'estado' => ['required', 'string', 'in:asistida,ausente'],
+            'estado' => ['required', 'string', Rule::in(EstadoCita::asistenciaValues())],
         ];
     }
 
-    public function withValidator($validator)
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
     {
-        $validator->after(function ($validator) {
+        return [
+            'estado.in' => 'El resultado debe ser Asistió o Ausente.',
+        ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            /** @var Cita|null $cita */
             $cita = $this->route('cita');
-            
-            if (!$cita || $cita->estado !== 'programada') {
-                $validator->errors()->add('estado', 'Solo se puede registrar asistencia de citas programadas.');
+
+            if (! $cita) {
                 return;
             }
-            
-            // Evaluamos límite de fecha (startOfDay para permitir dentro del mismo día, antes de la hora)
-            if (!$cita->fecha_hora->startOfDay()->lte(now()->startOfDay())) {
-                $validator->errors()->add('fecha_hora', 'No se puede registrar asistencia de citas en el futuro.');
+
+            if ($cita->estado !== EstadoCita::Programada->value) {
+                $validator->errors()->add(
+                    'estado',
+                    'Solo se puede registrar asistencia de citas programadas.'
+                );
+
+                return;
+            }
+
+            // HU-12: comparar timestamp completo (hora de inicio de la cita).
+            if ($cita->fecha_hora->isFuture()) {
+                $validator->errors()->add(
+                    'fecha_hora',
+                    'No se puede registrar asistencia antes de la hora programada de la cita.'
+                );
             }
         });
     }

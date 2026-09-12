@@ -16,6 +16,7 @@ const props = defineProps({
     hasAnyExpediente: { type: Boolean, default: false },
     areasDisponibles: { type: Array, default: () => [] },
     citasPendientes: { type: Array, default: () => [] },
+    consultaActivaId: { type: String, default: null },
     can: { type: Object, default: () => ({}) }
 });
 
@@ -56,12 +57,19 @@ const openGestionarCitaModal = (cita, mode) => {
 
 const marcarAsistencia = (citaId, estado) => {
     if (!props.can?.updateCita || !expedienteActivo.value) return;
-    
+    const cita = props.citasPendientes.find(c => c.id === citaId);
+    if (cita && !puedeRegistrarAsistencia(cita)) return;
+
     router.patch(`/expedientes/${expedienteActivo.value.id}/citas/${citaId}/asistencia`, {
         estado: estado
     }, {
         preserveScroll: true
     });
+};
+
+const puedeRegistrarAsistencia = (cita) => {
+    if (!cita?.fecha_hora) return false;
+    return new Date(cita.fecha_hora).getTime() <= Date.now();
 };
 
 onMounted(() => {
@@ -104,7 +112,7 @@ onMounted(() => {
                     <template v-else>{{ paciente.codigo.substring(0,8) }}...</template>
                 </span>
                 
-                <template v-if="page.props.auth?.user?.roles?.includes('psychosocial_referent')">
+                <template v-if="can.derivar">
                     <template v-if="paciente.expedientes && paciente.expedientes.length > 0">
                         <span class="px-3 py-1.5 bg-[var(--surface-subtle)] text-[var(--nord3)] text-[11px] font-semibold rounded-lg border border-[var(--nord4)] inline-flex items-center gap-1.5 shadow-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[var(--aurora-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -177,6 +185,29 @@ onMounted(() => {
                                         {{ tag }}
                                     </span>
                                 </div>
+                            </div>
+                        </div>
+                        <!-- Motivo de derivación -->
+                        <div
+                            v-if="paciente.expedientes?.some(e => e.motivo_derivacion)"
+                            class="md:col-span-2 flex items-start gap-3 p-3 rounded-xl bg-[var(--nord8)]/5 border border-[var(--nord8)]/20"
+                        >
+                            <div class="w-8 h-8 rounded-lg bg-[var(--nord8)]/10 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg class="h-4 w-4 text-[var(--nord8)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </div>
+                            <div class="min-w-0 flex-1 space-y-3">
+                                <template v-for="exp in paciente.expedientes.filter(e => e.motivo_derivacion)" :key="exp.id">
+                                    <div>
+                                        <p class="text-[10px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">
+                                            Motivo de Derivación
+                                            <span v-if="getAreaName(exp.area_id)"> — {{ getAreaName(exp.area_id) }}</span>
+                                        </p>
+                                        <p class="text-[13px] text-[var(--nord0)] whitespace-pre-line leading-relaxed">{{ exp.motivo_derivacion }}</p>
+                                        <p v-if="exp.fecha_derivacion" class="text-[11px] text-[var(--nord3)] mt-1">
+                                            {{ formatDate(exp.fecha_derivacion) }}
+                                        </p>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                         <!-- Dirección -->
@@ -331,12 +362,25 @@ onMounted(() => {
                                 <p class="text-[13px] text-[var(--nord0)] font-medium mt-1">{{ cita.motivo }}</p>
                                 
                                 <div v-if="can?.updateCita" class="flex flex-col gap-2 mt-3 pt-3 border-t border-[var(--nord4)]/60">
+                                    <p v-if="!puedeRegistrarAsistencia(cita)" class="text-[11px] text-[var(--nord3)]">
+                                        La asistencia se habilita a partir de la hora programada de la cita.
+                                    </p>
                                     <div class="flex items-center gap-2">
-                                        <button @click="marcarAsistencia(cita.id, 'asistida')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-green)] hover:bg-[#8FBCBB] text-white transition-colors">
+                                        <button
+                                            type="button"
+                                            @click="marcarAsistencia(cita.id, 'asistida')"
+                                            :disabled="!puedeRegistrarAsistencia(cita)"
+                                            class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-green)] hover:bg-[#8FBCBB] text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--aurora-green)]"
+                                        >
                                             Asistió
                                         </button>
-                                        <button @click="marcarAsistencia(cita.id, 'ausente')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-red)] hover:bg-[#BF616A] text-white transition-colors">
-                                            No asistió
+                                        <button
+                                            type="button"
+                                            @click="marcarAsistencia(cita.id, 'ausente')"
+                                            :disabled="!puedeRegistrarAsistencia(cita)"
+                                            class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-red)] hover:bg-[#BF616A] text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--aurora-red)]"
+                                        >
+                                            Ausente
                                         </button>
                                     </div>
                                     <div class="flex items-center gap-2">
@@ -438,6 +482,7 @@ onMounted(() => {
         <AgendarCitaModal
             :show="isCitaModalOpen"
             :expediente="expedienteActivo"
+            :consulta-id="consultaActivaId || page.props.flash?.prompt_cita_consulta_id"
             @close="isCitaModalOpen = false"
         />
 
