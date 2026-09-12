@@ -15,31 +15,32 @@ class ConsultaPolicy
      */
     public function viewAny(Especialista $user): bool
     {
-        return true;
+        return $user->hasRole('specialist') || $user->hasRole('area_coordinator');
     }
 
     /**
-     * Determine whether the user can create models.
+     * Registrar consulta: rol clínico + área del expediente + expediente no cerrado.
+     *
+     * La comprobación de área es explícita en Policy (no depende solo de AreaScope).
      */
     public function create(Especialista $user, Expediente $expediente): bool
     {
-        // 1. Debe pertenecer al área del expediente
-        $perteneceArea = $user->profesional && $user->profesional->area_id === $expediente->area_id;
-        
-        // 2. El expediente no puede estar cerrado
-        $estaAbierto = $expediente->estado !== 'cerrado';
+        if (! $user->hasRole('specialist') && ! $user->hasRole('area_coordinator')) {
+            return false;
+        }
 
-        // 3. El referente psicosocial no registra consultas clínicas
-        $noEsPsicosocial = !$user->hasRole('psychosocial_referent');
+        if (! $user->profesional) {
+            return false;
+        }
 
-        return $perteneceArea && $estaAbierto && $noEsPsicosocial;
-    }
+        if ((int) $user->profesional->area_id !== (int) $expediente->area_id) {
+            return false;
+        }
 
-    /**
-     * Create a new policy instance.
-     */
-    public function __construct()
-    {
-        //
+        if ($expediente->estado === Expediente::ESTADO_CERRADO) {
+            return false;
+        }
+
+        return in_array($expediente->estado, Expediente::ESTADOS_ACTIVOS, true);
     }
 }

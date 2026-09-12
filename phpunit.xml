@@ -31,6 +31,7 @@
         <env name="DB_ADMIN_USERNAME" value="pandora" force="true"/>
         <env name="DB_ADMIN_PASSWORD" value="pandora" force="true"/>
         <env name="BLIND_INDEX_SECRET" value="COF1s6q9Yztt4FYmCcUVBvZkbq0apNEsT0Hu/jP0fBc=" force="true"/>
+        <env name="AREA_KEY_SECRET" value="HAxacxXpA16Orl/xpR9tYeJkgPA2HejdVtlB34M11lw=" force="true"/>
         <env name="MAIL_MAILER" value="array" force="true"/>
         <env name="PULSE_ENABLED" value="false" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync" force="true"/>

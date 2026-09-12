@@ -16,7 +16,9 @@ const form = useForm({
     motivo_consulta: '',
     notas_clinicas: '',
     diagnostico: '',
+    plan_atencion: '',
     tecnica_utilizada: '',
+    fecha_consulta: new Date().toISOString().slice(0, 10),
     evaluacion_inicial: {
         apariencia_externa: '',
         voz: '',
@@ -29,6 +31,13 @@ const form = useForm({
         pronostico: ''
     }
 });
+
+const maxFechaConsulta = new Date().toISOString().slice(0, 10);
+const minFechaConsulta = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    return d.toISOString().slice(0, 10);
+})();
 
 const activeAccordion = ref(0);
 
@@ -131,7 +140,10 @@ const submit = () => {
                             </button>
                             <div v-show="activeAccordion === 2" class="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div v-for="campo in ['plan_tratamiento', 'pronostico']" :key="campo">
-                                    <label class="block text-[12px] font-semibold text-[var(--nord0)] mb-1.5 capitalize">{{ campo.replace('_', ' ') }}</label>
+                                    <label class="block text-[12px] font-semibold text-[var(--nord0)] mb-1.5 capitalize">
+                                        <template v-if="campo === 'plan_tratamiento'">Plan de tratamiento (evaluación inicial)</template>
+                                        <template v-else>{{ campo.replace('_', ' ') }}</template>
+                                    </label>
                                     <input type="text" v-model="form.evaluacion_inicial[campo]"
                                         class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[13px] border-[var(--nord4)] focus:border-[var(--nord8)] focus:ring-0" />
                                     <p v-if="form.errors[`evaluacion_inicial.${campo}`]" class="text-[var(--aurora-red)] text-[11px] mt-1">{{ form.errors[`evaluacion_inicial.${campo}`] }}</p>
@@ -156,6 +168,24 @@ const submit = () => {
                     <p v-if="form.errors.motivo_consulta" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ form.errors.motivo_consulta }}</p>
                 </div>
 
+                <!-- Fecha de consulta -->
+                <div>
+                    <label for="fecha_consulta" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
+                        Fecha de la consulta <span class="text-[var(--aurora-red)]">*</span>
+                    </label>
+                    <input
+                        type="date"
+                        id="fecha_consulta"
+                        v-model="form.fecha_consulta"
+                        :min="minFechaConsulta"
+                        :max="maxFechaConsulta"
+                        class="w-full sm:w-64 rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
+                        :class="form.errors.fecha_consulta ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                    />
+                    <p class="text-[11px] text-[var(--nord3)] mt-1">Fecha clínica de la atención (no puede ser futura).</p>
+                    <p v-if="form.errors.fecha_consulta" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ form.errors.fecha_consulta }}</p>
+                </div>
+
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Técnica Utilizada -->
@@ -174,7 +204,7 @@ const submit = () => {
                     <!-- Diagnóstico -->
                     <div>
                         <label for="diagnostico" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
-                            Diagnóstico <span class="text-[var(--aurora-red)]">*</span>
+                            Diagnóstico <span class="text-[11px] font-medium text-[var(--nord3)]">(o observación)</span>
                         </label>
                         <input type="text"
                             id="diagnostico"
@@ -185,10 +215,11 @@ const submit = () => {
                     </div>
                 </div>
 
-                <!-- Notas Clínicas -->
+                <!-- Notas / Observación clínica -->
                 <div>
                     <label for="notas_clinicas" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
-                        Notas Clínicas / Evolución <span class="text-[var(--aurora-red)]">*</span>
+                        Observación / Notas clínicas
+                        <span class="text-[11px] font-medium text-[var(--nord3)]">(al menos diagnóstico u observación)</span>
                     </label>
                     <textarea 
                         id="notas_clinicas"
@@ -198,6 +229,23 @@ const submit = () => {
                         :class="form.errors.notas_clinicas ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
                     ></textarea>
                     <p v-if="form.errors.notas_clinicas" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ form.errors.notas_clinicas }}</p>
+                </div>
+
+                <!-- Plan de atención (cada consulta) -->
+                <div>
+                    <label for="plan_atencion" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
+                        Plan de atención <span class="text-[var(--aurora-red)]">*</span>
+                    </label>
+                    <textarea
+                        id="plan_atencion"
+                        v-model="form.plan_atencion"
+                        rows="3"
+                        maxlength="1000"
+                        placeholder="Indique el plan de atención acordado en esta consulta (mín. 10 caracteres)"
+                        class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2.5 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
+                        :class="form.errors.plan_atencion ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                    ></textarea>
+                    <p v-if="form.errors.plan_atencion" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ form.errors.plan_atencion }}</p>
                 </div>
 
                 <div class="pt-4 border-t border-[var(--nord4)] flex items-center justify-end gap-3">

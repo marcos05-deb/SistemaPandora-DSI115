@@ -54,6 +54,7 @@ class CryptoMigrateAreaKeys extends Command
                     $this->migrateField($exp, 'motivo_consulta');
                     $this->migrateField($exp, 'notas_clinicas');
                     $this->migrateField($exp, 'diagnostico');
+                    $this->migrateField($exp, 'motivo_derivacion');
                     if ($exp->isDirty()) $exp->save();
                 } catch (\Exception $e) {
                     Log::warning("Expediente {$exp->id}: {$e->getMessage()}");
@@ -74,6 +75,7 @@ class CryptoMigrateAreaKeys extends Command
                     $this->migrateField($cons, 'motivo_consulta');
                     $this->migrateField($cons, 'notas_clinicas');
                     $this->migrateField($cons, 'diagnostico');
+                    $this->migrateField($cons, 'plan_atencion');
                     if ($cons->isDirty()) $cons->save();
                 } catch (\Exception $e) {
                     Log::warning("Consulta {$cons->id}: {$e->getMessage()}");

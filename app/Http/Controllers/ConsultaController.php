@@ -45,7 +45,7 @@ class ConsultaController extends Controller
 
         $profesionalId = $request->user()->profesional->id;
 
-        $this->consultaService->registrarConsulta(
+        $consulta = $this->consultaService->registrarConsulta(
             $expediente,
             $request->validated(),
             $profesionalId
@@ -56,6 +56,7 @@ class ConsultaController extends Controller
         return redirect()->route('pacientes.show', $expediente->paciente->carnet)
             ->with('message', 'Consulta registrada exitosamente.')
             ->with('variant', 'success')
-            ->with('prompt_cita_expediente_id', $expediente->id);
+            ->with('prompt_cita_expediente_id', $expediente->id)
+            ->with('prompt_cita_consulta_id', $consulta->id);
     }
 }

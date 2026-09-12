@@ -29,6 +29,7 @@ class Consulta extends Model implements AuditableContract
         'motivo_consulta',
         'notas_clinicas',
         'diagnostico',
+        'plan_atencion',
         'fecha_consulta',
         'tecnica_utilizada',
         'evaluacion_inicial',
@@ -39,6 +40,7 @@ class Consulta extends Model implements AuditableContract
         'motivo_consulta' => AreaEncryptedFieldCast::class,
         'notas_clinicas' => AreaEncryptedFieldCast::class,
         'diagnostico' => AreaEncryptedFieldCast::class,
+        'plan_atencion' => AreaEncryptedFieldCast::class,
         'tecnica_utilizada' => AreaEncryptedFieldCast::class,
         'evaluacion_inicial' => EncryptedArrayCast::class,
     ];
@@ -51,5 +53,25 @@ class Consulta extends Model implements AuditableContract
     public function profesional(): BelongsTo
     {
         return $this->belongsTo(Profesional::class);
+    }
+
+    /**
+     * Consulta "activa" para agendar: la más reciente del expediente (no eliminada).
+     */
+    public static function activaParaExpediente(Expediente $expediente): ?self
+    {
+        return $expediente->consultas()
+            ->orderByDesc('fecha_consulta')
+            ->orderByDesc('created_at')
+            ->first();
+    }
+
+    /**
+     * ¿La consulta pertenece al expediente indicado y está vigente para agendar?
+     */
+    public function perteneceAExpedienteActivo(Expediente $expediente): bool
+    {
+        return $this->expediente_id === $expediente->id
+            && $expediente->estado !== Expediente::ESTADO_CERRADO;
     }
 }

@@ -69,7 +69,9 @@ test('los campos de consulta (incluyendo json) se almacenan cifrados y son ilegi
         'motivo_consulta' => 'Sintomas de ansiedad aguda',
         'notas_clinicas' => 'El paciente reporta insomnio persistente',
         'diagnostico' => 'Ansiedad Generalizada',
+        'plan_atencion' => 'Psicoterapia breve con seguimiento semanal',
         'tecnica_utilizada' => 'Entrevista Semiestructurada',
+        'fecha_consulta' => now()->toDateString(),
         'evaluacion_inicial' => $evaluacionInicial,
     ];
 
@@ -83,6 +85,7 @@ test('los campos de consulta (incluyendo json) se almacenan cifrados y son ilegi
     session(['_sym_key' => str_repeat('a', 32)]);
     $consulta = \App\Models\Consulta::first();
     expect($consulta->motivo_consulta)->toBe('Sintomas de ansiedad aguda')
+        ->and($consulta->plan_atencion)->toBe('Psicoterapia breve con seguimiento semanal')
         ->and($consulta->evaluacion_inicial)->toBe($evaluacionInicial);
 
     // Comprobacion 2: DB cruda está cifrada
@@ -92,10 +95,12 @@ test('los campos de consulta (incluyendo json) se almacenan cifrados y son ilegi
     expect($rawConsulta->motivo_consulta)->not->toContain('ansiedad aguda')
         ->and($rawConsulta->notas_clinicas)->not->toContain('insomnio')
         ->and($rawConsulta->diagnostico)->not->toContain('Ansiedad Generalizada')
+        ->and($rawConsulta->plan_atencion)->not->toContain('seguimiento semanal')
         ->and($rawConsulta->tecnica_utilizada)->not->toContain('Semiestructurada')
         ->and($rawConsulta->evaluacion_inicial)->not->toContain('Paciente aliñado')
         ->and($rawConsulta->evaluacion_inicial)->not->toContain('Psicoterapia breve');
         
     // Verificamos que tienen aspecto de base64 (cifrado libsodium)
-    expect(base64_decode($rawConsulta->evaluacion_inicial, true))->not->toBeFalse();
+    expect(base64_decode($rawConsulta->evaluacion_inicial, true))->not->toBeFalse()
+        ->and(base64_decode($rawConsulta->plan_atencion, true))->not->toBeFalse();
 });
