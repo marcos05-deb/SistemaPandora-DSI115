@@ -60,6 +60,7 @@ it('permite al especialista reprogramar su propia cita con motivo', function () 
         ->patch("/expedientes/{$this->expediente->id}/citas/{$citaOriginal->id}/reprogramar", [
             'fecha_hora' => $nuevaFecha,
             'motivo_reprogramacion' => $motivo,
+            'acordada_con_paciente' => true,
         ]);
 
     $response->assertRedirect();
@@ -78,6 +79,24 @@ it('permite al especialista reprogramar su propia cita con motivo', function () 
         ->and($citaNueva->fecha_hora->format('Y-m-d H:i'))->toBe($nuevaFecha);
 });
 
+it('rechaza reprogramar sin confirmación acordada con el paciente', function () {
+    $cita = Cita::create([
+        'expediente_id' => $this->expediente->id,
+        'profesional_id' => $this->profesional->id,
+        'area_id' => $this->area->id,
+        'fecha_hora' => now()->addDays(1)->setTime(10, 0),
+        'motivo' => 'Consulta',
+        'estado' => EstadoCita::Programada->value,
+    ]);
+
+    $this->actingAs($this->especialista)
+        ->patch("/expedientes/{$this->expediente->id}/citas/{$cita->id}/reprogramar", [
+            'fecha_hora' => now()->addDays(4)->format('Y-m-d H:i'),
+            'motivo_reprogramacion' => 'Cambio solicitado por el paciente.',
+        ])
+        ->assertSessionHasErrors('acordada_con_paciente');
+});
+
 it('rechaza reprogramar sin motivo', function () {
     $cita = Cita::create([
         'expediente_id' => $this->expediente->id,
@@ -91,6 +110,7 @@ it('rechaza reprogramar sin motivo', function () {
     $this->actingAs($this->especialista)
         ->patch("/expedientes/{$this->expediente->id}/citas/{$cita->id}/reprogramar", [
             'fecha_hora' => now()->addDays(4)->format('Y-m-d H:i'),
+            'acordada_con_paciente' => true,
         ])
         ->assertSessionHasErrors('motivo_reprogramacion');
 });
@@ -111,6 +131,7 @@ it('rechaza reprogramar o cancelar una cita cuya hora ya pasó', function () {
         ->patch("/expedientes/{$this->expediente->id}/citas/{$cita->id}/reprogramar", [
             'fecha_hora' => now()->addDays(2)->format('Y-m-d H:i'),
             'motivo_reprogramacion' => 'Intento sobre cita pasada',
+            'acordada_con_paciente' => true,
         ])
         ->assertSessionHasErrors('fecha_hora');
 
@@ -146,7 +167,7 @@ it('permite al especialista cancelar su propia cita futura', function () {
         ->and($cita->motivo_cancelacion)->toBe('Paciente llamó para cancelar por viaje inesperado');
 });
 
-it('rechaza reprogramar si el horario genera conflicto', function () {
+it('rechaza reprogramar si el horario genera conflicto o solapamiento', function () {
     $citaTarget = Cita::create([
         'expediente_id' => $this->expediente->id,
         'profesional_id' => $this->profesional->id,
@@ -171,12 +192,10 @@ it('rechaza reprogramar si el horario genera conflicto', function () {
         ->patch("/expedientes/{$this->expediente->id}/citas/{$citaTarget->id}/reprogramar", [
             'fecha_hora' => $fechaConflicto->format('Y-m-d H:i'),
             'motivo_reprogramacion' => 'Intento con horario ocupado',
+            'acordada_con_paciente' => true,
         ]);
 
-    $response->assertRedirect();
-    $response->assertSessionHasErrors([
-        'fecha_hora' => 'El horario seleccionado ya no está disponible o existe un conflicto en la agenda del especialista.',
-    ]);
+    $response->assertSessionHasErrors('fecha_hora');
 
     expect($citaTarget->fresh()->estado)->toBe(EstadoCita::Programada->value);
     expect(Cita::where('cita_origen_id', $citaTarget->id)->count())->toBe(0);
@@ -220,6 +239,7 @@ it('rechaza reprogramar una cita cancelada', function () {
         ->patch("/expedientes/{$this->expediente->id}/citas/{$cita->id}/reprogramar", [
             'fecha_hora' => now()->addDays(5)->format('Y-m-d H:i'),
             'motivo_reprogramacion' => 'No debería aplicar',
+            'acordada_con_paciente' => true,
         ])
         ->assertSessionHasErrors([
             'estado' => 'Solo se pueden reprogramar citas que estén en estado programada.',

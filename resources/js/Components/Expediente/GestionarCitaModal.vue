@@ -24,6 +24,7 @@ const form = useForm({
     fecha_hora: '',
     motivo_cancelacion: '',
     motivo_reprogramacion: '',
+    acordada_con_paciente: false,
 });
 
 const close = () => {
@@ -136,6 +137,22 @@ const description = computed(() => {
                             <p v-if="form.errors.motivo_reprogramacion" class="text-[var(--aurora-red)] text-[12px] mt-1.5 font-medium flex items-center gap-1.5">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 {{ form.errors.motivo_reprogramacion }}
+                            </p>
+
+                            <div class="flex items-start gap-2 mt-4">
+                                <input
+                                    id="acordada_con_paciente"
+                                    v-model="form.acordada_con_paciente"
+                                    type="checkbox"
+                                    class="mt-0.5 w-4 h-4 rounded border-[var(--nord4)] text-[var(--nord8)] focus:ring-[var(--nord8)]"
+                                >
+                                <label for="acordada_con_paciente" class="text-[13px] text-[var(--nord0)]">
+                                    Confirmo que la nueva fecha y hora fueron <span class="font-semibold">acordadas con el paciente</span>
+                                    <span class="text-[var(--aurora-red)]">*</span>
+                                </label>
+                            </div>
+                            <p v-if="form.errors.acordada_con_paciente" class="text-[var(--aurora-red)] text-[12px] mt-1.5 font-medium">
+                                {{ form.errors.acordada_con_paciente }}
                             </p>
                         </div>
                         
