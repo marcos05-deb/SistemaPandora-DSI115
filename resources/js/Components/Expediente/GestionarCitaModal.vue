@@ -23,6 +23,7 @@ const emit = defineEmits(['close']);
 const form = useForm({
     fecha_hora: '',
     motivo_cancelacion: '',
+    motivo_reprogramacion: '',
 });
 
 const close = () => {
@@ -67,7 +68,7 @@ const title = computed(() => {
 
 const description = computed(() => {
     if (props.mode === 'reprogramar') {
-        return 'Seleccione una nueva fecha y hora. El motivo clínico original se conservará automáticamente.';
+        return 'Indique el motivo del cambio y la nueva fecha acordada con el paciente. El motivo clínico original se conserva.';
     }
     return 'Por favor, indique el motivo por el cual se cancela esta cita.';
 });
@@ -118,6 +119,23 @@ const description = computed(() => {
                             <p v-if="form.errors.fecha_hora" class="text-[var(--aurora-red)] text-[12px] mt-1.5 font-medium flex items-center gap-1.5">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 {{ form.errors.fecha_hora }}
+                            </p>
+
+                            <label for="motivo_reprogramacion" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5 mt-4">
+                                Motivo de reprogramación <span class="text-[var(--aurora-red)]">*</span>
+                            </label>
+                            <textarea 
+                                id="motivo_reprogramacion" 
+                                v-model="form.motivo_reprogramacion"
+                                rows="3"
+                                placeholder="Ej: Paciente solicitó cambio de horario por examen..."
+                                class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)] focus:outline-none focus:ring-2 focus:ring-[var(--nord8)]/30 transition-all"
+                                :class="form.errors.motivo_reprogramacion ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)] focus:border-[var(--nord8)]'"
+                                required
+                            ></textarea>
+                            <p v-if="form.errors.motivo_reprogramacion" class="text-[var(--aurora-red)] text-[12px] mt-1.5 font-medium flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                {{ form.errors.motivo_reprogramacion }}
                             </p>
                         </div>
                         

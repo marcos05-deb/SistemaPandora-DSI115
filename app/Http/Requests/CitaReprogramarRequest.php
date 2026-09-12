@@ -1,39 +1,69 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Enums\EstadoCita;
+use App\Models\Cita;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class CitaReprogramarRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return true; // Autenticación/Autorización en Policy
+        return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
             'fecha_hora' => ['required', 'date', 'after:now'],
+            'motivo_reprogramacion' => ['required', 'string', 'min:10', 'max:2000'],
         ];
     }
 
-    public function withValidator($validator)
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
     {
-        $validator->after(function ($validator) {
+        return [
+            'fecha_hora.after' => 'La nueva fecha de la cita debe ser futura.',
+            'motivo_reprogramacion.required' => 'El motivo de reprogramación es obligatorio.',
+            'motivo_reprogramacion.min' => 'El motivo de reprogramación debe tener al menos :min caracteres.',
+        ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            /** @var Cita|null $cita */
             $cita = $this->route('cita');
-            
-            if (!$cita || $cita->estado !== 'programada') {
-                $validator->errors()->add('estado', 'Solo se pueden reprogramar citas que estén en estado programada.');
+
+            if (! $cita) {
+                return;
+            }
+
+            if ($cita->estado !== EstadoCita::Programada->value) {
+                $validator->errors()->add(
+                    'estado',
+                    'Solo se pueden reprogramar citas que estén en estado programada.'
+                );
+
+                return;
+            }
+
+            if (! $cita->fecha_hora->isFuture()) {
+                $validator->errors()->add(
+                    'fecha_hora',
+                    'Solo se pueden reprogramar citas futuras cuya hora aún no haya llegado.'
+                );
             }
         });
     }

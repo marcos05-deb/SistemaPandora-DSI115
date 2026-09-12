@@ -1,39 +1,67 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Enums\EstadoCita;
+use App\Models\Cita;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class CitaCancelarRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return true; // Autenticación/Autorización en Policy
+        return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'motivo_cancelacion' => ['required', 'string', 'max:5000'],
+            'motivo_cancelacion' => ['required', 'string', 'min:10', 'max:5000'],
         ];
     }
 
-    public function withValidator($validator)
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
     {
-        $validator->after(function ($validator) {
+        return [
+            'motivo_cancelacion.required' => 'El motivo de cancelación es obligatorio.',
+            'motivo_cancelacion.min' => 'El motivo de cancelación debe tener al menos :min caracteres.',
+        ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            /** @var Cita|null $cita */
             $cita = $this->route('cita');
-            
-            if (!$cita || $cita->estado !== 'programada') {
-                $validator->errors()->add('estado', 'Solo se pueden cancelar citas que estén en estado programada.');
+
+            if (! $cita) {
+                return;
+            }
+
+            if ($cita->estado !== EstadoCita::Programada->value) {
+                $validator->errors()->add(
+                    'estado',
+                    'Solo se pueden cancelar citas que estén en estado programada.'
+                );
+
+                return;
+            }
+
+            if (! $cita->fecha_hora->isFuture()) {
+                $validator->errors()->add(
+                    'fecha_hora',
+                    'Solo se pueden cancelar citas futuras cuya hora aún no haya llegado.'
+                );
             }
         });
     }
