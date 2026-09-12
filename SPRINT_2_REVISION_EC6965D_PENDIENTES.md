@@ -1,5 +1,8 @@
 # Sprint 2 — Revisión posterior al pull y pendientes reales
 
+> **Histórico.** Este informe describe el estado en el commit `ec6965d`.
+> La revisión técnica más reciente está en [`SPRINT_2_REVISION_5935126_PENDIENTES.md`](./SPRINT_2_REVISION_5935126_PENDIENTES.md).
+
 ## Datos de la revisión
 
 - Fecha: 12 de septiembre de 2026

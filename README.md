@@ -165,6 +165,12 @@ docker compose exec app sh
 # Interfaz de consola nativa de PostgreSQL
 docker compose exec postgres psql -U pandora -d pandora
 
+# Aplicar migraciones pendientes (rol administrador; no destruye datos)
+docker compose exec app php artisan migrate --database=pgsql_admin --force
+
+# Ejecutar la suite de pruebas automatizadas
+docker compose exec app php artisan test
+
 # Emulación local del entorno de Producción (servidor Vite deshabilitado, usa public/build)
 docker compose -f docker-compose.prod.yml up --build
 ```

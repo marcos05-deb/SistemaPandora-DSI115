@@ -1,5 +1,7 @@
 # Sprint 2 — Nuevos hallazgos por resolver
 
+> **Histórico.** Estado revisado en `366b2e8`. La revisión técnica más reciente está en [`SPRINT_2_REVISION_5935126_PENDIENTES.md`](./SPRINT_2_REVISION_5935126_PENDIENTES.md).
+
 ## 1. Propósito del documento
 
 Este documento reúne únicamente los pendientes nuevos encontrados después de actualizar y revisar la rama `correcciones-sprint-2` contra los criterios de aceptación de Jira para el Sprint 2.

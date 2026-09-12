@@ -1,5 +1,7 @@
 # Sprint 2 — Plan completo de correcciones según Jira
 
+> **Histórico.** Plan inicial contra `dev@0259612`. La revisión técnica más reciente está en [`SPRINT_2_REVISION_5935126_PENDIENTES.md`](./SPRINT_2_REVISION_5935126_PENDIENTES.md).
+
 ## 1. Propósito del documento
 
 Este documento define todo lo que debe corregirse o completarse en la rama `dev` para que el Sprint 2 del Sistema PANDORA cumpla con las historias de usuario y criterios de aceptación registrados en Jira.
