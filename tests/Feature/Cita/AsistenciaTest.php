@@ -217,3 +217,62 @@ it('impide doble registro de asistencia', function () {
     $response->assertSessionHasErrors('estado');
     expect($cita->fresh()->estado)->toBe(EstadoCita::Asistida->value);
 });
+
+it('alimenta estadísticas preventivas al registrar ausencia', function () {
+    $cita = Cita::create([
+        'expediente_id' => $this->expediente->id,
+        'profesional_id' => $this->profesional->id,
+        'area_id' => $this->area->id,
+        'fecha_hora' => now()->subHour(),
+        'motivo' => 'Consulta general',
+        'estado' => EstadoCita::Programada->value,
+    ]);
+
+    $service = app(\App\Services\EstadisticasPreventivasService::class);
+    expect($service->contarAusenciasPaciente($this->user, $this->paciente->codigo))->toBe(0);
+
+    $this->actingAs($this->user)
+        ->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->patch("/expedientes/{$this->expediente->id}/citas/{$cita->id}/asistencia", [
+            'estado' => EstadoCita::Ausente->value,
+        ])
+        ->assertRedirect();
+
+    expect(\App\Models\EstadisticaPreventivaAusencia::count())->toBe(1)
+        ->and($service->contarAusenciasPaciente($this->user, $this->paciente->codigo))->toBe(1);
+
+    // Idempotencia del listener ante reproceso del mismo evento.
+    event(new CitaAusenciaRegistrada($cita->fresh()));
+    expect(\App\Models\EstadisticaPreventivaAusencia::count())->toBe(1);
+});
+
+it('no incrementa ausencias al marcar asistida y aísla por área', function () {
+    $cita = Cita::create([
+        'expediente_id' => $this->expediente->id,
+        'profesional_id' => $this->profesional->id,
+        'area_id' => $this->area->id,
+        'fecha_hora' => now()->subHour(),
+        'motivo' => 'Consulta general',
+        'estado' => EstadoCita::Programada->value,
+    ]);
+
+    $this->actingAs($this->user)
+        ->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->patch("/expedientes/{$this->expediente->id}/citas/{$cita->id}/asistencia", [
+            'estado' => EstadoCita::Asistida->value,
+        ])
+        ->assertRedirect();
+
+    expect(\App\Models\EstadisticaPreventivaAusencia::count())->toBe(0);
+
+    $otraArea = \App\Models\Area::factory()->create();
+    $otroUser = Especialista::factory()->create();
+    $otroUser->roles()->attach($this->user->roles->first()->id);
+    Profesional::factory()->create([
+        'user_id' => $otroUser->id,
+        'area_id' => $otraArea->id,
+    ]);
+
+    $service = app(\App\Services\EstadisticasPreventivasService::class);
+    expect($service->contarAusenciasPaciente($otroUser, $this->paciente->codigo))->toBe(0);
+});
