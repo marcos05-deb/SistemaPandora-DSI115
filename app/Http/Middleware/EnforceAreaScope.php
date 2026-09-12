@@ -22,9 +22,8 @@ class EnforceAreaScope
             return abort(401);
         }
 
-        // El sysadmin no puede acceder a rutas clínicas
         if ($especialista->hasRole('sysadmin')) {
-            return abort(403, 'Acceso denegado: El rol de administrador de sistema no tiene acceso a datos clínicos.');
+            return abort(403, 'Sysadmin no tiene acceso a operaciones clínicas.');
         }
 
         $expedienteId = $request->route('expediente');

@@ -2,12 +2,21 @@
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
-import { computed } from 'vue';
+import DerivacionModal from '@/Components/Expediente/DerivacionModal.vue';
+import CierreExpedienteModal from '@/Components/Expediente/CierreExpedienteModal.vue';
+import AgendarCitaModal from '@/Components/Expediente/AgendarCitaModal.vue';
+import GestionarCitaModal from '@/Components/Expediente/GestionarCitaModal.vue';
+import { computed, ref, onMounted } from 'vue';
+import { router } from '@inertiajs/vue3';
 
 defineOptions({ layout: ClinicalLayout });
 
 const props = defineProps({
-    paciente: { type: Object, required: true }
+    paciente: { type: Object, required: true },
+    hasAnyExpediente: { type: Boolean, default: false },
+    areasDisponibles: { type: Array, default: () => [] },
+    citasPendientes: { type: Array, default: () => [] },
+    can: { type: Object, default: () => ({}) }
 });
 
 const page = usePage();
@@ -17,10 +26,51 @@ const canSeeFullUuid = computed(() => {
     return roles.includes('sysadmin') || roles.includes('area_coordinator');
 });
 
+const expedienteActivo = computed(() => {
+    if (!props.paciente.expedientes || !Array.isArray(props.paciente.expedientes)) return null;
+    return props.paciente.expedientes.find(e => e.estado !== 'cerrado');
+});
+
 const formatDate = (dateString) => {
     if (!dateString) return 'No registrada';
     return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 };
+
+const getAreaName = (areaId) => {
+    const area = props.areasDisponibles.find(a => a.id === areaId);
+    return area ? area.nombre : 'Área';
+};
+
+const isDerivacionModalOpen = ref(false);
+const isCierreModalOpen = ref(false);
+const isCitaModalOpen = ref(false);
+const isGestionarCitaModalOpen = ref(false);
+const gestionarCitaMode = ref('reprogramar');
+const selectedCita = ref(null);
+
+const openGestionarCitaModal = (cita, mode) => {
+    selectedCita.value = cita;
+    gestionarCitaMode.value = mode;
+    isGestionarCitaModalOpen.value = true;
+};
+
+const marcarAsistencia = (citaId, estado) => {
+    if (!props.can?.updateCita || !expedienteActivo.value) return;
+    
+    router.patch(`/expedientes/${expedienteActivo.value.id}/citas/${citaId}/asistencia`, {
+        estado: estado
+    }, {
+        preserveScroll: true
+    });
+};
+
+onMounted(() => {
+    if (page.props.flash?.prompt_cita_expediente_id && expedienteActivo.value?.id === page.props.flash.prompt_cita_expediente_id) {
+        if (props.can?.assignCita) {
+            isCitaModalOpen.value = true;
+        }
+    }
+});
 </script>
 
 <template>
@@ -53,6 +103,26 @@ const formatDate = (dateString) => {
                     <template v-if="canSeeFullUuid">{{ paciente.codigo }}</template>
                     <template v-else>{{ paciente.codigo.substring(0,8) }}...</template>
                 </span>
+                
+                <template v-if="page.props.auth?.user?.roles?.includes('psychosocial_referent')">
+                    <template v-if="paciente.expedientes && paciente.expedientes.length > 0">
+                        <span class="px-3 py-1.5 bg-[var(--surface-subtle)] text-[var(--nord3)] text-[11px] font-semibold rounded-lg border border-[var(--nord4)] inline-flex items-center gap-1.5 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[var(--aurora-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Referido al {{ getAreaName(paciente.expedientes[0].area_id) }}
+                        </span>
+                    </template>
+                    <button v-else 
+                        @click="isDerivacionModalOpen = true"
+                        class="px-3 py-1.5 bg-[var(--nord8)] hover:bg-[var(--nord9)] text-white text-[11px] font-medium rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                        Derivar a Área
+                    </button>
+                </template>
+
                 <button disabled class="px-3 py-1.5 bg-[var(--surface-header)] text-[var(--nord3)] text-[11px] font-medium rounded-lg border border-[var(--nord4)] cursor-not-allowed">
                     Expediente Clínico
                 </button>
@@ -102,6 +172,11 @@ const formatDate = (dateString) => {
                             <div class="min-w-0 flex-1">
                                 <p class="text-[10px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Motivo de Consulta</p>
                                 <p class="text-[13px] text-[var(--nord0)] whitespace-pre-line leading-relaxed">{{ paciente.motivo_consulta }}</p>
+                                <div v-if="paciente.etiquetas_motivo && paciente.etiquetas_motivo.length > 0" class="flex flex-wrap gap-1.5 mt-2">
+                                    <span v-for="tag in paciente.etiquetas_motivo" :key="tag" class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--nord10)] text-white shadow-sm">
+                                        {{ tag }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         <!-- Dirección -->
@@ -235,16 +310,90 @@ const formatDate = (dateString) => {
                     </div>
                 </div>
 
-                <!-- Clinical Records (locked) -->
+                <!-- Citas Pendientes -->
+                <div v-if="citasPendientes && citasPendientes.length > 0" class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
+                    <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--surface-header)]">
+                        <h2 class="text-[14px] font-medium text-[var(--nord0)] flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[var(--aurora-purple)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Citas Pendientes
+                        </h2>
+                    </div>
+                    <div class="p-0">
+                        <div v-for="cita in citasPendientes" :key="cita.id" class="p-5 border-b border-[var(--nord4)] last:border-0">
+                            <div class="flex flex-col gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-[var(--surface-header)] text-[var(--nord3)] border border-[var(--nord4)]">
+                                        {{ formatDate(cita.fecha_hora) }} a las {{ new Date(cita.fecha_hora).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}) }}
+                                    </span>
+                                </div>
+                                <p class="text-[13px] text-[var(--nord0)] font-medium mt-1">{{ cita.motivo }}</p>
+                                
+                                <div v-if="can?.updateCita" class="flex flex-col gap-2 mt-3 pt-3 border-t border-[var(--nord4)]/60">
+                                    <div class="flex items-center gap-2">
+                                        <button @click="marcarAsistencia(cita.id, 'asistida')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-green)] hover:bg-[#8FBCBB] text-white transition-colors">
+                                            Asistió
+                                        </button>
+                                        <button @click="marcarAsistencia(cita.id, 'ausente')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-red)] hover:bg-[#BF616A] text-white transition-colors">
+                                            No asistió
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button @click="openGestionarCitaModal(cita, 'reprogramar')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--nord8)] border border-[var(--nord8)] transition-colors">
+                                            Reprogramar
+                                        </button>
+                                        <button @click="openGestionarCitaModal(cita, 'cancelar')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--aurora-red)] border border-[var(--aurora-red)] transition-colors">
+                                            Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clinical Records -->
                 <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
-                    <div class="relative px-6 py-8 text-center overflow-hidden">
+                    <div v-if="expedienteActivo" class="px-6 py-6 text-center">
+                        <div class="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[var(--frost4)]/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-[var(--frost4)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-[14px] font-semibold text-[var(--nord0)] mb-1">Módulo de Expedientes</h3>
+                        <p class="text-[12px] text-[var(--nord3)] mb-5 leading-relaxed">
+                            Expediente actual en estado <span class="font-bold">{{ expedienteActivo.estado.replace('_', ' ') }}</span>.
+                        </p>
+                        <div class="space-y-3">
+                            <Link v-if="can?.createConsulta" :href="'/expedientes/' + expedienteActivo.id + '/consultas/create'" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--nord8)] hover:bg-[var(--nord9)] text-white transition-colors shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                Registrar Consulta Clínica
+                            </Link>
+                            
+                            <button v-if="can?.assignCita" @click="isCitaModalOpen = true" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                Agendar Próxima Cita
+                            </button>
+                            
+                            <button v-if="can?.closeExpediente" @click="isCierreModalOpen = true" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--aurora-red)] text-[var(--aurora-red)] hover:text-white border border-[var(--aurora-red)] hover:border-transparent transition-colors shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                Cerrar Expediente
+                            </button>
+                            <Link v-if="hasAnyExpediente" :href="'/pacientes/' + paciente.codigo + '/historial'" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--surface-subtle)] text-[var(--nord3)] hover:text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                                Ver Historial Multidisciplinario
+                            </Link>
+                        </div>
+                    </div>
+                    <div v-else class="relative px-6 py-8 text-center overflow-hidden">
                         <!-- Fondo decorativo -->
                         <div class="absolute inset-0 opacity-[0.03]" style="background: repeating-linear-gradient(45deg, var(--nord0) 0, var(--nord0) 1px, transparent 0, transparent 50%); background-size: 12px 12px;"></div>
                         <div class="relative z-10">
                             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4"
                                 style="background: linear-gradient(135deg, var(--aurora-yellow)/15, var(--aurora-orange)/10); border: 1px solid var(--aurora-yellow)/30; color: var(--aurora-yellow);">
                                 <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
-                                Próximamente
+                                Sin Expediente
                             </div>
                             <div class="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center"
                                 style="background: linear-gradient(135deg, var(--nord4) 0%, var(--nord5) 100%);">
@@ -254,17 +403,51 @@ const formatDate = (dateString) => {
                             </div>
                             <h3 class="text-[14px] font-semibold text-[var(--nord0)] mb-1">Módulo de Expedientes</h3>
                             <p class="text-[12px] text-[var(--nord3)] mb-5 leading-relaxed">
-                                El registro de sesiones y evoluciones clínicas<br>estará disponible en el siguiente sprint.
+                                El paciente no tiene un expediente<br>activo en su área clínica.
                             </p>
-                            <button disabled class="w-full py-2 text-[12px] font-medium rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
-                                style="background: var(--surface-subtle); color: var(--nord4); border: 1px dashed var(--nord4);">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                Crear Nueva Sesión
-                            </button>
+                            <div class="space-y-3">
+                                <button disabled class="w-full py-2 text-[12px] font-medium rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
+                                    style="background: var(--surface-subtle); color: var(--nord4); border: 1px dashed var(--nord4);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                    Crear Nueva Sesión
+                                </button>
+                                <Link v-if="hasAnyExpediente" :href="'/pacientes/' + paciente.codigo + '/historial'" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--surface-subtle)] text-[var(--nord3)] hover:text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                                    Ver Historial Multidisciplinario
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <DerivacionModal
+            :show="isDerivacionModalOpen"
+            :paciente="paciente"
+            :areas="areasDisponibles"
+            @close="isDerivacionModalOpen = false"
+        />
+
+        <CierreExpedienteModal
+            :show="isCierreModalOpen"
+            :expediente="expedienteActivo"
+            @close="isCierreModalOpen = false"
+        />
+        
+        <AgendarCitaModal
+            :show="isCitaModalOpen"
+            :expediente="expedienteActivo"
+            @close="isCitaModalOpen = false"
+        />
+
+        <GestionarCitaModal
+            v-if="selectedCita && expedienteActivo"
+            :show="isGestionarCitaModalOpen"
+            :mode="gestionarCitaMode"
+            :cita="selectedCita"
+            :expediente="expedienteActivo"
+            @close="isGestionarCitaModalOpen = false"
+        />
     </div>
 </template>

@@ -8,6 +8,7 @@ use App\Models\ContactoPaciente;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Profesional;
+use App\Models\Consulta;
 use Illuminate\Database\Seeder;
 
 class ExpedienteSeeder extends Seeder
@@ -35,8 +36,9 @@ class ExpedienteSeeder extends Seeder
         $psicosocial = $profByEmail['psicosocial@pandora.com'] ?? null;
         $especialista = $profByEmail['especialista@pandora.com'] ?? null;
         $especialistaNutri = $profByEmail['especialista-nutri@pandora.com'] ?? null;
+        $especialistaPsi = $profByEmail['especialista-psi@pandora.com'] ?? null;
 
-        if (!$psicosocial || !$especialista || !$especialistaNutri) {
+        if (!$psicosocial || !$especialista || !$especialistaNutri || !$especialistaPsi) {
             $this->command?->warn('Faltan profesionales. Ejecute DatabaseSeeder primero.');
             return;
         }
@@ -47,6 +49,14 @@ class ExpedienteSeeder extends Seeder
             'medicina_general' => $especialista,
             'nutricion'        => $especialistaNutri,
             'trabajo_social'   => $psicosocial,
+        ];
+
+        // Mapa: area_key => profesional que atiende (especialista)
+        $especialistaPorArea = [
+            'psicologia'       => $especialistaPsi,
+            'medicina_general' => $especialista,
+            'nutricion'        => $especialistaNutri,
+            'trabajo_social'   => null,
         ];
 
         $pacientes = [
@@ -284,7 +294,7 @@ class ExpedienteSeeder extends Seeder
             ],
         ];
 
-        foreach ($pacientes as $data) {
+        foreach ($pacientes as $index => $data) {
             $carrera = Carrera::where('nombre', $data['carrera_nombre'])
                 ->whereHas('facultad', function ($q) use ($data) {
                     $q->where('nombre', $data['facultad_nombre']);
@@ -323,17 +333,142 @@ class ExpedienteSeeder extends Seeder
                 ]);
             }
 
+            // Actualizar paciente con las etiquetas para simular que se añadieron en su registro
+            $paciente->update([
+                'etiquetas_motivo' => ['Violencia Familiar', 'Problemas de Adaptación']
+            ]);
+
+            if ($index >= 6) {
+                continue; // Dejamos estos 4 pacientes sin expediente, listos para que el usuario los cree manualmente
+            }
+
             $expData = $data['expediente'];
             $area = $areas[$expData['area_key']];
 
             if ($area) {
-                Expediente::create([
+                $expediente = Expediente::create([
                     'paciente_id' => $paciente->codigo,
                     'area_id' => $area->id,
                     'motivo_consulta' => $expData['motivo_consulta'],
                     'notas_clinicas' => $expData['notas_clinicas'],
                     'diagnostico' => $expData['diagnostico'],
                 ]);
+
+                if ($index >= 4) {
+                    continue; // Dejamos estos 2 pacientes con expediente, pero sin consultas ni citas
+                }
+
+                $atendedor = $especialistaPorArea[$expData['area_key']];
+                
+                if (!$atendedor) {
+                    continue; // Si no hay especialista configurado para el área (ej. trabajo social no tiene especialista clínico), saltamos.
+                }
+
+                // Generar consulta asociada para que US-09 tenga datos visuales en la línea de tiempo
+                Consulta::create([
+                    'expediente_id' => $expediente->id,
+                    'profesional_id' => $atendedor->id,
+                    'fecha_consulta' => $paciente->fecha_primera_consulta,
+                    'motivo_consulta' => 'Evaluación inicial: ' . $expData['motivo_consulta'],
+                    'notas_clinicas' => $expData['notas_clinicas'],
+                    'diagnostico' => $expData['diagnostico'],
+                    'tecnica_utilizada' => 'Entrevista y Observación Clínica',
+                    'evaluacion_inicial' => [
+                        'apariencia_externa' => 'Adecuada',
+                        'voz' => 'Tono normal',
+                        'patrones_habla' => 'Fluido',
+                        'expresiones_faciales' => 'Congruentes',
+                        'ademanes' => 'Tranquilos',
+                        'actitudes_tratamiento' => 'Colaborador',
+                        'impresion' => 'Paciente orientado',
+                        'plan_tratamiento' => 'Seguimiento quincenal',
+                        'pronostico' => 'Favorable',
+                    ],
+                ]);
+                
+                // Generar Cita programada para pruebas de conflicto de horario (US-11)
+                // Se agenda para MT20045 con especialista-psi@pandora.com (Psicología)
+                if ($data['carnet'] === 'MT20045') {
+                    $fechaCitaConflicto = now()->addDays(2)->setTime(10, 0)->format('Y-m-d H:i:s');
+                    \App\Models\Cita::create([
+                        'expediente_id' => $expediente->id,
+                        'profesional_id' => $atendedor->id,
+                        'area_id' => $area->id,
+                        'fecha_hora' => $fechaCitaConflicto,
+                        'motivo' => 'Cita de seguimiento pre-agendada para test de conflicto',
+                        'estado' => 'programada',
+                    ]);
+                    $this->command?->info("==> CITA GENERADA PARA PRUEBAS US-11 <==");
+                    $this->command?->info("Paciente: {$data['nombre_completo']} ({$data['carnet']})");
+                    $this->command?->info("Especialista: {$atendedor->especialista->email}");
+                    $this->command?->info("Fecha y Hora ocupada: {$fechaCitaConflicto}");
+                    $this->command?->info("==========================================");
+                }
+
+                if ($data['carnet'] === 'FL22067') {
+                    // Cita pasada
+                    \App\Models\Cita::create([
+                        'expediente_id' => $expediente->id,
+                        'profesional_id' => $atendedor->id,
+                        'area_id' => $area->id,
+                        'fecha_hora' => now()->subDays(1)->setTime(14, 0)->format('Y-m-d H:i:s'),
+                        'motivo' => 'Cita de seguimiento atrasada (Pasada)',
+                        'estado' => 'programada',
+                    ]);
+                    
+                    // Cita hoy (futura en horas)
+                    \App\Models\Cita::create([
+                        'expediente_id' => $expediente->id,
+                        'profesional_id' => $atendedor->id,
+                        'area_id' => $area->id,
+                        'fecha_hora' => now()->setTime(23, 59)->format('Y-m-d H:i:s'),
+                        'motivo' => 'Cita para hoy más tarde (Límite Mismo Día)',
+                        'estado' => 'programada',
+                    ]);
+                    
+                    // Cita futura en días
+                    \App\Models\Cita::create([
+                        'expediente_id' => $expediente->id,
+                        'profesional_id' => $atendedor->id,
+                        'area_id' => $area->id,
+                        'fecha_hora' => now()->addDays(2)->setTime(9, 0)->format('Y-m-d H:i:s'),
+                        'motivo' => 'Cita en días futuros (No accionable)',
+                        'estado' => 'programada',
+                    ]);
+                    
+                    $this->command?->info("==> CITAS GENERADAS PARA PRUEBAS US-12 <==");
+                    $this->command?->info("Paciente: {$data['nombre_completo']} ({$data['carnet']})");
+                    $this->command?->info("Especialista: {$atendedor->especialista->email}");
+                    $this->command?->info("Variantes: Pasada, Hoy-Futura, Futura-en-días");
+                    $this->command?->info("==========================================");
+                }
+
+                if ($data['carnet'] === 'RM24033') {
+                    // Cita para probar reprogramar
+                    \App\Models\Cita::create([
+                        'expediente_id' => $expediente->id,
+                        'profesional_id' => $atendedor->id,
+                        'area_id' => $area->id,
+                        'fecha_hora' => now()->addDays(5)->setTime(10, 0)->format('Y-m-d H:i:s'),
+                        'motivo' => 'Cita de control nutricional (Para reprogramar)',
+                        'estado' => 'programada',
+                    ]);
+                    
+                    // Cita para probar cancelar
+                    \App\Models\Cita::create([
+                        'expediente_id' => $expediente->id,
+                        'profesional_id' => $atendedor->id,
+                        'area_id' => $area->id,
+                        'fecha_hora' => now()->addDays(6)->setTime(11, 0)->format('Y-m-d H:i:s'),
+                        'motivo' => 'Cita de seguimiento (Para cancelar)',
+                        'estado' => 'programada',
+                    ]);
+                    
+                    $this->command?->info("==> CITAS GENERADAS PARA PRUEBAS US-13 <==");
+                    $this->command?->info("Paciente: {$data['nombre_completo']} ({$data['carnet']})");
+                    $this->command?->info("Variantes: Para Reprogramar, Para Cancelar");
+                    $this->command?->info("==========================================");
+                }
             }
         }
 

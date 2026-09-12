@@ -20,6 +20,10 @@ class PacienteController extends Controller
     {
         $user = auth()->user();
 
+        if ($user->hasRole('sysadmin')) {
+            abort(403);
+        }
+
         if ($user->hasRole('area_coordinator')) {
             return redirect()->route('busqueda-segura');
         }
@@ -66,7 +70,8 @@ class PacienteController extends Controller
         $facultades = Facultad::with('carreras')->get();
 
         return Inertia::render('Pacientes/Create', [
-            'facultades' => $facultades
+            'facultades' => $facultades,
+            'etiquetasValidas' => \App\Http\Requests\StorePacienteRequest::ETIQUETAS_VALIDAS
         ]);
     }
 
@@ -92,6 +97,8 @@ class PacienteController extends Controller
                 'referido_por' => $validated['referido_por'],
                 'llevado_por' => $validated['llevado_por'],
                 'motivo_consulta' => $validated['motivo_consulta'],
+                'etiquetas_motivo' => $validated['etiquetas_motivo'] ?? null,
+                'ultima_accion' => 'Registro de paciente',
             ]);
 
             // Crear Padre
@@ -143,17 +150,61 @@ class PacienteController extends Controller
      */
     public function show($carnet): Response
     {
-        $paciente = Paciente::with(['contactos', 'carrera.facultad'])
-            ->where('carnet', $carnet)
-            ->firstOrFail();
-
         $user = auth()->user();
+
+        $pacienteQuery = Paciente::with(['contactos', 'carrera.facultad']);
+
+        if ($user->hasRole('psychosocial_referent')) {
+            $pacienteQuery->with(['expedientes' => function ($q) {
+                $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class)
+                  ->with('citas')
+                  ->select('id', 'paciente_id', 'area_id', 'estado', 'created_at', 'updated_at');
+            }]);
+        } else {
+            $pacienteQuery->with(['expedientes.citas']);
+        }
+
+        $paciente = $pacienteQuery->where('carnet', $carnet)->firstOrFail();
 
         // Aplicamos la política IDOR
         $this->authorize('view', $paciente);
+        
+        $areasDisponibles = [];
+        if ($user->hasRole('psychosocial_referent')) {
+            $areasDisponibles = \App\Models\Area::select('id', 'nombre')->orderBy('nombre')->get();
+        }
+
+        $hasAnyExpediente = \App\Models\Expediente::withoutGlobalScopes()
+            ->where('paciente_id', $paciente->codigo)
+            ->exists();
+
+        $expedienteActivo = $paciente->expedientes->where('estado', '!=', 'cerrado')->first();
+        $canCloseExpediente = $expedienteActivo ? $user->can('close', $expedienteActivo) : false;
+        $canAssignCita = $expedienteActivo ? $user->can('create', [\App\Models\Cita::class, $expedienteActivo]) : false;
+        $canCreateConsulta = $expedienteActivo ? $user->can('create', [\App\Models\Consulta::class, $expedienteActivo]) : false;
+        
+        $citasPendientes = [];
+        $canUpdateCita = false;
+        if ($expedienteActivo) {
+            $citasPendientes = $expedienteActivo->citas->where('estado', 'programada')->values()->all();
+            if (count($citasPendientes) > 0) {
+                // Se asume que todas las citas pendientes de un expediente activo son administradas por la misma política. 
+                // Autorizamos con la primera cita (se evalúa la de profesional asignado).
+                $canUpdateCita = $user->can('update', $citasPendientes[0]);
+            }
+        }
 
         return Inertia::render('Pacientes/Show', [
-            'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve()
+            'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve(),
+            'hasAnyExpediente' => $hasAnyExpediente,
+            'areasDisponibles' => $areasDisponibles,
+            'citasPendientes' => $citasPendientes,
+            'can' => [
+                'closeExpediente' => $canCloseExpediente,
+                'assignCita' => $canAssignCita,
+                'updateCita' => $canUpdateCita,
+                'createConsulta' => $canCreateConsulta,
+            ],
         ]);
     }
 }

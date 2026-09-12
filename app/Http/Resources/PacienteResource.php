@@ -17,6 +17,15 @@ class PacienteResource extends JsonResource
         }
     }
 
+    private function decryptArray(string $field): ?array
+    {
+        try {
+            return $this->{$field};
+        } catch (DecryptionException) {
+            return null;
+        }
+    }
+
     /**
      * Transform the resource into an array.
      *
@@ -37,6 +46,7 @@ class PacienteResource extends JsonResource
             'referido_por' => $this->decrypt('referido_por'),
             'llevado_por' => $this->decrypt('llevado_por'),
             'motivo_consulta' => $this->decrypt('motivo_consulta'),
+            'etiquetas_motivo' => $this->decryptArray('etiquetas_motivo'),
             'created_at' => $this->created_at?->format('Y-m-d H:i'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i'),
             

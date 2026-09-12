@@ -14,7 +14,7 @@ class PacienteController extends Controller
      */
     public function index(\Illuminate\Http\Request $request): Response
     {
-        $pacientes = Paciente::select('codigo', 'created_at', 'carnet')
+        $pacientes = Paciente::select('codigo', 'created_at', 'updated_at', 'carnet', 'ultima_accion')
             ->when($request->search, function ($query, $search) {
                 // Since codigo is a UUID in Postgres, we cast to text for a safe partial search
                 $query->whereRaw('codigo::text ILIKE ?', ["%{$search}%"]);
@@ -26,6 +26,8 @@ class PacienteController extends Controller
                 return [
                     'codigo' => $paciente->codigo,
                     'created_at' => $paciente->created_at->format('Y-m-d H:i:s'),
+                    'updated_at' => $paciente->updated_at->format('Y-m-d H:i:s'),
+                    'ultima_accion' => $paciente->ultima_accion ?? 'Registro de paciente',
                 ];
             });
 

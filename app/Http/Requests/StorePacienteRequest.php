@@ -14,6 +14,18 @@ class StorePacienteRequest extends FormRequest
         return true; // La autorización se maneja en el middleware
     }
 
+    public const ETIQUETAS_VALIDAS = [
+        'Violencia Familiar',
+        'Violencia Docente',
+        'Violencia Pareja',
+        'Ideas Suicidas',
+        'Duelo',
+        'Problemas Académicos',
+        'Dificultades Socioeconómicas',
+        'Problemas de Adaptación',
+        'Conflictos Interpersonales',
+    ];
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -35,6 +47,8 @@ class StorePacienteRequest extends FormRequest
             'referido_por' => 'nullable|string|max:255',
             'llevado_por' => 'nullable|string|max:255',
             'motivo_consulta' => 'required|string',
+            'etiquetas_motivo' => ['nullable', 'array'],
+            'etiquetas_motivo.*' => ['string', \Illuminate\Validation\Rule::in(self::ETIQUETAS_VALIDAS)],
 
             // Padre / Madre
             'padre_nombre' => 'required_if:responsable_parentesco,Padre|nullable|string|max:255',

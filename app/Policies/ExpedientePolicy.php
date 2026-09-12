@@ -55,4 +55,20 @@ class ExpedientePolicy
     {
         return false;
     }
+
+    /**
+     * Determine whether the user can derivar a paciente (create a derived expediente).
+     */
+    public function derivar(Especialista $especialista): bool
+    {
+        return $especialista->hasRole('psychosocial_referent');
+    }
+
+    /**
+     * Determine whether the user can close the model.
+     */
+    public function close(Especialista $user, Expediente $expediente): bool
+    {
+        return $user->hasRole('area_coordinator') && $user->profesional && $user->profesional->area_id === $expediente->area_id;
+    }
 }

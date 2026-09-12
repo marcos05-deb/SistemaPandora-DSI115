@@ -128,9 +128,9 @@ class LoginController extends Controller
         sodium_memzero($passwordPlain);
 
         if ($especialista->hasRole('sysadmin')) {
-            return redirect()->intended('/admin/dashboard');
+            return redirect()->intended('/admin/dashboard')->withCookie($jwtCookie);
         }
 
-        return redirect()->intended('/dashboard');
+        return redirect()->intended('/dashboard')->withCookie($jwtCookie);
     }
 }

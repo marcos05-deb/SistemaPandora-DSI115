@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-use App\Models\Casts\EncryptedFieldCast;
+use App\Casts\EncryptedFieldCast;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -33,7 +33,9 @@ class Paciente extends Model
         'fecha_primera_consulta',
         'referido_por',
         'llevado_por',
-        'motivo_consulta'
+        'motivo_consulta',
+        'etiquetas_motivo',
+        'ultima_accion'
     ];
 
     protected $casts = [
@@ -44,11 +46,24 @@ class Paciente extends Model
         'referido_por' => EncryptedFieldCast::class,
         'llevado_por' => EncryptedFieldCast::class,
         'motivo_consulta' => EncryptedFieldCast::class,
+        'etiquetas_motivo' => \App\Casts\EncryptedJsonFieldCast::class,
     ];
 
     public function expedientes(): HasMany
     {
         return $this->hasMany(Expediente::class, 'paciente_id', 'codigo');
+    }
+
+    public function historialMultidisciplinario(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Consulta::class,
+            Expediente::class,
+            'paciente_id',
+            'expediente_id',
+            'codigo',
+            'id'
+        )->whereHas('expediente')->orderBy('fecha_consulta', 'desc');
     }
 
     public function contactos(): HasMany

@@ -44,12 +44,16 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
             'activos' => 0,
         ];
         $areaIds = $user->areas()->pluck('areas.id')->toArray();
+        $areasDisponibles = [];
 
         // Solo el referente psicosocial ve los pacientes (y únicamente los que él registró)
         if ($user->hasRole('psychosocial_referent') && $user->profesional) {
             $profesionalId = $user->profesional->id;
 
-            $pacientesQuery = \App\Models\Paciente::with('expedientes')
+            $pacientesQuery = \App\Models\Paciente::with(['expedientes' => function ($q) {
+                $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class)
+                  ->select('id', 'paciente_id', 'area_id', 'estado', 'created_at', 'updated_at');
+            }])
                 ->where('creado_por_profesional_id', $profesionalId)
                 ->orderBy('created_at', 'desc')
                 ->take(10)
@@ -61,8 +65,10 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
                 'total' => \App\Models\Paciente::where('creado_por_profesional_id', $profesionalId)->count(),
                 'activos' => \App\Models\Expediente::whereHas('paciente', function ($q) use ($profesionalId) {
                     $q->where('creado_por_profesional_id', $profesionalId);
-                })->count(),
+                })->where('estado', '!=', 'cerrado')->count(),
             ];
+            
+            $areasDisponibles = \App\Models\Area::select('id', 'nombre')->orderBy('nombre')->get();
         }
 
         // Coordinador y especialista: pacientes con expedientes en su área
@@ -81,13 +87,14 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
                 'total' => \App\Models\Paciente::whereHas('expedientes', function ($q) use ($areaIds) {
                     $q->whereIn('area_id', $areaIds);
                 })->count(),
-                'activos' => \App\Models\Expediente::whereIn('area_id', $areaIds)->count(),
+                'activos' => \App\Models\Expediente::whereIn('area_id', $areaIds)->where('estado', '!=', 'cerrado')->count(),
             ];
         }
 
         return Inertia::render('Dashboard', [
             'pacientes' => $pacientes,
             'stats' => $stats,
+            'areasDisponibles' => $areasDisponibles,
         ]);
     })->name('dashboard');
 
@@ -95,11 +102,27 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
     Route::middleware('role:psychosocial_referent')->group(function () {
         Route::get('/pacientes/create', [\App\Http\Controllers\PacienteController::class, 'create'])->name('pacientes.create');
         Route::post('/pacientes', [\App\Http\Controllers\PacienteController::class, 'store'])->name('pacientes.store');
+        
+        Route::post('/pacientes/{paciente}/derivar', [\App\Http\Controllers\DerivacionController::class, 'store'])->name('pacientes.derivar.store');
     });
 
-    Route::middleware('role:psychosocial_referent|specialist|area_coordinator')->group(function () {
+    Route::middleware('role:psychosocial_referent|specialist|area_coordinator|sysadmin')->group(function () {
         Route::get('/pacientes', [\App\Http\Controllers\PacienteController::class, 'index'])->name('pacientes.index')->middleware('throttle:30,1');
         Route::get('/pacientes/{carnet}', [\App\Http\Controllers\PacienteController::class, 'show'])->name('pacientes.show')->middleware('throttle:30,1');
+        
+        Route::middleware('enforce_area_scope')->group(function () {
+            Route::get('/citas', [\App\Http\Controllers\CitaController::class, 'index'])->name('citas.index');
+            Route::get('/pacientes/{paciente}/historial', [\App\Http\Controllers\HistorialController::class, 'show'])->name('pacientes.historial');
+            
+            Route::get('/expedientes/{expediente}/consultas/create', [\App\Http\Controllers\ConsultaController::class, 'create'])->name('consultas.create');
+            Route::post('/expedientes/{expediente}/consultas', [\App\Http\Controllers\ConsultaController::class, 'store'])->name('consultas.store');
+            Route::post('/expedientes/{expediente}/cerrar', [\App\Http\Controllers\ExpedienteController::class, 'close'])->name('expedientes.cerrar');
+            
+            Route::post('/expedientes/{expediente}/citas', [\App\Http\Controllers\CitaController::class, 'store'])->name('citas.store');
+            Route::patch('/expedientes/{expediente}/citas/{cita}/asistencia', [\App\Http\Controllers\CitaController::class, 'actualizarAsistencia'])->name('citas.asistencia');
+            Route::patch('/expedientes/{expediente}/citas/{cita}/reprogramar', [\App\Http\Controllers\CitaController::class, 'reprogramar'])->name('citas.reprogramar');
+            Route::patch('/expedientes/{expediente}/citas/{cita}/cancelar', [\App\Http\Controllers\CitaController::class, 'cancelar'])->name('citas.cancelar');
+        });
     });
 
     // Secure Search Routes (HU-06)
@@ -123,6 +146,10 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
 
         // Organigrama
         Route::get('/organigrama', [\App\Http\Controllers\Admin\OrganigramaController::class, 'index'])->name('admin.organigrama.index');
+        
+        // Calendario de Citas
+        Route::get('/citas', [\App\Http\Controllers\Admin\CitaController::class, 'index'])->name('admin.citas');
+        Route::get('/api/citas/{date}', [\App\Http\Controllers\Admin\CitaController::class, 'citasPorDia'])->name('admin.api.citas.dia');
     });
 
     Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout');
