@@ -213,10 +213,11 @@ class CitaController extends Controller
             DB::transaction(function () use ($request, $expediente, $profesional) {
                 $fechaHora = \Illuminate\Support\Carbon::parse($request->validated('fecha_hora'));
                 $profesionalId = $profesional->id;
+                $profesionalUserId = (int) $profesional->user_id;
 
-                $this->bloquearAgendaProfesional($profesionalId);
+                $this->bloquearAgendaUsuario($profesionalUserId);
 
-                if (Cita::hayConflictoHorario($profesionalId, $fechaHora)) {
+                if (Cita::hayConflictoHorario($profesionalUserId, $fechaHora)) {
                     throw \Illuminate\Validation\ValidationException::withMessages([
                         'fecha_hora' => 'El horario seleccionado se solapa con otra cita programada del especialista.',
                     ]);
@@ -226,6 +227,7 @@ class CitaController extends Controller
                 $cita->expediente_id = $expediente->id;
                 $cita->consulta_id = $request->validated('consulta_id');
                 $cita->profesional_id = $profesionalId;
+                $cita->profesional_user_id = $profesionalUserId;
                 $cita->area_id = $expediente->area_id;
                 $cita->fecha_hora = $fechaHora;
                 $cita->motivo = $request->validated('motivo');
@@ -287,7 +289,8 @@ class CitaController extends Controller
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                $this->bloquearAgendaProfesional($citaBloqueada->profesional_id);
+                $profesionalUserId = (int) $citaBloqueada->profesional_user_id;
+                $this->bloquearAgendaUsuario($profesionalUserId);
 
                 if ($citaBloqueada->estado !== \App\Enums\EstadoCita::Programada->value) {
                     throw \Illuminate\Validation\ValidationException::withMessages([
@@ -304,7 +307,7 @@ class CitaController extends Controller
                 $nuevaFecha = \Illuminate\Support\Carbon::parse($request->validated('fecha_hora'));
 
                 if (Cita::hayConflictoHorario(
-                    $citaBloqueada->profesional_id,
+                    $profesionalUserId,
                     $nuevaFecha,
                     $citaBloqueada->id
                 )) {
@@ -317,6 +320,7 @@ class CitaController extends Controller
                 $nuevaCita->expediente_id = $citaBloqueada->expediente_id;
                 $nuevaCita->consulta_id = $citaBloqueada->consulta_id;
                 $nuevaCita->profesional_id = $citaBloqueada->profesional_id;
+                $nuevaCita->profesional_user_id = $profesionalUserId;
                 $nuevaCita->area_id = $citaBloqueada->area_id;
                 $nuevaCita->fecha_hora = $nuevaFecha;
                 $nuevaCita->motivo = $citaBloqueada->motivo;
@@ -395,20 +399,22 @@ class CitaController extends Controller
     }
 
     /**
-     * Serializa mutaciones de agenda por profesional (NH-05).
+     * Serializa mutaciones de agenda por persona (RF-01 / NH-05).
      */
-    private function bloquearAgendaProfesional(string $profesionalId): void
+    private function bloquearAgendaUsuario(int $profesionalUserId): void
     {
-        $lockKey = crc32('cita-agenda:'.$profesionalId);
+        $lockKey = crc32('cita-agenda-usuario:'.$profesionalUserId);
         DB::select('SELECT pg_advisory_xact_lock(?)', [$lockKey]);
     }
 
     private function esViolacionExclusionAgenda(QueryException $e): bool
     {
         $sqlState = $e->errorInfo[0] ?? null;
+        $message = $e->getMessage();
 
         return $sqlState === '23P01'
-            || str_contains($e->getMessage(), 'citas_no_solapamiento_programada')
-            || str_contains($e->getMessage(), 'exclusion constraint');
+            || str_contains($message, 'citas_no_solapamiento_usuario_programada')
+            || str_contains($message, 'citas_no_solapamiento_programada')
+            || str_contains($message, 'exclusion constraint');
     }
 }

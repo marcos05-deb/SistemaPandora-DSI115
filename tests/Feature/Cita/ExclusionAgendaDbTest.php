@@ -65,10 +65,10 @@ it('rechaza inserción solapada en BD con SQLSTATE 23P01', function () {
 
     $sql = <<<'SQL'
         INSERT INTO citas (
-            id, expediente_id, consulta_id, profesional_id, area_id,
+            id, expediente_id, consulta_id, profesional_id, profesional_user_id, area_id,
             fecha_hora, estado, motivo, created_at, updated_at
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, 'programada', 'Solapada', NOW(), NOW()
+            ?, ?, ?, ?, ?, ?, ?, 'programada', 'Solapada', NOW(), NOW()
         )
     SQL;
 
@@ -80,6 +80,7 @@ it('rechaza inserción solapada en BD con SQLSTATE 23P01', function () {
             $this->expediente->id,
             $this->consulta->id,
             $this->profesional->id,
+            $this->profesional->user_id,
             $this->expediente->area_id,
             $this->base->copy()->addMinutes(30)->toIso8601String(),
         ]);

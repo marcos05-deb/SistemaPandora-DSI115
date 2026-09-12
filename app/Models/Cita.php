@@ -22,12 +22,27 @@ class Cita extends Model implements Auditable
     protected static function booted(): void
     {
         static::addGlobalScope(new AreaScope);
+
+        static::saving(function (Cita $cita): void {
+            if ($cita->profesional_user_id !== null || $cita->profesional_id === null) {
+                return;
+            }
+
+            $userId = Profesional::query()
+                ->whereKey($cita->profesional_id)
+                ->value('user_id');
+
+            if ($userId !== null) {
+                $cita->profesional_user_id = $userId;
+            }
+        });
     }
 
     protected $fillable = [
         'expediente_id',
         'consulta_id',
         'profesional_id',
+        'profesional_user_id',
         'area_id',
         'fecha_hora',
         'motivo',
@@ -56,17 +71,18 @@ class Cita extends Model implements Auditable
     public const DURACION_MINUTOS = 60;
 
     /**
-     * ¿Existe solapamiento de agenda (intervalo de duración) para el profesional?
+     * ¿Existe solapamiento de agenda (intervalo de duración) para la persona?
+     * Usa profesional_user_id para cubrir perfiles multiárea de la misma persona (RF-01).
      */
     public static function hayConflictoHorario(
-        string $profesionalId,
+        int|string $profesionalUserId,
         \Illuminate\Support\Carbon $inicio,
         ?string $exceptoCitaId = null
     ): bool {
         $fin = $inicio->copy()->addMinutes(self::DURACION_MINUTOS);
 
         $query = static::query()
-            ->where('profesional_id', $profesionalId)
+            ->where('profesional_user_id', $profesionalUserId)
             ->where('estado', \App\Enums\EstadoCita::Programada->value)
             ->where('fecha_hora', '<', $fin)
             ->whereRaw(
@@ -79,6 +95,11 @@ class Cita extends Model implements Auditable
         }
 
         return $query->exists();
+    }
+
+    public function profesionalUsuario(): BelongsTo
+    {
+        return $this->belongsTo(Especialista::class, 'profesional_user_id');
     }
 
     public function expediente(): BelongsTo

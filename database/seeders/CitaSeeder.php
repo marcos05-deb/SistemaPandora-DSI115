@@ -84,6 +84,7 @@ class CitaSeeder extends Seeder
         $cita = new Cita();
         $cita->expediente_id = $expediente->id;
         $cita->profesional_id = $profesional->id;
+        $cita->profesional_user_id = $profesional->user_id;
         $cita->area_id = $profesional->area_id;
         $cita->fecha_hora = $fecha;
         $cita->motivo = $motivo;
