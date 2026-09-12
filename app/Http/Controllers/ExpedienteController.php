@@ -29,21 +29,9 @@ class ExpedienteController extends Controller
             }
         }
 
+        // Incluye motivo_cambio en el INSERT original de auditoría (RP-04).
+        $expediente->auditMotivoCambio = $motivoCambio;
         $expediente->update($payload);
-
-        $ultimoAudit = $expediente->audits()->latest('id')->first();
-        if ($ultimoAudit) {
-            $newValues = $ultimoAudit->new_values ?? [];
-            $newValues['motivo_cambio'] = $motivoCambio;
-
-            // Bypass Eloquent: los audits son inmutables a nivel de modelo (NH-04).
-            \Illuminate\Support\Facades\DB::table(config('audit.drivers.database.table', 'audits'))
-                ->where('id', $ultimoAudit->id)
-                ->update([
-                    'new_values' => json_encode($newValues),
-                    'updated_at' => now(),
-                ]);
-        }
 
         $expediente->paciente->update(['ultima_accion' => 'Actualización de expediente clínico']);
 

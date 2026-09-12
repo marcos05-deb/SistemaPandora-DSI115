@@ -27,6 +27,10 @@ class HistorialController extends Controller
         $user = $request->user();
         $tipo = $filtros['tipo_atencion'] ?? null;
 
+        // RP-06: un evento agregado de acceso al historial (no una fila por consulta).
+        app(\App\Services\ClinicalAccessAuditor::class)
+            ->record($user, $paciente, 'view_historial');
+
         $eventos = collect();
 
         if ($tipo === null || $tipo === 'consulta') {

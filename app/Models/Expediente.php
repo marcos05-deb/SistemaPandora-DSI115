@@ -18,6 +18,11 @@ class Expediente extends Model implements Auditable
     use HasFactory, SoftDeletes, HasUuids, \OwenIt\Auditing\Auditable;
 
     /**
+     * Motivo del cambio clínico a incluir en el INSERT de auditoría (RP-04).
+     */
+    public ?string $auditMotivoCambio = null;
+
+    /**
      * Longitud mínima del motivo de derivación (caracteres).
      */
     public const MOTIVO_DERIVACION_MIN = 10;
@@ -86,6 +91,10 @@ class Expediente extends Model implements Auditable
                     $data[$bucket][$campo] = '[CIFRADO]';
                 }
             }
+        }
+
+        if ($this->auditMotivoCambio) {
+            $data['new_values']['motivo_cambio'] = $this->auditMotivoCambio;
         }
 
         return $data;

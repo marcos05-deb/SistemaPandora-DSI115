@@ -115,4 +115,124 @@ class AuditLoggingTest extends ComplianceTestCase
         $raw = DB::table('audits')->where('id', $audit->id)->value('new_values');
         $this->assertStringNotContainsString('Motivo actualizado confidencial', (string) $raw);
     }
+
+    public function test_no_se_pueden_actualizar_auditorias_via_sql_directo(): void
+    {
+        $audit = app(ClinicalAccessAuditor::class)
+            ->record($this->especialista, $this->expediente, 'view_expediente');
+
+        DB::connection('pgsql')->statement('SAVEPOINT audit_update_guard');
+
+        try {
+            DB::connection('pgsql')->table('audits')
+                ->where('id', $audit->id)
+                ->update(['tags' => 'tampered_sql']);
+            $this->fail('Debía fallar el UPDATE directo sobre audits');
+        } catch (\Illuminate\Database\QueryException $e) {
+            DB::connection('pgsql')->statement('ROLLBACK TO SAVEPOINT audit_update_guard');
+            $this->assertTrue(
+                str_contains(strtolower($e->getMessage()), 'permission')
+                || str_contains($e->getMessage(), '42501'),
+                'Se esperaba error de permisos al actualizar audits'
+            );
+        }
+
+        $this->assertSame('clinical_access', $audit->fresh()->tags);
+    }
+
+    public function test_no_se_pueden_eliminar_auditorias_via_sql_directo(): void
+    {
+        $audit = app(ClinicalAccessAuditor::class)
+            ->record($this->especialista, $this->expediente, 'view_expediente');
+
+        DB::connection('pgsql')->statement('SAVEPOINT audit_delete_guard');
+
+        try {
+            DB::connection('pgsql')->table('audits')
+                ->where('id', $audit->id)
+                ->delete();
+            $this->fail('Debía fallar el DELETE directo sobre audits');
+        } catch (\Illuminate\Database\QueryException $e) {
+            DB::connection('pgsql')->statement('ROLLBACK TO SAVEPOINT audit_delete_guard');
+            $this->assertTrue(
+                str_contains(strtolower($e->getMessage()), 'permission')
+                || str_contains($e->getMessage(), '42501'),
+                'Se esperaba error de permisos al eliminar audits'
+            );
+        }
+
+        $this->assertDatabaseHas('audits', ['id' => $audit->id]);
+    }
+
+    public function test_visualizar_varios_expedientes_audita_cada_acceso(): void
+    {
+        $segundaArea = Area::factory()->create();
+        Profesional::factory()->create([
+            'user_id' => $this->especialista->id,
+            'area_id' => $segundaArea->id,
+        ]);
+
+        $segundo = Expediente::factory()->create([
+            'paciente_id' => $this->paciente->codigo,
+            'area_id' => $segundaArea->id,
+            'estado' => 'abierto',
+        ]);
+
+        $this->actingAs($this->especialista)
+            ->withSession(['_sym_key' => session('_sym_key')])
+            ->get(route('pacientes.show', $this->paciente->carnet))
+            ->assertOk();
+
+        $access = Audit::query()
+            ->where('event', 'accessed')
+            ->where('tags', 'clinical_access')
+            ->where('user_id', $this->especialista->id)
+            ->where('auditable_type', Expediente::class)
+            ->get();
+
+        $this->assertTrue($access->contains(fn (Audit $a) => (string) $a->auditable_id === (string) $this->expediente->id));
+        $this->assertTrue($access->contains(fn (Audit $a) => (string) $a->auditable_id === (string) $segundo->id));
+    }
+
+    public function test_consultar_historial_genera_evento_de_acceso(): void
+    {
+        $this->actingAs($this->especialista)
+            ->withSession(['_sym_key' => session('_sym_key')])
+            ->get(route('pacientes.historial', $this->paciente))
+            ->assertOk();
+
+        $this->assertTrue(
+            Audit::query()
+                ->where('event', 'accessed')
+                ->where('tags', 'clinical_access')
+                ->where('user_id', $this->especialista->id)
+                ->where('auditable_type', Paciente::class)
+                ->get()
+                ->contains(fn (Audit $a) => ($a->new_values['action'] ?? null) === 'view_historial')
+        );
+    }
+
+    public function test_solicitud_no_autorizada_no_registra_acceso_como_visto(): void
+    {
+        $otraArea = Area::factory()->create();
+        $otro = Especialista::factory()->create([
+            'password' => Hash::make('password'),
+            'is_active' => true,
+        ]);
+        $role = Role::where('slug', 'specialist')->firstOrFail();
+        $otro->roles()->attach($role->id);
+        Profesional::factory()->create([
+            'user_id' => $otro->id,
+            'area_id' => $otraArea->id,
+        ]);
+
+        $antes = Audit::query()->where('tags', 'clinical_access')->count();
+
+        $this->actingAs($otro)
+            ->withSession(['_sym_key' => session('_sym_key')])
+            ->get(route('pacientes.show', $this->paciente->carnet))
+            ->assertForbidden();
+
+        $this->assertSame($antes, Audit::query()->where('tags', 'clinical_access')->count());
+    }
 }
