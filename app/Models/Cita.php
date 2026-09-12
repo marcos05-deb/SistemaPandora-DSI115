@@ -35,6 +35,8 @@ class Cita extends Model implements Auditable
         'fecha_registro_asistencia',
         'registrado_por_profesional_id',
         'motivo_cancelacion',
+        'cancelado_por_profesional_id',
+        'fecha_cancelacion',
         'cita_origen_id',
         'motivo_reprogramacion',
         'reprogramado_por_profesional_id',
@@ -45,6 +47,7 @@ class Cita extends Model implements Auditable
         'fecha_hora' => 'datetime',
         'fecha_registro_asistencia' => 'datetime',
         'fecha_reprogramacion' => 'datetime',
+        'fecha_cancelacion' => 'datetime',
         'motivo' => \App\Casts\AreaEncryptedFieldCast::class,
         'motivo_cancelacion' => \App\Casts\AreaEncryptedFieldCast::class,
         'motivo_reprogramacion' => \App\Casts\AreaEncryptedFieldCast::class,
@@ -101,6 +104,11 @@ class Cita extends Model implements Auditable
     public function registradoPor(): BelongsTo
     {
         return $this->belongsTo(Profesional::class, 'registrado_por_profesional_id');
+    }
+
+    public function canceladoPor(): BelongsTo
+    {
+        return $this->belongsTo(Profesional::class, 'cancelado_por_profesional_id');
     }
 
     public function registrarAsistencia(string $estado, string $profesionalId): void

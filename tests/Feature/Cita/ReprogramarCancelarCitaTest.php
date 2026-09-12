@@ -164,7 +164,9 @@ it('permite al especialista cancelar su propia cita futura', function () {
 
     $cita->refresh();
     expect($cita->estado)->toBe(EstadoCita::Cancelada->value)
-        ->and($cita->motivo_cancelacion)->toBe('Paciente llamó para cancelar por viaje inesperado');
+        ->and($cita->motivo_cancelacion)->toBe('Paciente llamó para cancelar por viaje inesperado')
+        ->and($cita->cancelado_por_profesional_id)->toBe($this->profesional->id)
+        ->and($cita->fecha_cancelacion)->not->toBeNull();
 });
 
 it('rechaza reprogramar si el horario genera conflicto o solapamiento', function () {

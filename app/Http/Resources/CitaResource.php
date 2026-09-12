@@ -54,6 +54,13 @@ class CitaResource extends JsonResource
                     'nombre' => $this->registradoPor->especialista->name ?? null,
                 ];
             }),
+
+            'cancelado_por_profesional_id' => $this->cancelado_por_profesional_id,
+            'fecha_cancelacion' => $this->fecha_cancelacion?->toIso8601String(),
+            'motivo_cancelacion' => $this->when(
+                $this->estado === 'cancelada',
+                $this->motivo_cancelacion
+            ),
         ];
     }
 }
