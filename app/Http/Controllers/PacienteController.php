@@ -156,9 +156,20 @@ class PacienteController extends Controller
 
         if ($user->hasRole('psychosocial_referent')) {
             $pacienteQuery->with(['expedientes' => function ($q) {
+                // Bypass seguro (ESTANDARES.md Sec 4): columnas de trazabilidad de derivación
+                // (incluye motivo cifrado; el cast descifra solo en lectura autorizada del referente).
                 $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class)
                   ->with('citas')
-                  ->select('id', 'paciente_id', 'area_id', 'estado', 'created_at', 'updated_at');
+                  ->select(
+                      'id',
+                      'paciente_id',
+                      'area_id',
+                      'estado',
+                      'fecha_derivacion',
+                      'motivo_derivacion',
+                      'created_at',
+                      'updated_at'
+                  );
             }]);
         } else {
             $pacienteQuery->with(['expedientes.citas']);
@@ -185,6 +196,7 @@ class PacienteController extends Controller
         
         $citasPendientes = [];
         $canUpdateCita = false;
+        $consultaActivaId = null;
         if ($expedienteActivo) {
             $citasPendientes = $expedienteActivo->citas->where('estado', 'programada')->values()->all();
             if (count($citasPendientes) > 0) {
@@ -192,6 +204,10 @@ class PacienteController extends Controller
                 // Autorizamos con la primera cita (se evalúa la de profesional asignado).
                 $canUpdateCita = $user->can('update', $citasPendientes[0]);
             }
+
+            $consultaActivaId = \App\Models\Consulta::activaParaExpediente($expedienteActivo)?->id;
+            // Solo permitir agendar si hay consulta origen vinculable.
+            $canAssignCita = $canAssignCita && $consultaActivaId !== null;
         }
 
         return Inertia::render('Pacientes/Show', [
@@ -199,11 +215,13 @@ class PacienteController extends Controller
             'hasAnyExpediente' => $hasAnyExpediente,
             'areasDisponibles' => $areasDisponibles,
             'citasPendientes' => $citasPendientes,
+            'consultaActivaId' => $consultaActivaId,
             'can' => [
                 'closeExpediente' => $canCloseExpediente,
                 'assignCita' => $canAssignCita,
                 'updateCita' => $canUpdateCita,
                 'createConsulta' => $canCreateConsulta,
+                'derivar' => $user->can('derivar', [\App\Models\Expediente::class, $paciente]),
             ],
         ]);
     }

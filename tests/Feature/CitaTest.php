@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Area;
 use App\Models\Cita;
+use App\Models\Consulta;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Role;
@@ -47,16 +48,27 @@ class CitaTest extends TestCase
             'paciente_id' => $paciente->codigo,
             'area_id' => $area->id,
             'estado' => 'abierto',
-            'fecha_apertura' => now(),
-            'creado_por_profesional_id' => $prof1Id,
+            'fecha_derivacion' => now(),
         ]);
     }
 
     public function test_specialist_can_schedule_cita_in_their_area()
     {
+        $consulta = Consulta::create([
+            'expediente_id' => $this->expediente->id,
+            'profesional_id' => $this->specialist->profesional->id,
+            'motivo_consulta' => 'Motivo base',
+            'notas_clinicas' => 'Notas base',
+            'diagnostico' => 'Dx base',
+            'plan_atencion' => 'Plan de atención de prueba',
+            'tecnica_utilizada' => 'Entrevista',
+            'fecha_consulta' => now(),
+        ]);
+
         $fechaHora = now()->addDays(2)->format('Y-m-d H:i:s');
         
         $response = $this->actingAs($this->specialist)->post("/expedientes/{$this->expediente->id}/citas", [
+            'consulta_id' => $consulta->id,
             'fecha_hora' => $fechaHora,
             'motivo' => 'Seguimiento clínico',
         ]);
@@ -66,25 +78,35 @@ class CitaTest extends TestCase
 
         $this->assertDatabaseHas('citas', [
             'expediente_id' => $this->expediente->id,
+            'consulta_id' => $consulta->id,
             'profesional_id' => $this->specialist->profesional->id,
             'area_id' => $this->expediente->area_id,
             'estado' => 'programada',
         ]);
 
-        // Verify audit log (assuming Auditable trait is working and creates generic log or uses auditing package)
-        // For standard Auditable (OwenIt), it creates 'audits' table records.
         $cita = Cita::first();
-        $this->assertNotNull($cita->motivo); // Motivo is encrypted
+        $this->assertNotNull($cita->motivo);
         $this->assertEquals('Seguimiento clínico', $cita->motivo);
     }
 
     public function test_race_condition_conflict_prevention()
     {
+        $consulta = Consulta::create([
+            'expediente_id' => $this->expediente->id,
+            'profesional_id' => $this->specialist->profesional->id,
+            'motivo_consulta' => 'Motivo base',
+            'notas_clinicas' => 'Notas base',
+            'diagnostico' => 'Dx base',
+            'plan_atencion' => 'Plan de atención de prueba',
+            'tecnica_utilizada' => 'Entrevista',
+            'fecha_consulta' => now(),
+        ]);
+
         $fechaHora = now()->addDays(2)->format('Y-m-d H:i:00');
         
-        // First cita
         Cita::create([
             'expediente_id' => $this->expediente->id,
+            'consulta_id' => $consulta->id,
             'profesional_id' => $this->specialist->profesional->id,
             'area_id' => $this->expediente->area_id,
             'fecha_hora' => $fechaHora,
@@ -92,8 +114,8 @@ class CitaTest extends TestCase
             'estado' => 'programada'
         ]);
 
-        // Attempt second cita for the exact same specialist and time
         $response = $this->actingAs($this->specialist)->post("/expedientes/{$this->expediente->id}/citas", [
+            'consulta_id' => $consulta->id,
             'fecha_hora' => $fechaHora,
             'motivo' => 'Race condition attempt',
         ]);
@@ -101,7 +123,6 @@ class CitaTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHasErrors('fecha_hora');
 
-        // Verify only 1 cita exists for this time
         $count = Cita::where('profesional_id', $this->specialist->profesional->id)
             ->where('fecha_hora', $fechaHora)
             ->count();
@@ -111,11 +132,23 @@ class CitaTest extends TestCase
     
     public function test_cannot_schedule_cita_for_closed_expediente()
     {
+        $consulta = Consulta::create([
+            'expediente_id' => $this->expediente->id,
+            'profesional_id' => $this->specialist->profesional->id,
+            'motivo_consulta' => 'Motivo base',
+            'notas_clinicas' => 'Notas base',
+            'diagnostico' => 'Dx base',
+            'plan_atencion' => 'Plan de atención de prueba',
+            'tecnica_utilizada' => 'Entrevista',
+            'fecha_consulta' => now(),
+        ]);
+
         $this->expediente->update(['estado' => 'cerrado']);
         
         $fechaHora = now()->addDays(2)->format('Y-m-d H:i:s');
         
         $response = $this->actingAs($this->specialist)->post("/expedientes/{$this->expediente->id}/citas", [
+            'consulta_id' => $consulta->id,
             'fecha_hora' => $fechaHora,
             'motivo' => 'Intento en expediente cerrado',
         ]);
