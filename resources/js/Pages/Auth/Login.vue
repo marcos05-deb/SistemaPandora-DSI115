@@ -81,7 +81,7 @@ function submitLogin() {
     <div class="flex-1 flex items-center justify-center p-4 sm:p-8 bg-[var(--nord6)] lg:pt-0 pt-20 relative">
       <button
         @click="toggleTheme"
-        class="absolute top-4 right-4 lg:top-8 lg:right-8 p-2 rounded-lg border border-[var(--nord4)] bg-white hover:bg-[var(--nord6)] text-[var(--nord3)] hover:text-[var(--nord0)] transition-all duration-200 shadow-sm hover:shadow-md"
+        class="absolute top-4 right-4 lg:top-8 lg:right-8 p-2 rounded-lg border border-[var(--nord4)] bg-[var(--surface)] hover:bg-[var(--nord6)] text-[var(--nord1)] hover:text-[var(--nord0)] transition-all duration-200 shadow-sm hover:shadow-md"
         :title="isDark ? 'Modo Claro' : 'Modo Oscuro'"
       >
         <svg v-if="isDark" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -118,7 +118,7 @@ function submitLogin() {
 
           <form @submit.prevent="submitLogin" class="space-y-5">
             <div>
-              <label for="login-email" class="block text-[13px] font-medium text-[var(--nord3)] mb-1.5">Correo electrónico</label>
+              <label for="login-email" class="block text-[13px] font-medium text-[var(--nord1)] mb-1.5">Correo electrónico</label>
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg class="h-4 w-4 text-[var(--nord3)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 11-8 0 4 4 0 018 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" /></svg>
@@ -129,7 +129,7 @@ function submitLogin() {
             </div>
 
             <div>
-              <label for="login-password" class="block text-[13px] font-medium text-[var(--nord3)] mb-1.5">Contraseña</label>
+              <label for="login-password" class="block text-[13px] font-medium text-[var(--nord1)] mb-1.5">Contraseña</label>
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg class="h-4 w-4 text-[var(--nord3)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>

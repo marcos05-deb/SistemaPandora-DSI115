@@ -104,7 +104,7 @@ it('permite al especialista ver solo sus propias citas', function () {
 it('permite al coordinador ver citas de toda el area y aplicar filtros de estado y fecha', function () {
     actingAs($this->coordinadorPsicologia);
 
-    // Sin filtros: debe ver las de Psico 1 y Psico 2
+    // Sin filtros: debe ver las de Psico 1 y Psico 2 (default = todos)
     $response = get(route('citas.index'));
     $response->assertOk();
     $citas = $response->viewData('page')['props']['citas']['data'];
@@ -117,12 +117,36 @@ it('permite al coordinador ver citas de toda el area y aplicar filtros de estado
     expect($citas)->toHaveCount(1)
         ->and($citas[0]['id'])->toBe($this->citaPsico1->id);
 
-    // Filtro por Estado Asistida
+    // Filtro por Estado Asistida / resultado asistencia
     $response = get(route('citas.index', ['estado' => 'asistida']));
     $response->assertOk();
     $citas = $response->viewData('page')['props']['citas']['data'];
     expect($citas)->toHaveCount(1)
         ->and($citas[0]['id'])->toBe($this->citaPsico2->id);
+
+    $response = get(route('citas.index', ['resultado_asistencia' => 'asistida']));
+    $response->assertOk();
+    expect($response->viewData('page')['props']['citas']['data'])->toHaveCount(1);
+});
+
+it('soporta vista diaria y semanal', function () {
+    actingAs($this->coordinadorPsicologia);
+
+    $response = get(route('citas.index', [
+        'vista' => 'diaria',
+        'referencia' => now()->toDateString(),
+    ]));
+    $response->assertOk();
+    $citas = $response->viewData('page')['props']['citas']['data'];
+    expect($citas)->toHaveCount(1)
+        ->and($citas[0]['id'])->toBe($this->citaPsico1->id);
+
+    $response = get(route('citas.index', [
+        'vista' => 'semanal',
+        'referencia' => now()->toDateString(),
+    ]));
+    $response->assertOk();
+    expect($response->viewData('page')['props']['filtros']['vista'])->toBe('semanal');
 });
 
 it('bloquea al sysadmin de acceder a las citas', function () {

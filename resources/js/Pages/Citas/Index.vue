@@ -15,8 +15,10 @@ function debounce(fn, delay = 300) {
 
 const props = defineProps({
     citas: { type: Object, required: true },
+    citasPorDia: { type: Array, default: null },
     filtros: { type: Object, default: () => ({}) },
-    especialistas: { type: Array, default: () => [] }
+    especialistas: { type: Array, default: () => [] },
+    navegacion: { type: Object, default: () => ({}) },
 });
 
 const page = usePage();
@@ -28,7 +30,13 @@ const isCoordinator = computed(() => {
 const form = useForm({
     estado: props.filtros.estado || 'todos',
     fecha: props.filtros.fecha || '',
+    fecha_desde: props.filtros.fecha_desde || '',
+    fecha_hasta: props.filtros.fecha_hasta || '',
     especialista_id: props.filtros.especialista_id || '',
+    resultado_asistencia: props.filtros.resultado_asistencia || '',
+    paciente: props.filtros.paciente || '',
+    vista: props.filtros.vista || 'lista',
+    referencia: props.filtros.referencia || '',
 });
 
 const applyFilters = debounce(() => {
@@ -41,12 +49,36 @@ const applyFilters = debounce(() => {
 
 watch(() => form.estado, applyFilters);
 watch(() => form.fecha, applyFilters);
+watch(() => form.fecha_desde, applyFilters);
+watch(() => form.fecha_hasta, applyFilters);
 watch(() => form.especialista_id, applyFilters);
+watch(() => form.resultado_asistencia, applyFilters);
+watch(() => form.paciente, applyFilters);
 
 function clearFilters() {
     form.estado = 'todos';
     form.fecha = '';
+    form.fecha_desde = '';
+    form.fecha_hasta = '';
     form.especialista_id = '';
+    form.resultado_asistencia = '';
+    form.paciente = '';
+    form.vista = 'lista';
+    form.referencia = '';
+    applyFilters();
+}
+
+function setVista(vista) {
+    form.vista = vista;
+    if (!form.referencia) {
+        form.referencia = props.navegacion.hoy || new Date().toISOString().slice(0, 10);
+    }
+    applyFilters();
+}
+
+function navegar(referencia) {
+    form.referencia = referencia;
+    applyFilters();
 }
 
 function formatDay(dateStr) {
@@ -85,18 +117,31 @@ const statusLabels = {
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-[var(--nord0)] tracking-tight">Citas Clínicas</h1>
-                <p class="text-[13px] text-[var(--nord3)] mt-1">Gestión y consulta del historial de asistencia</p>
+                <p class="text-[13px] text-[var(--nord3)] mt-1">Agenda diaria/semanal e historial de asistencia</p>
+                <div class="flex items-center gap-2 mt-3">
+                    <button type="button" @click="setVista('lista')" class="px-3 py-1.5 text-[12px] font-semibold rounded-lg border" :class="form.vista === 'lista' ? 'bg-[var(--nord8)] text-white border-[var(--nord8)]' : 'border-[var(--nord4)] text-[var(--nord3)]'">Lista</button>
+                    <button type="button" @click="setVista('diaria')" class="px-3 py-1.5 text-[12px] font-semibold rounded-lg border" :class="form.vista === 'diaria' ? 'bg-[var(--nord8)] text-white border-[var(--nord8)]' : 'border-[var(--nord4)] text-[var(--nord3)]'">Diaria</button>
+                    <button type="button" @click="setVista('semanal')" class="px-3 py-1.5 text-[12px] font-semibold rounded-lg border" :class="form.vista === 'semanal' ? 'bg-[var(--nord8)] text-white border-[var(--nord8)]' : 'border-[var(--nord4)] text-[var(--nord3)]'">Semanal</button>
+                </div>
             </div>
             
             <!-- Filters -->
             <div class="flex flex-wrap items-center gap-3 bg-white p-2.5 rounded-2xl shadow-sm border border-[var(--nord4)] w-full md:w-auto">
-                <div class="relative">
+                <div v-if="form.vista !== 'lista'" class="flex items-center gap-1">
+                    <button type="button" @click="navegar(navegacion.anterior)" class="px-2 py-1.5 text-[12px] rounded-lg border border-[var(--nord4)] text-[var(--nord3)]">←</button>
+                    <button type="button" @click="navegar(navegacion.hoy)" class="px-2 py-1.5 text-[12px] rounded-lg border border-[var(--nord4)] text-[var(--nord3)]">Hoy</button>
+                    <button type="button" @click="navegar(navegacion.siguiente)" class="px-2 py-1.5 text-[12px] rounded-lg border border-[var(--nord4)] text-[var(--nord3)]">→</button>
+                    <input type="date" v-model="form.referencia" @change="applyFilters" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" />
+                </div>
+                <div v-else class="relative">
                     <input 
                         type="date" 
                         v-model="form.fecha"
                         class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 focus:ring-2 focus:ring-[var(--frost4)] transition-shadow"
+                        title="Fecha exacta"
                     >
                 </div>
+                <input type="text" v-model="form.paciente" placeholder="Código/carnet" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 w-36" />
                 <div class="relative">
                     <select v-model="form.estado" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 pr-8 focus:ring-2 focus:ring-[var(--frost4)] transition-shadow appearance-none cursor-pointer">
                         <option value="todos">Todos los estados</option>
@@ -105,6 +150,13 @@ const statusLabels = {
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--nord3)]">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     </div>
+                </div>
+                <div class="relative">
+                    <select v-model="form.resultado_asistencia" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 pr-8 appearance-none cursor-pointer">
+                        <option value="">Asistencia: todas</option>
+                        <option value="asistida">Asistió</option>
+                        <option value="ausente">Ausente</option>
+                    </select>
                 </div>
                 <div v-if="isCoordinator" class="relative">
                     <select v-model="form.especialista_id" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 pr-8 focus:ring-2 focus:ring-[var(--frost4)] transition-shadow appearance-none cursor-pointer">
@@ -116,7 +168,7 @@ const statusLabels = {
                     </div>
                 </div>
                 
-                <button v-if="form.fecha || (form.estado && form.estado !== 'todos') || form.especialista_id" @click="clearFilters" 
+                <button v-if="form.fecha || form.fecha_desde || form.fecha_hasta || (form.estado && form.estado !== 'todos') || form.especialista_id || form.paciente || form.resultado_asistencia" @click="clearFilters" 
                     class="p-2 text-[var(--nord3)] hover:text-[var(--aurora-red)] hover:bg-[var(--aurora-red)]/10 rounded-xl transition-colors" title="Limpiar filtros">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -125,7 +177,40 @@ const statusLabels = {
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden">
+        <!-- Vista semanal agrupada -->
+        <div v-if="form.vista === 'semanal'" class="space-y-4">
+            <div v-if="!citasPorDia || citasPorDia.length === 0" class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] p-10 text-center">
+                <p class="text-[14px] font-medium text-[var(--nord0)]">No hay citas en esta semana</p>
+                <p class="text-[12px] text-[var(--nord3)] mt-1">Usa la navegación para cambiar de semana</p>
+            </div>
+            <div v-for="dia in citasPorDia" :key="dia.fecha" class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden">
+                <div class="px-5 py-3 bg-[var(--surface-header)] border-b border-[var(--nord4)]">
+                    <h3 class="text-[14px] font-bold text-[var(--nord0)]">{{ formatDay(dia.fecha) }}</h3>
+                </div>
+                <div class="divide-y divide-[var(--nord4)]">
+                    <div v-for="cita in dia.citas" :key="cita.id" class="px-5 py-3 flex flex-wrap items-center justify-between gap-3 hover:bg-[var(--nord6)]/30">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="text-[13px] font-semibold text-[var(--nord0)] tabular-nums">{{ formatTime(cita.fecha_hora) }}</span>
+                            <span class="text-[13px] font-mono text-[var(--nord0)]">{{ cita.paciente?.codigo || 'Anonimizado' }}</span>
+                            <span class="text-[12px] text-[var(--nord3)] truncate">{{ cita.profesional?.nombre || '-' }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border"
+                                :class="statusColors[cita.estado] || statusColors.programada">
+                                {{ statusLabels[cita.estado] || cita.estado }}
+                            </span>
+                            <Link v-if="cita.paciente?.carnet" :href="`/pacientes/${cita.paciente?.carnet}`"
+                                class="inline-flex items-center px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white"
+                                style="background: linear-gradient(135deg, var(--frost4), var(--nord9));">
+                                Ver Exp.
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-else class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
