@@ -152,12 +152,21 @@ class CitaController extends Controller
 
         try {
             DB::transaction(function () use ($request, $expediente) {
+                $fechaHora = \Illuminate\Support\Carbon::parse($request->validated('fecha_hora'));
+                $profesionalId = $request->user()->profesional->id;
+
+                if (Cita::hayConflictoHorario($profesionalId, $fechaHora)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'fecha_hora' => 'El horario seleccionado se solapa con otra cita programada del especialista.',
+                    ]);
+                }
+
                 $cita = new Cita();
                 $cita->expediente_id = $expediente->id;
                 $cita->consulta_id = $request->validated('consulta_id');
-                $cita->profesional_id = $request->user()->profesional->id;
+                $cita->profesional_id = $profesionalId;
                 $cita->area_id = $expediente->area_id;
-                $cita->fecha_hora = $request->validated('fecha_hora');
+                $cita->fecha_hora = $fechaHora;
                 $cita->motivo = $request->validated('motivo');
                 $cita->estado = 'programada';
                 $cita->save();
@@ -213,12 +222,24 @@ class CitaController extends Controller
                     ]);
                 }
 
+                $nuevaFecha = \Illuminate\Support\Carbon::parse($request->validated('fecha_hora'));
+
+                if (Cita::hayConflictoHorario(
+                    $citaBloqueada->profesional_id,
+                    $nuevaFecha,
+                    $citaBloqueada->id
+                )) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'fecha_hora' => 'El horario seleccionado se solapa con otra cita programada del especialista.',
+                    ]);
+                }
+
                 $nuevaCita = new Cita();
                 $nuevaCita->expediente_id = $expediente->id;
                 $nuevaCita->consulta_id = $citaBloqueada->consulta_id;
                 $nuevaCita->profesional_id = $citaBloqueada->profesional_id;
                 $nuevaCita->area_id = $citaBloqueada->area_id;
-                $nuevaCita->fecha_hora = $request->validated('fecha_hora');
+                $nuevaCita->fecha_hora = $nuevaFecha;
                 $nuevaCita->motivo = $citaBloqueada->motivo;
                 $nuevaCita->estado = \App\Enums\EstadoCita::Programada->value;
                 $nuevaCita->cita_origen_id = $citaBloqueada->id;

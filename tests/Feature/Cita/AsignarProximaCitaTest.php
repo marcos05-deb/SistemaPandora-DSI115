@@ -192,6 +192,32 @@ it('rejects conflicting horario for the same specialist', function () {
     expect(Cita::count())->toBe(1);
 });
 
+it('rejects overlapping duration even when timestamps differ', function () {
+    $this->actingAs($this->userSpecialist);
+    $inicio = now()->addDays(2)->setTime(10, 0);
+
+    Cita::create([
+        'expediente_id' => $this->expediente->id,
+        'consulta_id' => $this->consulta->id,
+        'profesional_id' => $this->profesional->id,
+        'area_id' => $this->area->id,
+        'fecha_hora' => $inicio,
+        'motivo' => 'Primera cita',
+        'estado' => 'programada',
+    ]);
+
+    $response = $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->from(route('pacientes.show', $this->paciente->carnet))
+        ->post(route('citas.store', $this->expediente->id), [
+            'consulta_id' => $this->consulta->id,
+            'fecha_hora' => $inicio->copy()->addMinutes(30)->format('Y-m-d H:i:s'),
+            'motivo' => 'Solapamiento por duración',
+        ]);
+
+    $response->assertSessionHasErrors('fecha_hora');
+    expect(Cita::count())->toBe(1);
+});
+
 it('audits cita creation', function () {
     $this->actingAs($this->userSpecialist);
 

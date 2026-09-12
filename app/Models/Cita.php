@@ -45,10 +45,38 @@ class Cita extends Model implements Auditable
         'fecha_hora' => 'datetime',
         'fecha_registro_asistencia' => 'datetime',
         'fecha_reprogramacion' => 'datetime',
-        'motivo' => \App\Casts\EncryptedFieldCast::class,
-        'motivo_cancelacion' => \App\Casts\EncryptedFieldCast::class,
-        'motivo_reprogramacion' => \App\Casts\EncryptedFieldCast::class,
+        'motivo' => \App\Casts\AreaEncryptedFieldCast::class,
+        'motivo_cancelacion' => \App\Casts\AreaEncryptedFieldCast::class,
+        'motivo_reprogramacion' => \App\Casts\AreaEncryptedFieldCast::class,
     ];
+
+    public const DURACION_MINUTOS = 60;
+
+    /**
+     * ¿Existe solapamiento de agenda (intervalo de duración) para el profesional?
+     */
+    public static function hayConflictoHorario(
+        string $profesionalId,
+        \Illuminate\Support\Carbon $inicio,
+        ?string $exceptoCitaId = null
+    ): bool {
+        $fin = $inicio->copy()->addMinutes(self::DURACION_MINUTOS);
+
+        $query = static::query()
+            ->where('profesional_id', $profesionalId)
+            ->where('estado', \App\Enums\EstadoCita::Programada->value)
+            ->where('fecha_hora', '<', $fin)
+            ->whereRaw(
+                "fecha_hora + (INTERVAL '1 minute' * ?) > ?",
+                [self::DURACION_MINUTOS, $inicio]
+            );
+
+        if ($exceptoCitaId) {
+            $query->whereKeyNot($exceptoCitaId);
+        }
+
+        return $query->exists();
+    }
 
     public function expediente(): BelongsTo
     {
