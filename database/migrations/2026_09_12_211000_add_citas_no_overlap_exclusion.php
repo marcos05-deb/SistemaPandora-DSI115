@@ -67,6 +67,37 @@ return new class extends Migration
 
         DB::connection('pgsql_admin')->statement('DROP INDEX IF EXISTS unique_profesional_cita');
 
+        // RP-08: diagnosticar solapamientos existentes antes de crear la exclusión.
+        $conflictos = DB::connection('pgsql_admin')->select(<<<'SQL'
+            SELECT
+                a.id AS cita_a,
+                b.id AS cita_b,
+                a.profesional_id
+            FROM citas a
+            JOIN citas b
+              ON a.profesional_id = b.profesional_id
+             AND a.id < b.id
+             AND tstzrange(a.fecha_hora, a.fecha_hora + interval '60 minutes', '[)')
+                 &&
+                 tstzrange(b.fecha_hora, b.fecha_hora + interval '60 minutes', '[)')
+            WHERE a.estado = 'programada'
+              AND b.estado = 'programada'
+              AND a.deleted_at IS NULL
+              AND b.deleted_at IS NULL
+            LIMIT 20
+        SQL);
+
+        if ($conflictos !== []) {
+            $detalle = collect($conflictos)
+                ->map(fn ($row) => "{$row->cita_a} ↔ {$row->cita_b} (profesional {$row->profesional_id})")
+                ->implode('; ');
+
+            throw new RuntimeException(
+                'No se puede crear citas_no_solapamiento_programada: existen citas programadas solapadas. '.
+                'Revise y resuelva manualmente antes de migrar. Conflictos: '.$detalle
+            );
+        }
+
         DB::connection('pgsql_admin')->statement(<<<'SQL'
             DO $$
             BEGIN
