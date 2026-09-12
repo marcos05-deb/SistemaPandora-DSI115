@@ -305,7 +305,7 @@ it('allows a second specialist of the same area to read the consultation', funct
 
 it('allows a multi-area specialist to register consultations in both authorized areas', function () {
     $segundaArea = Area::factory()->create();
-    Profesional::factory()->create([
+    $profSegunda = Profesional::factory()->create([
         'user_id' => $this->userSpecialist->id,
         'area_id' => $segundaArea->id,
     ]);
@@ -331,7 +331,11 @@ it('allows a multi-area specialist to register consultations in both authorized 
         ]))
         ->assertRedirect();
 
-    expect(Consulta::withoutGlobalScopes()->count())->toBe(2);
+    expect(Consulta::withoutGlobalScopes()->count())->toBe(2)
+        ->and(Consulta::withoutGlobalScopes()->where('expediente_id', $this->expediente->id)->value('profesional_id'))
+        ->toBe($this->profesionalSpecialist->id)
+        ->and(Consulta::withoutGlobalScopes()->where('expediente_id', $expedienteSegunda->id)->value('profesional_id'))
+        ->toBe($profSegunda->id);
 
     $terceraArea = Area::factory()->create();
     $expedienteTercera = Expediente::withoutGlobalScopes()->create([

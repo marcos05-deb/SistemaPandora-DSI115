@@ -10,24 +10,27 @@ class CitaPolicy
 {
     public function create(Especialista $user, Expediente $expediente): bool
     {
-        // Roles permitidos según US-11 (y referente para Trabajo Social)
-        $hasValidRole = $user->hasRole('specialist') || 
-                        $user->hasRole('area_coordinator');
-                        
-        // Solo los profesionales asignados a las áreas del expediente pueden agendar citas
-        return $hasValidRole && $user->areas()->where('areas.id', $expediente->area_id)->exists();
+        $hasValidRole = $user->hasRole('specialist')
+            || $user->hasRole('area_coordinator');
+
+        return $hasValidRole
+            && $user->areas()->where('areas.id', $expediente->area_id)->exists();
     }
 
     public function update(Especialista $user, Cita $cita): bool
     {
-        return $user->profesional && $user->profesional->id === $cita->profesional_id;
+        return $user->hasRole('specialist')
+            && $user->perfilesProfesionales()
+                ->whereKey($cita->profesional_id)
+                ->exists();
     }
 
     public function reprogramar(Especialista $user, Cita $cita): bool
     {
         $esEspecialistaAsignado = $user->hasRole('specialist')
-            && $user->profesional
-            && $user->profesional->id === $cita->profesional_id;
+            && $user->perfilesProfesionales()
+                ->whereKey($cita->profesional_id)
+                ->exists();
 
         $esCoordinadorAutorizado = $user->hasRole('area_coordinator')
             && $user->areas()->where('areas.id', $cita->area_id)->exists();
@@ -37,7 +40,6 @@ class CitaPolicy
 
     public function cancelar(Especialista $user, Cita $cita): bool
     {
-        // Misma lógica de autorización que reprogramar
         return $this->reprogramar($user, $cita);
     }
 }

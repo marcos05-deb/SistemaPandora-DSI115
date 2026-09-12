@@ -21,8 +21,13 @@ class CitaController extends Controller
 {
     private const MENSAJE_CONFLICTO_HORARIO = 'El horario seleccionado ya no está disponible o existe un conflicto en la agenda del especialista.';
 
-    /** Límite operativo de citas cargadas en vistas diaria/semanal (RP-09). */
+    /** Límite operativo por defecto de citas en vistas diaria/semanal (RP-09 / R593-06). */
     private const LIMITE_VISTA_AGENDA = 500;
+
+    private function limiteVistaAgenda(): int
+    {
+        return max(1, (int) config('citas.limite_vista_agenda', self::LIMITE_VISTA_AGENDA));
+    }
 
     public function index(Request $request)
     {
@@ -42,12 +47,14 @@ class CitaController extends Controller
             'paciente' => 'nullable|string|max:64',
             'vista' => 'nullable|string|in:lista,diaria,semanal',
             'referencia' => 'nullable|date',
+            'page' => 'nullable|integer|min:1',
         ]);
 
         $vista = $validated['vista'] ?? 'lista';
         $referencia = isset($validated['referencia'])
             ? \Illuminate\Support\Carbon::parse($validated['referencia'])->startOfDay()
             : now()->startOfDay();
+        $page = max(1, (int) ($validated['page'] ?? 1));
 
         $estado = $validated['estado'] ?? null;
         if ($estado === 'todos') {
@@ -57,7 +64,8 @@ class CitaController extends Controller
         $query = Cita::with(['expediente.paciente', 'profesional.especialista', 'registradoPor.especialista']);
 
         if (! $user->hasRole('area_coordinator')) {
-            $query->where('profesional_id', $user->profesional->id);
+            $profesionalIds = $user->perfilesProfesionales()->pluck('id');
+            $query->whereIn('profesional_id', $profesionalIds);
         } elseif (! empty($validated['especialista_id'])) {
             $profesionalFiltro = \App\Models\Profesional::query()
                 ->whereKey($validated['especialista_id'])
@@ -103,19 +111,38 @@ class CitaController extends Controller
             }
         }
 
-        // NH-06 / RP-09: cargan el rango completo con tope explícito y aviso si se trunca.
+        // NH-06 / RP-09 / R593-06: tope operativo con paginación y total real del rango.
         $semanaTruncada = false;
+        $totalRango = null;
+        $rangoLista = null;
         if ($vista === 'diaria' || $vista === 'semanal') {
+            $limite = $this->limiteVistaAgenda();
             $totalRango = (clone $query)->count();
-            $items = $query->orderBy('fecha_hora', 'asc')->limit(self::LIMITE_VISTA_AGENDA)->get();
-            $semanaTruncada = $totalRango > $items->count();
+            $items = $query->orderBy('fecha_hora', 'asc')
+                ->forPage($page, $limite)
+                ->get();
+            $semanaTruncada = $totalRango > $limite;
             $citas = new LengthAwarePaginator(
                 $items,
-                $items->count(),
-                max($items->count(), 1),
-                1,
+                $totalRango,
+                $limite,
+                $page,
                 ['path' => $request->url(), 'query' => $request->query()]
             );
+
+            if ($vista === 'semanal') {
+                $inicio = $referencia->copy()->startOfWeek();
+                $fin = $referencia->copy()->endOfWeek();
+                $rangoLista = [
+                    'fecha_desde' => $inicio->toDateString(),
+                    'fecha_hasta' => $fin->toDateString(),
+                ];
+            } else {
+                $rangoLista = [
+                    'fecha_desde' => $referencia->toDateString(),
+                    'fecha_hasta' => $referencia->toDateString(),
+                ];
+            }
         } else {
             $citas = $query->orderBy('fecha_hora', 'desc')->paginate(30)->withQueryString();
         }
@@ -158,8 +185,10 @@ class CitaController extends Controller
             ],
             'especialistas' => $especialistas,
             'agendaMeta' => [
-                'limite' => self::LIMITE_VISTA_AGENDA,
+                'limite' => $vista === 'diaria' || $vista === 'semanal' ? $this->limiteVistaAgenda() : null,
                 'truncada' => $semanaTruncada,
+                'total' => $totalRango,
+                'rangoLista' => $rangoLista,
             ],
             'navegacion' => [
                 'anterior' => $vista === 'semanal'
@@ -177,10 +206,13 @@ class CitaController extends Controller
     {
         $this->authorize('create', [Cita::class, $expediente]);
 
+        $profesional = $request->user()->profesionalParaArea($expediente->area_id);
+        abort_unless($profesional, 403);
+
         try {
-            DB::transaction(function () use ($request, $expediente) {
+            DB::transaction(function () use ($request, $expediente, $profesional) {
                 $fechaHora = \Illuminate\Support\Carbon::parse($request->validated('fecha_hora'));
-                $profesionalId = $request->user()->profesional->id;
+                $profesionalId = $profesional->id;
 
                 $this->bloquearAgendaProfesional($profesionalId);
 
@@ -222,9 +254,12 @@ class CitaController extends Controller
         $this->asegurarCitaDelExpediente($expediente, $cita);
         $this->authorize('update', $cita);
 
+        $profesional = $request->user()->profesionalParaArea($cita->area_id);
+        abort_unless($profesional, 403);
+
         $cita->registrarAsistencia(
             $request->validated('estado'),
-            $request->user()->profesional->id
+            $profesional->id
         );
 
         $etiqueta = $request->validated('estado') === \App\Enums\EstadoCita::Asistida->value
@@ -241,8 +276,11 @@ class CitaController extends Controller
         $this->asegurarCitaDelExpediente($expediente, $cita);
         $this->authorize('reprogramar', $cita);
 
+        $reprogramador = $request->user()->profesionalParaArea($cita->area_id);
+        abort_unless($reprogramador, 403);
+
         try {
-            DB::transaction(function () use ($request, $cita) {
+            DB::transaction(function () use ($request, $cita, $reprogramador) {
                 /** @var Cita $citaBloqueada */
                 $citaBloqueada = Cita::query()
                     ->whereKey($cita->getKey())
@@ -288,7 +326,7 @@ class CitaController extends Controller
 
                 $citaBloqueada->estado = \App\Enums\EstadoCita::Reprogramada->value;
                 $citaBloqueada->motivo_reprogramacion = $request->validated('motivo_reprogramacion');
-                $citaBloqueada->reprogramado_por_profesional_id = $request->user()->profesional->id;
+                $citaBloqueada->reprogramado_por_profesional_id = $reprogramador->id;
                 $citaBloqueada->fecha_reprogramacion = now();
                 $citaBloqueada->save();
             });
@@ -314,7 +352,10 @@ class CitaController extends Controller
         $this->asegurarCitaDelExpediente($expediente, $cita);
         $this->authorize('cancelar', $cita);
 
-        DB::transaction(function () use ($request, $cita) {
+        $cancelador = $request->user()->profesionalParaArea($cita->area_id);
+        abort_unless($cancelador, 403);
+
+        DB::transaction(function () use ($request, $cita, $cancelador) {
             /** @var Cita $citaBloqueada */
             $citaBloqueada = Cita::query()
                 ->whereKey($cita->getKey())
@@ -335,6 +376,8 @@ class CitaController extends Controller
 
             $citaBloqueada->estado = \App\Enums\EstadoCita::Cancelada->value;
             $citaBloqueada->motivo_cancelacion = $request->validated('motivo_cancelacion');
+            $citaBloqueada->cancelado_por_profesional_id = $cancelador->id;
+            $citaBloqueada->fecha_cancelacion = now();
             $citaBloqueada->save();
         });
 

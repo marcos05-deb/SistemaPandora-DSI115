@@ -43,12 +43,13 @@ class ConsultaController extends Controller
     {
         Gate::authorize('create', [\App\Models\Consulta::class, $expediente]);
 
-        $profesionalId = $request->user()->profesional->id;
+        $profesional = $request->user()->profesionalParaArea($expediente->area_id);
+        abort_unless($profesional, 403);
 
         $consulta = $this->consultaService->registrarConsulta(
             $expediente,
             $request->validated(),
-            $profesionalId
+            $profesional->id
         );
 
         $expediente->paciente->update(['ultima_accion' => 'Registro de consulta clínica']);

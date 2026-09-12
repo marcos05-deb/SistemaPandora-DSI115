@@ -29,8 +29,8 @@ final class EstadisticasPreventivasService
     ): array {
         $areas = $especialista->areas()->pluck('areas.id');
 
-        if ($areas->isEmpty() && $especialista->profesional?->area_id) {
-            $areas = collect([$especialista->profesional->area_id]);
+        if ($areas->isEmpty()) {
+            $areas = $especialista->perfilesProfesionales()->pluck('area_id');
         }
 
         $query = EstadisticaPreventivaAusencia::query()

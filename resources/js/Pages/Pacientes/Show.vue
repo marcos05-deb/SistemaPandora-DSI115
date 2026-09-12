@@ -16,6 +16,8 @@ const props = defineProps({
     paciente: { type: Object, required: true },
     hasAnyExpediente: { type: Boolean, default: false },
     areasDisponibles: { type: Array, default: () => [] },
+    expedientesActivos: { type: Array, default: () => [] },
+    expedienteSeleccionadoId: { type: String, default: null },
     citasPendientes: { type: Array, default: () => [] },
     consultaActivaId: { type: String, default: null },
     expedienteCerrado: { type: Object, default: null },
@@ -32,8 +34,20 @@ const canSeeFullUuid = computed(() => {
 
 const expedienteActivo = computed(() => {
     if (!props.paciente.expedientes || !Array.isArray(props.paciente.expedientes)) return null;
-    return props.paciente.expedientes.find(e => e.estado !== 'cerrado');
+    if (props.expedienteSeleccionadoId) {
+        return props.paciente.expedientes.find(e => e.id === props.expedienteSeleccionadoId) || null;
+    }
+    return props.paciente.expedientes.find(e => e.estado !== 'cerrado') || null;
 });
+
+const seleccionarExpediente = (expedienteId) => {
+    router.get(`/pacientes/${props.paciente.carnet}`, {
+        expediente_id: expedienteId,
+    }, {
+        preserveScroll: true,
+        preserveState: false,
+    });
+};
 
 const formatDate = (dateString) => {
     if (!dateString) return 'No registrada';
@@ -111,6 +125,26 @@ onMounted(() => {
             <p class="text-[12px] text-[var(--nord3)] mt-1">
                 Umbral: {{ alertaPreventiva.umbral }} ausencias en {{ alertaPreventiva.ventana_dias }} días.
             </p>
+        </div>
+        <div
+            v-if="expedientesActivos.length > 1"
+            class="mb-4 rounded-[10px] border border-[var(--nord4)] bg-white px-4 py-3"
+        >
+            <p class="text-[12px] font-medium text-[var(--nord0)] mb-2">Expediente / área de trabajo</p>
+            <div class="flex flex-wrap gap-2">
+                <button
+                    v-for="exp in expedientesActivos"
+                    :key="exp.id"
+                    type="button"
+                    class="px-3 py-1.5 text-[12px] font-semibold rounded-lg border transition-colors"
+                    :class="exp.id === expedienteSeleccionadoId
+                        ? 'bg-[var(--nord8)] text-white border-[var(--nord8)]'
+                        : 'border-[var(--nord4)] text-[var(--nord3)] hover:border-[var(--nord8)]'"
+                    @click="seleccionarExpediente(exp.id)"
+                >
+                    {{ exp.area_nombre }}
+                </button>
+            </div>
         </div>
         <div class="flex justify-between items-center bg-white py-[14px] px-[18px] shadow-sm border border-[var(--nord4)] rounded-[10px]">
             <div>

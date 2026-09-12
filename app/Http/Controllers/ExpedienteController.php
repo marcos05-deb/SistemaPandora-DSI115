@@ -47,12 +47,15 @@ class ExpedienteController extends Controller
     {
         Gate::authorize('close', $expediente);
 
+        $profesional = $request->user()->profesionalParaArea($expediente->area_id);
+        abort_unless($profesional, 403);
+
         $expediente->update([
             'estado' => Expediente::ESTADO_CERRADO,
             'resultado_final' => $request->validated('resultado_final'),
             'motivo_cierre' => $request->validated('motivo_cierre'),
             'fecha_cierre' => now(),
-            'cerrado_por_profesional_id' => $request->user()->profesional->id,
+            'cerrado_por_profesional_id' => $profesional->id,
         ]);
 
         $expediente->paciente->update(['ultima_accion' => 'Cierre de expediente clínico']);
