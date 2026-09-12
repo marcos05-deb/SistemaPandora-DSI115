@@ -248,6 +248,65 @@ it('forbids another referent from derivar a patient they do not own', function (
     expect(Expediente::withoutGlobalScopes()->count())->toBe(0);
 });
 
+it('permite derivar con autorización vigente aunque no sea el creador', function () {
+    $otroReferente = Especialista::factory()->create([
+        'password' => Hash::make('password'),
+        'is_active' => true,
+    ]);
+    $otroReferente->roles()->attach($this->roleReferente->id);
+    $otroProfesional = Profesional::factory()->create([
+        'user_id' => $otroReferente->id,
+    ]);
+
+    \App\Models\AutorizacionPaciente::create([
+        'paciente_id' => $this->paciente->codigo,
+        'profesional_id' => $otroProfesional->id,
+        'otorgada_por_profesional_id' => $this->profesionalReferent->id,
+        'vigente_desde' => now()->subDay(),
+        'vigente_hasta' => now()->addDays(7),
+    ]);
+
+    $this->actingAs($otroReferente);
+
+    $response = $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->from(route('pacientes.index'))
+        ->post(route('pacientes.derivar.store', $this->paciente->codigo), [
+            'area_id' => $this->area->id,
+            'motivo_derivacion' => $this->motivoValido,
+        ]);
+
+    $response->assertRedirect(route('pacientes.index'));
+    expect(Expediente::withoutGlobalScopes()->count())->toBe(1);
+});
+
+it('rechaza derivar si la autorización ya venció', function () {
+    $otroReferente = Especialista::factory()->create([
+        'password' => Hash::make('password'),
+        'is_active' => true,
+    ]);
+    $otroReferente->roles()->attach($this->roleReferente->id);
+    $otroProfesional = Profesional::factory()->create([
+        'user_id' => $otroReferente->id,
+    ]);
+
+    \App\Models\AutorizacionPaciente::create([
+        'paciente_id' => $this->paciente->codigo,
+        'profesional_id' => $otroProfesional->id,
+        'otorgada_por_profesional_id' => $this->profesionalReferent->id,
+        'vigente_desde' => now()->subDays(10),
+        'vigente_hasta' => now()->subDay(),
+    ]);
+
+    $this->actingAs($otroReferente);
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('pacientes.derivar.store', $this->paciente->codigo), [
+            'area_id' => $this->area->id,
+            'motivo_derivacion' => $this->motivoValido,
+        ])
+        ->assertForbidden();
+});
+
 it('audits the derivacion with author patient area date and masked motivo', function () {
     $this->actingAs($this->userReferent);
 

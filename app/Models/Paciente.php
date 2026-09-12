@@ -98,11 +98,18 @@ class Paciente extends Model
     }
 
     /**
-     * Extensión futura: autorizaciones temporales entre referentes.
-     * Sin modelo de dominio aún, no concede acceso.
+     * Autorizaciones temporales entre referentes (HU-07).
      */
     public function tieneAutorizacionVigentePara(Especialista $especialista): bool
     {
-        return false;
+        if (! $especialista->profesional) {
+            return false;
+        }
+
+        return AutorizacionPaciente::query()
+            ->where('paciente_id', $this->codigo)
+            ->where('profesional_id', $especialista->profesional->id)
+            ->vigentes()
+            ->exists();
     }
 }
