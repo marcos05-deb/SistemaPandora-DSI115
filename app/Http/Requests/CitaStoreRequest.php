@@ -32,6 +32,7 @@ class CitaStoreRequest extends FormRequest
             'consulta_id' => ['required', 'uuid', 'exists:consultas,id'],
             'fecha_hora' => ['required', 'date', 'after:now'],
             'motivo' => ['required', 'string', 'max:5000'],
+            'acordada_con_paciente' => ['accepted'],
         ];
     }
 
@@ -44,6 +45,7 @@ class CitaStoreRequest extends FormRequest
             'consulta_id.required' => 'Debe agendar la cita desde una consulta activa.',
             'consulta_id.exists' => 'La consulta de origen no es válida.',
             'fecha_hora.after' => 'La fecha de la cita debe ser futura.',
+            'acordada_con_paciente.accepted' => 'Debe confirmar que la fecha y hora fueron acordadas con el paciente.',
         ];
     }
 

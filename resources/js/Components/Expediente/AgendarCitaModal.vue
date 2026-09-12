@@ -19,6 +19,7 @@ const form = useForm({
     consulta_id: '',
     fecha_hora: '',
     motivo: '',
+    acordada_con_paciente: false,
 });
 
 const close = () => {
@@ -141,6 +142,22 @@ watch(() => props.show, (isOpen) => {
                                 {{ form.errors.motivo }}
                             </p>
                         </div>
+
+                        <div class="flex items-start gap-2">
+                            <input
+                                id="acordada_con_paciente"
+                                v-model="form.acordada_con_paciente"
+                                type="checkbox"
+                                class="mt-0.5 w-4 h-4 rounded border-[var(--nord4)] text-[var(--nord8)] focus:ring-[var(--nord8)]"
+                            >
+                            <label for="acordada_con_paciente" class="text-[13px] text-[var(--nord0)]">
+                                Confirmo que la fecha y hora fueron <span class="font-semibold">acordadas con el paciente</span>
+                                <span class="text-[var(--aurora-red)]">*</span>
+                            </label>
+                        </div>
+                        <p v-if="form.errors.acordada_con_paciente" class="text-[var(--aurora-red)] text-[12px] font-medium">
+                            {{ form.errors.acordada_con_paciente }}
+                        </p>
                     </div>
 
                     <div class="bg-[var(--surface-subtle)] px-6 py-4 flex items-center justify-end gap-3 border-t border-[var(--nord4)]">
@@ -153,7 +170,7 @@ watch(() => props.show, (isOpen) => {
                         </button>
                         <button 
                             type="submit" 
-                            :disabled="form.processing || !form.consulta_id"
+                            :disabled="form.processing || !form.consulta_id || !form.acordada_con_paciente"
                             class="px-5 py-2 bg-[var(--nord8)] hover:bg-[var(--nord9)] text-white text-[13px] font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
                         >
                             <svg v-if="form.processing" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

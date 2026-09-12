@@ -148,6 +148,7 @@ it('completa el flujo clínico: derivar → consulta → cita → asistencia', f
             'consulta_id' => $consulta->id,
             'fecha_hora' => $fechaCita->format('Y-m-d H:i:s'),
             'motivo' => 'Seguimiento post consulta integral',
+            'acordada_con_paciente' => true,
         ])
         ->assertRedirect()
         ->assertSessionHas('success');
@@ -226,6 +227,7 @@ it('rechaza el flujo si se intenta crear cita sin consulta origen', function () 
         ->post(route('citas.store', $expediente->id), [
             'fecha_hora' => now()->addDays(2)->format('Y-m-d H:i:s'),
             'motivo' => 'Cita sin consulta origen',
+            'acordada_con_paciente' => true,
         ])
         ->assertSessionHasErrors('consulta_id');
 

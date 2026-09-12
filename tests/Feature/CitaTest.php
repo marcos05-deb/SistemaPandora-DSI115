@@ -71,6 +71,7 @@ class CitaTest extends TestCase
             'consulta_id' => $consulta->id,
             'fecha_hora' => $fechaHora,
             'motivo' => 'Seguimiento clínico',
+            'acordada_con_paciente' => true,
         ]);
 
         $response->assertRedirect();
@@ -118,6 +119,7 @@ class CitaTest extends TestCase
             'consulta_id' => $consulta->id,
             'fecha_hora' => $fechaHora,
             'motivo' => 'Race condition attempt',
+            'acordada_con_paciente' => true,
         ]);
 
         $response->assertRedirect();
@@ -151,6 +153,7 @@ class CitaTest extends TestCase
             'consulta_id' => $consulta->id,
             'fecha_hora' => $fechaHora,
             'motivo' => 'Intento en expediente cerrado',
+            'acordada_con_paciente' => true,
         ]);
 
         $response->assertRedirect();

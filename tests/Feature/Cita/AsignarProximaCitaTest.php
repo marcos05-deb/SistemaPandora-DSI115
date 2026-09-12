@@ -93,6 +93,7 @@ it('creates a cita linked to the active consulta', function () {
             'consulta_id' => $this->consulta->id,
             'fecha_hora' => $fechaHora,
             'motivo' => 'Seguimiento post consulta',
+            'acordada_con_paciente' => true,
         ]);
 
     $response->assertRedirect();
@@ -114,6 +115,7 @@ it('rejects cita without consulta_id', function () {
         ->post(route('citas.store', $this->expediente->id), [
             'fecha_hora' => now()->addDays(2)->format('Y-m-d H:i:s'),
             'motivo' => 'Sin consulta origen',
+            'acordada_con_paciente' => true,
         ]);
 
     $response->assertSessionHasErrors('consulta_id');
@@ -129,6 +131,7 @@ it('rejects consulta that belongs to another expediente', function () {
             'consulta_id' => $this->consultaAjena->id,
             'fecha_hora' => now()->addDays(2)->format('Y-m-d H:i:s'),
             'motivo' => 'Consulta ajena',
+            'acordada_con_paciente' => true,
         ]);
 
     $response->assertSessionHasErrors('consulta_id');
@@ -144,6 +147,7 @@ it('rejects past fecha_hora', function () {
             'consulta_id' => $this->consulta->id,
             'fecha_hora' => now()->subHour()->format('Y-m-d H:i:s'),
             'motivo' => 'Fecha pasada',
+            'acordada_con_paciente' => true,
         ]);
 
     $response->assertSessionHasErrors('fecha_hora');
@@ -160,6 +164,7 @@ it('rejects scheduling on closed expediente', function () {
             'consulta_id' => $this->consulta->id,
             'fecha_hora' => now()->addDays(2)->format('Y-m-d H:i:s'),
             'motivo' => 'Expediente cerrado',
+            'acordada_con_paciente' => true,
         ]);
 
     $response->assertSessionHasErrors('expediente');
@@ -186,6 +191,7 @@ it('rejects conflicting horario for the same specialist', function () {
             'consulta_id' => $this->consulta->id,
             'fecha_hora' => $fechaHora,
             'motivo' => 'Conflicto',
+            'acordada_con_paciente' => true,
         ]);
 
     $response->assertSessionHasErrors('fecha_hora');
@@ -212,6 +218,7 @@ it('rejects overlapping duration even when timestamps differ', function () {
             'consulta_id' => $this->consulta->id,
             'fecha_hora' => $inicio->copy()->addMinutes(30)->format('Y-m-d H:i:s'),
             'motivo' => 'Solapamiento por duración',
+            'acordada_con_paciente' => true,
         ]);
 
     $response->assertSessionHasErrors('fecha_hora');
@@ -226,6 +233,7 @@ it('audits cita creation', function () {
             'consulta_id' => $this->consulta->id,
             'fecha_hora' => now()->addDays(3)->format('Y-m-d H:i:s'),
             'motivo' => 'Cita auditada',
+            'acordada_con_paciente' => true,
         ])
         ->assertRedirect();
 
@@ -263,6 +271,7 @@ it('rejects scheduling from a previous consulta of the same expediente', functio
             'consulta_id' => $consultaAntigua->id,
             'fecha_hora' => now()->addDays(2)->format('Y-m-d H:i:s'),
             'motivo' => 'Intento con consulta anterior',
+            'acordada_con_paciente' => true,
         ])
         ->assertSessionHasErrors('consulta_id');
 
@@ -289,13 +298,45 @@ it('allows scheduling only with the most recent active consulta', function () {
             'consulta_id' => $consultaNueva->id,
             'fecha_hora' => now()->addDays(4)->format('Y-m-d H:i:s'),
             'motivo' => 'Desde consulta activa',
+            'acordada_con_paciente' => true,
         ])
         ->assertRedirect()
         ->assertSessionHas('success');
 
     expect(Cita::first()->consulta_id)->toBe($consultaNueva->id);
 });
-it('rejects concurrent overlapping intervals for the same professional', function () {
+it('rejects cita without patient agreement confirmation', function () {
+    $this->actingAs($this->userSpecialist);
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->from(route('pacientes.show', $this->paciente->carnet))
+        ->post(route('citas.store', $this->expediente->id), [
+            'consulta_id' => $this->consulta->id,
+            'fecha_hora' => now()->addDays(2)->format('Y-m-d H:i:s'),
+            'motivo' => 'Sin confirmación de acuerdo',
+        ])
+        ->assertSessionHasErrors('acordada_con_paciente');
+
+    expect(Cita::count())->toBe(0);
+});
+
+it('rejects cita when patient agreement is false', function () {
+    $this->actingAs($this->userSpecialist);
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->from(route('pacientes.show', $this->paciente->carnet))
+        ->post(route('citas.store', $this->expediente->id), [
+            'consulta_id' => $this->consulta->id,
+            'fecha_hora' => now()->addDays(2)->format('Y-m-d H:i:s'),
+            'motivo' => 'Confirmación en falso',
+            'acordada_con_paciente' => false,
+        ])
+        ->assertSessionHasErrors('acordada_con_paciente');
+
+    expect(Cita::count())->toBe(0);
+});
+
+it('rejects sequential overlapping intervals for the same professional', function () {
     $this->actingAs($this->userSpecialist);
     $base = now()->addDays(5)->setTime(10, 0);
 
@@ -309,6 +350,7 @@ it('rejects concurrent overlapping intervals for the same professional', functio
                 'consulta_id' => $this->consulta->id,
                 'fecha_hora' => $base->copy()->addMinutes($offset)->format('Y-m-d H:i:s'),
                 'motivo' => "Cita offset {$offset}",
+                'acordada_con_paciente' => true,
             ]);
 
         if ($response->getSession()->has('errors')) {
