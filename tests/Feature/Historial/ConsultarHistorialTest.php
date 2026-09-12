@@ -225,3 +225,39 @@ it('filtra por tipo de atención consulta', function () {
             ->where('historial.data.0.tipo_atencion', 'consulta')
         );
 });
+
+it('incluye derivaciones y cierres en el historial y permite filtrarlos', function () {
+    $this->expedientePsi->update([
+        'fecha_derivacion' => now()->subDays(10),
+        'motivo_derivacion' => 'Derivación por ansiedad académica',
+        'derivado_por_profesional_id' => $this->profesionalSpecialist->id,
+        'fecha_cierre' => now()->subDay(),
+        'resultado_final' => 'Proceso psicoterapéutico finalizado con remisión.',
+        'motivo_cierre' => 'Alta clínica',
+        'cerrado_por_profesional_id' => $this->profesionalSpecialist->id,
+        'estado' => Expediente::ESTADO_CERRADO,
+    ]);
+
+    $this->actingAs($this->userSpecialist);
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->get(route('pacientes.historial', [
+            'paciente' => $this->paciente->codigo,
+            'tipo_atencion' => 'cierre',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('historial.data', 1)
+            ->where('historial.data.0.tipo_atencion', 'cierre')
+        );
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->get(route('pacientes.historial', [
+            'paciente' => $this->paciente->codigo,
+            'tipo_atencion' => 'derivacion',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('historial.data.0.tipo_atencion', 'derivacion')
+        );
+});

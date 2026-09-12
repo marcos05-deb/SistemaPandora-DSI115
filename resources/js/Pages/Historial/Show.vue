@@ -129,6 +129,9 @@ const limpiarFiltros = () => {
                                 <span class="px-2.5 py-1 rounded-md text-[11px] font-bold text-white uppercase tracking-wider" :class="consulta.area.color">
                                     {{ consulta.area.nombre }}
                                 </span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-[var(--nord4)] text-[var(--nord3)] bg-white">
+                                    {{ consulta.tipo_atencion === 'derivacion' ? 'Derivación' : consulta.tipo_atencion === 'cierre' ? 'Cierre' : 'Consulta' }}
+                                </span>
                                 <span class="text-[13px] font-medium text-[var(--nord0)]">
                                     {{ consulta.profesional.nombre }}
                                 </span>
@@ -149,7 +152,7 @@ const limpiarFiltros = () => {
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[var(--nord8)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                                     </svg>
-                                    Motivo de Consulta
+                                    Motivo {{ consulta.tipo_atencion === 'derivacion' ? 'de derivación' : consulta.tipo_atencion === 'cierre' ? ' / resultado' : 'de Consulta' }}
                                 </h3>
                                 <p class="text-[14px] text-[var(--nord0)]">{{ consulta.motivo_consulta }}</p>
                             </div>

@@ -11,7 +11,7 @@ use Illuminate\Validation\Validator;
 
 class HistorialFilterRequest extends FormRequest
 {
-    public const TIPOS_ATENCION = ['consulta'];
+    public const TIPOS_ATENCION = ['consulta', 'derivacion', 'cierre'];
 
     public const RANGO_MAXIMO_DIAS = 730;
 
