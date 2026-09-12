@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace App\Casts;
 
+use App\Exceptions\DecryptionException;
 use App\Services\AreaEncryptionService;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
+use Throwable;
 
+/**
+ * Cifrado por área con lectura de respaldo del cifrado legacy (APP_KEY / sesión).
+ */
 final readonly class AreaEncryptedFieldCast implements CastsAttributes
 {
-    public function __construct() {}
-
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -25,7 +28,18 @@ final readonly class AreaEncryptedFieldCast implements CastsAttributes
         $areaId = $this->resolveAreaId($model);
         $encryptionService = app(AreaEncryptionService::class);
 
-        return $encryptionService->decrypt((string) $value, $areaId);
+        try {
+            return $encryptionService->decrypt((string) $value, $areaId);
+        } catch (Throwable) {
+            try {
+                return (new EncryptedFieldCast)->get($model, $key, $value, $attributes);
+            } catch (DecryptionException|RuntimeException|Throwable $e) {
+                throw new RuntimeException(
+                    sprintf('No se pudo descifrar el campo %s (área ni clave legacy).', $key),
+                    previous: $e
+                );
+            }
+        }
     }
 
     /**
@@ -58,7 +72,6 @@ final readonly class AreaEncryptedFieldCast implements CastsAttributes
                 return $model->expediente->area_id;
             }
 
-            // Lazy load the relationship if we have the foreign key
             if (isset($model->expediente_id)) {
                 $model->load('expediente');
                 if ($model->expediente !== null && isset($model->expediente->area_id)) {

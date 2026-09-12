@@ -11,6 +11,7 @@ use App\Models\Profesional;
 use App\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia as Assert;
 
 function evaluacionInicialValida(): array
 {
@@ -273,4 +274,31 @@ it('rejects future fecha_consulta', function () {
 
     $response->assertSessionHasErrors('fecha_consulta');
     expect(Consulta::count())->toBe(0);
+});
+
+it('allows a second specialist of the same area to read the consultation', function () {
+    $this->actingAs($this->userSpecialist)
+        ->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('consultas.store', $this->expediente->id), payloadConsulta())
+        ->assertRedirect();
+
+    $otroEspecialista = Especialista::factory()->create([
+        'password' => Hash::make('password'),
+        'is_active' => true,
+    ]);
+    $otroEspecialista->roles()->attach($this->roleSpecialist->id);
+    Profesional::factory()->create([
+        'user_id' => $otroEspecialista->id,
+        'area_id' => $this->area->id,
+    ]);
+
+    $this->actingAs($otroEspecialista);
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->get(route('pacientes.historial', $this->paciente->codigo))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('historial.data', 1)
+            ->where('historial.data.0.motivo_consulta', 'Dolor de cabeza crónico')
+        );
 });
