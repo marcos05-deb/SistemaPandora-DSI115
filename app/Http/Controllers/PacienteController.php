@@ -187,6 +187,14 @@ class PacienteController extends Controller
 
         // Aplicamos la política IDOR
         $this->authorize('view', $paciente);
+
+        app(\App\Services\ClinicalAccessAuditor::class)
+            ->record($user, $paciente, 'view_patient');
+
+        if ($paciente->expedientes->isNotEmpty()) {
+            app(\App\Services\ClinicalAccessAuditor::class)
+                ->record($user, $paciente->expedientes->first(), 'view_expediente');
+        }
         
         $areasDisponibles = [];
         if ($user->hasRole('psychosocial_referent')) {

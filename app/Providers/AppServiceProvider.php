@@ -4,9 +4,13 @@ namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use App\Events\CitaAusenciaRegistrada;
+use App\Listeners\RegistrarAusenciaEnEstadisticasPreventivas;
+use OwenIt\Auditing\Models\Audit;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +28,23 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureRateLimiting();
+        $this->configureClinicalAuditGuards();
+
+        Event::listen(
+            CitaAusenciaRegistrada::class,
+            RegistrarAusenciaEnEstadisticasPreventivas::class
+        );
+    }
+
+    private function configureClinicalAuditGuards(): void
+    {
+        Audit::updating(function (): bool {
+            throw new \RuntimeException('Los registros de auditoría son inmutables.');
+        });
+
+        Audit::deleting(function (): bool {
+            throw new \RuntimeException('Los registros de auditoría son inmutables.');
+        });
     }
 
     private function configureRateLimiting(): void
