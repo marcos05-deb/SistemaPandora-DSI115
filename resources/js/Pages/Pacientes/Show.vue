@@ -19,6 +19,7 @@ const props = defineProps({
     citasPendientes: { type: Array, default: () => [] },
     consultaActivaId: { type: String, default: null },
     expedienteCerrado: { type: Object, default: null },
+    alertaPreventiva: { type: Object, default: () => ({ activa: false, total: 0 }) },
     can: { type: Object, default: () => ({}) }
 });
 
@@ -101,6 +102,16 @@ onMounted(() => {
             { label: 'Pacientes', href: '/pacientes' },
             { label: paciente.carnet },
         ]" />
+        <div
+            v-if="alertaPreventiva?.activa"
+            class="mb-4 rounded-[10px] border border-[var(--aurora-orange)]/40 bg-[var(--aurora-orange)]/10 px-4 py-3 text-[13px] text-[var(--nord0)]"
+            role="alert"
+        >
+            <p class="font-medium">{{ alertaPreventiva.mensaje }}</p>
+            <p class="text-[12px] text-[var(--nord3)] mt-1">
+                Umbral: {{ alertaPreventiva.umbral }} ausencias en {{ alertaPreventiva.ventana_dias }} días.
+            </p>
+        </div>
         <div class="flex justify-between items-center bg-white py-[14px] px-[18px] shadow-sm border border-[var(--nord4)] rounded-[10px]">
             <div>
                 <h1 class="text-[16px] font-medium text-[var(--nord0)] tracking-tight flex items-center gap-2">

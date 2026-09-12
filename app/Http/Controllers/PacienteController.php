@@ -188,13 +188,16 @@ class PacienteController extends Controller
         // Aplicamos la política IDOR
         $this->authorize('view', $paciente);
 
-        app(\App\Services\ClinicalAccessAuditor::class)
-            ->record($user, $paciente, 'view_patient');
+        $auditor = app(\App\Services\ClinicalAccessAuditor::class);
+        $auditor->record($user, $paciente, 'view_patient');
 
-        if ($paciente->expedientes->isNotEmpty()) {
-            app(\App\Services\ClinicalAccessAuditor::class)
-                ->record($user, $paciente->expedientes->first(), 'view_expediente');
+        // RP-06: auditar cada expediente efectivamente entregado en la vista.
+        foreach ($paciente->expedientes as $expedienteVisible) {
+            $auditor->record($user, $expedienteVisible, 'view_expediente');
         }
+
+        $alertaPreventiva = app(\App\Services\AlertasPreventivasService::class)
+            ->alertaPaciente($user, $paciente->codigo);
         
         $areasDisponibles = [];
         if ($user->hasRole('psychosocial_referent')) {
@@ -234,6 +237,7 @@ class PacienteController extends Controller
             'citasPendientes' => $citasPendientes,
             'consultaActivaId' => $consultaActivaId,
             'expedienteCerrado' => $expedienteCerrado,
+            'alertaPreventiva' => $alertaPreventiva,
             'can' => [
                 'closeExpediente' => $canCloseExpediente,
                 'updateExpediente' => $canUpdateExpediente,
