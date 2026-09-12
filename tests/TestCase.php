@@ -11,7 +11,10 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
+        // OwenIt desactiva auditoría en consola por defecto; PHPUnit corre en CLI.
+        config(['audit.console' => true]);
+
         $this->withoutVite();
     }
 

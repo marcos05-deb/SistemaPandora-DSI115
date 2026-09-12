@@ -31,7 +31,8 @@ class DerivacionController extends Controller
         $this->derivacionService->derivarPaciente(
             $paciente,
             (int) $request->validated('area_id'),
-            $profesionalId
+            $profesionalId,
+            $request->validated('motivo_derivacion'),
         );
 
         $paciente->update(['ultima_accion' => 'Apertura de expediente']);

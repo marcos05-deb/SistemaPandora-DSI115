@@ -20,7 +20,8 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const form = useForm({
-    area_id: ''
+    area_id: '',
+    motivo_derivacion: '',
 });
 
 const isSubmitting = ref(false);
@@ -29,6 +30,7 @@ watch(() => props.show, (newVal) => {
     if (newVal) {
         form.reset();
         form.area_id = '';
+        form.motivo_derivacion = '';
         form.clearErrors();
         isSubmitting.value = false;
     }
@@ -36,6 +38,11 @@ watch(() => props.show, (newVal) => {
 
 const close = () => {
     emit('close');
+};
+
+const areaSeleccionada = () => {
+    if (!form.area_id) return null;
+    return props.areas.find((area) => String(area.id) === String(form.area_id)) ?? null;
 };
 
 const submit = () => {
@@ -85,7 +92,8 @@ const submit = () => {
                             </h3>
                             <div class="mt-2">
                                 <p class="text-sm text-[var(--nord3)]">
-                                    Seleccione el área clínica a la que desea derivar al paciente <span v-if="paciente" class="font-semibold text-[var(--nord0)]">{{ paciente.nombre_completo }}</span>.
+                                    Seleccione el área clínica y registre el motivo para derivar a
+                                    <span v-if="paciente" class="font-semibold text-[var(--nord0)]">{{ paciente.nombre_completo }}</span>.
                                 </p>
                             </div>
 
@@ -110,6 +118,38 @@ const submit = () => {
                                         {{ form.errors.area_id }}
                                     </p>
                                 </div>
+
+                                <div>
+                                    <label for="motivo_derivacion" class="block text-sm font-medium text-[var(--nord0)] mb-1">
+                                        Motivo de derivación <span class="text-[var(--aurora-red)]">*</span>
+                                    </label>
+                                    <textarea
+                                        id="motivo_derivacion"
+                                        v-model="form.motivo_derivacion"
+                                        rows="3"
+                                        maxlength="1000"
+                                        placeholder="Describa el motivo clínico o psicosocial de la derivación (mín. 10 caracteres)"
+                                        class="block w-full border text-[var(--nord0)] text-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-[var(--nord8)] focus:border-[var(--nord8)] transition-colors duration-200 resize-none"
+                                        :class="{'border-[var(--aurora-red)] bg-red-50': form.errors.motivo_derivacion, 'border-[var(--nord4)] bg-[var(--surface)]': !form.errors.motivo_derivacion}"
+                                        :disabled="isSubmitting"
+                                    />
+                                    <p v-if="form.errors.motivo_derivacion" class="mt-1.5 text-xs text-[var(--aurora-red)]">
+                                        {{ form.errors.motivo_derivacion }}
+                                    </p>
+                                </div>
+
+                                <div
+                                    v-if="paciente && areaSeleccionada()"
+                                    class="rounded-lg border border-[var(--nord4)] bg-[var(--surface-subtle)] px-3 py-2.5 text-left"
+                                >
+                                    <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--nord3)] mb-1">
+                                        Confirmación
+                                    </p>
+                                    <p class="text-sm text-[var(--nord0)]">
+                                        Se derivará a <span class="font-semibold">{{ paciente.nombre_completo }}</span>
+                                        hacia <span class="font-semibold">{{ areaSeleccionada().nombre }}</span>.
+                                    </p>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -125,7 +165,7 @@ const submit = () => {
                     <button
                         type="button"
                         @click="submit"
-                        :disabled="isSubmitting || !form.area_id"
+                        :disabled="isSubmitting || !form.area_id || !form.motivo_derivacion"
                         class="w-full sm:w-auto inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-[var(--nord8)] text-sm font-medium text-white hover:bg-[var(--nord9)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--nord8)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         <svg v-if="isSubmitting" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

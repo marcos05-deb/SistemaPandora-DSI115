@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Expediente;
 use App\Models\Paciente;
+use Illuminate\Foundation\Http\FormRequest;
 
 class DerivacionStoreRequest extends FormRequest
 {
@@ -15,7 +15,14 @@ class DerivacionStoreRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('derivar', Expediente::class);
+        $paciente = $this->route('paciente');
+
+        if (! $paciente instanceof Paciente) {
+            return false;
+        }
+
+        // Revalida en backend: rol + responsabilidad/autorización sobre el paciente.
+        return $this->user()->can('derivar', [Expediente::class, $paciente]);
     }
 
     /**
@@ -27,9 +34,27 @@ class DerivacionStoreRequest extends FormRequest
     {
         return [
             'area_id' => ['required', 'integer', 'exists:areas,id'],
+            'motivo_derivacion' => [
+                'required',
+                'string',
+                'min:'.Expediente::MOTIVO_DERIVACION_MIN,
+                'max:'.Expediente::MOTIVO_DERIVACION_MAX,
+            ],
         ];
     }
-    
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'motivo_derivacion.required' => 'El motivo de derivación es obligatorio.',
+            'motivo_derivacion.min' => 'El motivo de derivación debe tener al menos :min caracteres.',
+            'motivo_derivacion.max' => 'El motivo de derivación no puede superar :max caracteres.',
+        ];
+    }
+
     public function after(): array
     {
         return [
@@ -38,22 +63,18 @@ class DerivacionStoreRequest extends FormRequest
                     $paciente = $this->route('paciente');
                     $pacienteId = $paciente instanceof Paciente ? $paciente->codigo : $paciente;
 
-                    // Bypass seguro (ESTANDARES.md Sec 4): Limitado a un booleano (exists) para prevenir
-                    // duplicidad en la creación, sin extraer datos sensibles. El usuario que lo lanza
-                    // ya especificó intencionalmente el $this->area_id como destino.
-                    $exists = Expediente::withoutGlobalScopes()->where('paciente_id', $pacienteId)
-                        ->where('area_id', $this->area_id)
-                        ->where('estado', 'abierto')
-                        ->exists();
+                    // Bypass seguro (ESTANDARES.md Sec 4): solo AreaScope; exists() sin hidratar PHI.
+                    // Activo = abierto | en_atencion (un expediente en atención también bloquea).
+                    $exists = Expediente::existeActivoPara($pacienteId, (int) $this->area_id);
 
                     if ($exists) {
                         $validator->errors()->add(
                             'area_id',
-                            'El paciente ya tiene un expediente abierto en esta área.'
+                            Expediente::MENSAJE_EXPEDIENTE_ACTIVO_DUPLICADO
                         );
                     }
                 }
-            }
+            },
         ];
     }
 }

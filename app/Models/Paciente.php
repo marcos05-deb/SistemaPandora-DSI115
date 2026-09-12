@@ -1,14 +1,15 @@
 <?php
 
-namespace App\Models;
+declare(strict_types=1);
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+namespace App\Models;
 
 use App\Casts\EncryptedFieldCast;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Paciente extends Model
 {
@@ -74,5 +75,34 @@ class Paciente extends Model
     public function carrera(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'carrera_id', 'id');
+    }
+
+    /**
+     * Indica si el paciente está bajo responsabilidad del profesional autenticado
+     * o si existe una autorización vigente para actuar sobre él.
+     *
+     * Hoy la responsabilidad se define por creación (`creado_por_profesional_id`).
+     * La autorización vigente queda como punto de extensión cuando exista el dominio formal.
+     */
+    public function puedeSerDerivadoPor(Especialista $especialista): bool
+    {
+        if (! $especialista->profesional) {
+            return false;
+        }
+
+        if ($this->creado_por_profesional_id === $especialista->profesional->id) {
+            return true;
+        }
+
+        return $this->tieneAutorizacionVigentePara($especialista);
+    }
+
+    /**
+     * Extensión futura: autorizaciones temporales entre referentes.
+     * Sin modelo de dominio aún, no concede acceso.
+     */
+    public function tieneAutorizacionVigentePara(Especialista $especialista): bool
+    {
+        return false;
     }
 }
