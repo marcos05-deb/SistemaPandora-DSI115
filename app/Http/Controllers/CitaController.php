@@ -21,6 +21,9 @@ class CitaController extends Controller
 {
     private const MENSAJE_CONFLICTO_HORARIO = 'El horario seleccionado ya no está disponible o existe un conflicto en la agenda del especialista.';
 
+    /** Límite operativo de citas cargadas en vistas diaria/semanal (RP-09). */
+    private const LIMITE_VISTA_AGENDA = 500;
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -100,9 +103,12 @@ class CitaController extends Controller
             }
         }
 
-        // NH-06: diaria/semanal cargan el rango completo (sin truncar en página de 30).
+        // NH-06 / RP-09: cargan el rango completo con tope explícito y aviso si se trunca.
+        $semanaTruncada = false;
         if ($vista === 'diaria' || $vista === 'semanal') {
-            $items = $query->orderBy('fecha_hora', 'asc')->get();
+            $totalRango = (clone $query)->count();
+            $items = $query->orderBy('fecha_hora', 'asc')->limit(self::LIMITE_VISTA_AGENDA)->get();
+            $semanaTruncada = $totalRango > $items->count();
             $citas = new LengthAwarePaginator(
                 $items,
                 $items->count(),
@@ -151,6 +157,10 @@ class CitaController extends Controller
                 'referencia' => $referencia->toDateString(),
             ],
             'especialistas' => $especialistas,
+            'agendaMeta' => [
+                'limite' => self::LIMITE_VISTA_AGENDA,
+                'truncada' => $semanaTruncada,
+            ],
             'navegacion' => [
                 'anterior' => $vista === 'semanal'
                     ? $referencia->copy()->subWeek()->toDateString()
@@ -209,6 +219,7 @@ class CitaController extends Controller
 
     public function actualizarAsistencia(CitaAsistenciaRequest $request, Expediente $expediente, Cita $cita): RedirectResponse
     {
+        $this->asegurarCitaDelExpediente($expediente, $cita);
         $this->authorize('update', $cita);
 
         $cita->registrarAsistencia(
@@ -227,10 +238,11 @@ class CitaController extends Controller
 
     public function reprogramar(CitaReprogramarRequest $request, Expediente $expediente, Cita $cita): RedirectResponse
     {
+        $this->asegurarCitaDelExpediente($expediente, $cita);
         $this->authorize('reprogramar', $cita);
 
         try {
-            DB::transaction(function () use ($request, $expediente, $cita) {
+            DB::transaction(function () use ($request, $cita) {
                 /** @var Cita $citaBloqueada */
                 $citaBloqueada = Cita::query()
                     ->whereKey($cita->getKey())
@@ -264,7 +276,7 @@ class CitaController extends Controller
                 }
 
                 $nuevaCita = new Cita();
-                $nuevaCita->expediente_id = $expediente->id;
+                $nuevaCita->expediente_id = $citaBloqueada->expediente_id;
                 $nuevaCita->consulta_id = $citaBloqueada->consulta_id;
                 $nuevaCita->profesional_id = $citaBloqueada->profesional_id;
                 $nuevaCita->area_id = $citaBloqueada->area_id;
@@ -299,6 +311,7 @@ class CitaController extends Controller
 
     public function cancelar(CitaCancelarRequest $request, Expediente $expediente, Cita $cita): RedirectResponse
     {
+        $this->asegurarCitaDelExpediente($expediente, $cita);
         $this->authorize('cancelar', $cita);
 
         DB::transaction(function () use ($request, $cita) {
@@ -326,6 +339,16 @@ class CitaController extends Controller
         });
 
         return redirect()->back()->with('success', 'Cita cancelada exitosamente.');
+    }
+
+    /**
+     * Defensa en profundidad: la cita de la URL debe pertenecer al expediente (RP-02).
+     */
+    private function asegurarCitaDelExpediente(Expediente $expediente, Cita $cita): void
+    {
+        if ((string) $cita->expediente_id !== (string) $expediente->id) {
+            abort(404);
+        }
     }
 
     /**

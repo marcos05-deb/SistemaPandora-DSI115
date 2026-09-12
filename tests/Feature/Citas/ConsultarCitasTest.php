@@ -214,7 +214,8 @@ it('muestra más de 30 citas en la vista semanal sin truncar por paginación', f
     $porDia = $response->viewData('page')['props']['citasPorDia'];
 
     expect(count($citas))->toBeGreaterThanOrEqual(31)
-        ->and($porDia)->not->toBeEmpty();
+        ->and($porDia)->not->toBeEmpty()
+        ->and($response->viewData('page')['props']['agendaMeta']['truncada'] ?? true)->toBeFalse();
 
     $totalAgrupadas = collect($porDia)->sum(fn ($dia) => count($dia['citas']));
     expect($totalAgrupadas)->toBe(count($citas));

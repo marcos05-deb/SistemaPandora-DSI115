@@ -19,6 +19,7 @@ const props = defineProps({
     filtros: { type: Object, default: () => ({}) },
     especialistas: { type: Array, default: () => [] },
     navegacion: { type: Object, default: () => ({}) },
+    agendaMeta: { type: Object, default: () => ({ limite: 500, truncada: false }) },
 });
 
 const page = usePage();
@@ -123,6 +124,12 @@ const statusLabels = {
                     <button type="button" @click="setVista('diaria')" class="px-3 py-1.5 text-[12px] font-semibold rounded-lg border" :class="form.vista === 'diaria' ? 'bg-[var(--nord8)] text-white border-[var(--nord8)]' : 'border-[var(--nord4)] text-[var(--nord3)]'">Diaria</button>
                     <button type="button" @click="setVista('semanal')" class="px-3 py-1.5 text-[12px] font-semibold rounded-lg border" :class="form.vista === 'semanal' ? 'bg-[var(--nord8)] text-white border-[var(--nord8)]' : 'border-[var(--nord4)] text-[var(--nord3)]'">Semanal</button>
                 </div>
+                <p
+                    v-if="agendaMeta?.truncada"
+                    class="mt-2 text-[12px] text-[var(--aurora-orange)] font-medium"
+                >
+                    Se muestran las primeras {{ agendaMeta.limite }} citas del rango; hay más resultados. Ajuste filtros o el período.
+                </p>
             </div>
             
             <!-- Filters -->

@@ -25,10 +25,14 @@ class CitaPolicy
 
     public function reprogramar(Especialista $user, Cita $cita): bool
     {
-        $isAssignedSpecialist = $user->hasRole('specialist') && $user->profesional && $user->profesional->id === $cita->profesional_id;
-        $isCoordinator = $user->hasRole('area_coordinator') && $user->profesional && $user->profesional->area_id === $cita->area_id;
-        
-        return $isAssignedSpecialist || $isCoordinator;
+        $esEspecialistaAsignado = $user->hasRole('specialist')
+            && $user->profesional
+            && $user->profesional->id === $cita->profesional_id;
+
+        $esCoordinadorAutorizado = $user->hasRole('area_coordinator')
+            && $user->areas()->where('areas.id', $cita->area_id)->exists();
+
+        return $esEspecialistaAsignado || $esCoordinadorAutorizado;
     }
 
     public function cancelar(Especialista $user, Cita $cita): bool
