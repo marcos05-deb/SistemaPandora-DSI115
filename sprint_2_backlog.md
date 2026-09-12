@@ -49,7 +49,7 @@ Entonces los datos se descifran con la llave antigua y se recifran con la nueva 
 
 - [x] **Configuración:** Agregar variable de entorno `AREA_KEY_SECRET` y validación en el bootstrap.
 - [x] **Casts (`EncryptedFieldCast`):** Refactorizar el cast para que dependa del ID del Área del contexto actual (o inyectar la clave correcta) en lugar del KDF del usuario.
-- [ ] **Comando Artisan:** Crear un comando `crypto:migrate-area-keys` para migrar datos existentes (lectura con KDF antiguo, escritura con nueva llave de área).
+- [x] **Comando Artisan:** Crear un comando `crypto:migrate-area-keys` para migrar datos existentes (lectura con KDF antiguo, escritura con nueva llave de área).
 - [x] **Tests:** Unit tests verificando que dos usuarios de la misma área puedan descifrar el mismo campo, y usuarios de áreas distintas fallen.
 
 
