@@ -189,3 +189,33 @@ it('no expone datos de privacidad prohibidos en el resource (PHi)', function () 
     expect($citas[0]['paciente'])->toHaveKey('codigo');
     expect($citas[0]['paciente'])->not->toHaveKey('nombre_completo');
 });
+
+it('muestra más de 30 citas en la vista semanal sin truncar por paginación', function () {
+    actingAs($this->coordinadorPsicologia);
+
+    $inicioSemana = now()->startOfWeek()->addDay()->setTime(8, 0);
+    for ($i = 0; $i < 31; $i++) {
+        Cita::factory()->create([
+            'expediente_id' => $this->expedientePsico->id,
+            'profesional_id' => $this->profesionalPsico1->id,
+            'area_id' => $this->areaPsicologia->id,
+            'fecha_hora' => $inicioSemana->copy()->addMinutes($i * 90),
+            'estado' => 'programada',
+        ]);
+    }
+
+    $response = get(route('citas.index', [
+        'vista' => 'semanal',
+        'referencia' => $inicioSemana->toDateString(),
+    ]));
+
+    $response->assertOk();
+    $citas = $response->viewData('page')['props']['citas']['data'];
+    $porDia = $response->viewData('page')['props']['citasPorDia'];
+
+    expect(count($citas))->toBeGreaterThanOrEqual(31)
+        ->and($porDia)->not->toBeEmpty();
+
+    $totalAgrupadas = collect($porDia)->sum(fn ($dia) => count($dia['citas']));
+    expect($totalAgrupadas)->toBe(count($citas));
+});
