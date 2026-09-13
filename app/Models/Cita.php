@@ -24,7 +24,7 @@ class Cita extends Model implements Auditable
         static::addGlobalScope(new AreaScope);
 
         static::saving(function (Cita $cita): void {
-            if ($cita->profesional_user_id !== null || $cita->profesional_id === null) {
+            if ($cita->profesional_id === null) {
                 return;
             }
 
@@ -32,9 +32,22 @@ class Cita extends Model implements Auditable
                 ->whereKey($cita->profesional_id)
                 ->value('user_id');
 
-            if ($userId !== null) {
-                $cita->profesional_user_id = $userId;
+            if ($userId === null) {
+                throw new \InvalidArgumentException(
+                    'No se puede guardar la cita: el perfil profesional no existe.'
+                );
             }
+
+            if (
+                $cita->profesional_user_id !== null
+                && (int) $cita->profesional_user_id !== (int) $userId
+            ) {
+                throw new \InvalidArgumentException(
+                    'profesional_user_id debe coincidir con el usuario dueño del perfil profesional.'
+                );
+            }
+
+            $cita->profesional_user_id = $userId;
         });
     }
 
@@ -42,7 +55,6 @@ class Cita extends Model implements Auditable
         'expediente_id',
         'consulta_id',
         'profesional_id',
-        'profesional_user_id',
         'area_id',
         'fecha_hora',
         'motivo',
