@@ -170,26 +170,43 @@ const getCitasBreakdown = (dateObj) => {
     <AdminLayout>
         <div class="px-6 py-8 h-full flex flex-col">
             <!-- Header -->
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h1 class="text-2xl font-bold text-[var(--chrome-text)]">Calendario de Citas</h1>
-                    <p class="text-[13px] text-[var(--chrome-text-muted)] mt-1">Supervisión general de atención clínica</p>
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
+                <div class="min-w-0">
+                    <h1 class="text-2xl font-bold tracking-tight text-[var(--nord0)]">Calendario de Citas</h1>
+                    <p class="text-[13px] text-[var(--nord3)] mt-1">Supervisión general de atención clínica</p>
                 </div>
-                <div class="flex items-center gap-3">
-                    <button @click="goToToday" class="px-3 py-1.5 text-[13px] font-medium bg-[var(--chrome-sidebar)] border border-[var(--chrome-border)] rounded-lg hover:bg-[var(--chrome-sidebar-hover)] transition-colors">
+
+                <div
+                    class="inline-flex items-stretch self-start sm:self-auto rounded-xl border border-[var(--nord4)] bg-white shadow-sm overflow-hidden"
+                    role="group"
+                    aria-label="Navegación del calendario"
+                >
+                    <button
+                        type="button"
+                        @click="goToToday"
+                        class="px-3.5 py-2 text-[13px] font-semibold text-[var(--nord0)] border-r border-[var(--nord4)] hover:bg-[var(--nord6)] transition-colors"
+                    >
                         Hoy
                     </button>
-                    <div class="flex items-center rounded-lg overflow-hidden border border-[var(--chrome-border)] bg-[var(--chrome-sidebar)]">
-                        <button @click="previousMonth" class="px-3 py-1.5 hover:bg-[var(--chrome-sidebar-hover)] transition-colors">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                        </button>
-                        <span class="px-4 py-1.5 text-[14px] font-medium min-w-[140px] text-center border-x border-[var(--chrome-border)]">
-                            {{ currentDate.format('MMMM YYYY').replace(/^\w/, (c) => c.toUpperCase()) }}
-                        </span>
-                        <button @click="nextMonth" class="px-3 py-1.5 hover:bg-[var(--chrome-sidebar-hover)] transition-colors">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        @click="previousMonth"
+                        class="px-2.5 py-2 text-[var(--nord3)] hover:bg-[var(--nord6)] hover:text-[var(--nord0)] transition-colors"
+                        aria-label="Mes anterior"
+                    >
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <span class="px-3 py-2 text-[13px] font-semibold text-[var(--nord0)] min-w-[148px] text-center tabular-nums select-none">
+                        {{ currentDate.format('MMMM YYYY').replace(/^\w/, (c) => c.toUpperCase()) }}
+                    </span>
+                    <button
+                        type="button"
+                        @click="nextMonth"
+                        class="px-2.5 py-2 text-[var(--nord3)] hover:bg-[var(--nord6)] hover:text-[var(--nord0)] transition-colors"
+                        aria-label="Mes siguiente"
+                    >
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    </button>
                 </div>
             </div>
 

@@ -13,10 +13,30 @@ const form = useForm({
 });
 
 function submitLogin() {
+  if (form.processing) return;
+
+  // Si Inertia no completa el ciclo (Azure lento), forzar navegación:
+  // /dashboard redirige sysadmin a /admin/dashboard.
+  const safetyTimer = window.setTimeout(() => {
+    if (window.location.pathname === "/login" || window.location.pathname === "/") {
+      window.location.assign("/dashboard");
+    }
+  }, 10000);
+
   form.post("/login", {
     preserveScroll: true,
+    onSuccess: () => {
+      window.clearTimeout(safetyTimer);
+      window.location.assign("/dashboard");
+    },
+    onError: () => {
+      window.clearTimeout(safetyTimer);
+    },
     onFinish: () => {
-      if (form.hasErrors) form.reset("password");
+      if (form.hasErrors) {
+        window.clearTimeout(safetyTimer);
+        form.reset("password");
+      }
     },
   });
 }
