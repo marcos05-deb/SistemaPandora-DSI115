@@ -4,6 +4,7 @@ import { ref } from 'vue';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 import PrimaryButton from '@/Components/UI/PrimaryButton.vue';
+import { todayLocalYmd } from '@/utils/dates';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -12,13 +13,23 @@ const props = defineProps({
     esPrimeraConsulta: { type: Boolean, default: false }
 });
 
+const hoy = todayLocalYmd();
+const haceUnAno = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+})();
+
 const form = useForm({
     motivo_consulta: '',
     notas_clinicas: '',
     diagnostico: '',
     plan_atencion: '',
     tecnica_utilizada: '',
-    fecha_consulta: new Date().toISOString().slice(0, 10),
+    fecha_consulta: hoy,
     evaluacion_inicial: {
         apariencia_externa: '',
         voz: '',
@@ -32,12 +43,8 @@ const form = useForm({
     }
 });
 
-const maxFechaConsulta = new Date().toISOString().slice(0, 10);
-const minFechaConsulta = (() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 1);
-    return d.toISOString().slice(0, 10);
-})();
+const maxFechaConsulta = hoy;
+const minFechaConsulta = haceUnAno;
 
 const activeAccordion = ref(0);
 
