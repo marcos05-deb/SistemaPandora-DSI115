@@ -45,6 +45,8 @@ if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ]; then
         sleep 2
     done
     php artisan migrate --database=pgsql_admin --force --no-interaction 2>/dev/null || true
+    # Reconciliación idempotente Lab II (citas de cerrados, fechas, ausencias)
+    php artisan pandora:reconciliar-datos-lab2 --no-interaction 2>/dev/null || true
 fi
 
 exec "$@"

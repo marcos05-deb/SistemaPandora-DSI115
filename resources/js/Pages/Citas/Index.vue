@@ -22,6 +22,7 @@ const props = defineProps({
     especialistas: { type: Array, default: () => [] },
     navegacion: { type: Object, default: () => ({}) },
     agendaMeta: { type: Object, default: () => ({ limite: 500, truncada: false }) },
+    alertaPreventiva: { type: Object, default: () => ({ activa: false, total: 0 }) },
 });
 
 const page = usePage();
@@ -204,6 +205,17 @@ const statusLabels = {
                     </button>
                 </p>
             </div>
+        </div>
+
+        <div
+            v-if="alertaPreventiva?.activa"
+            class="mb-4 rounded-[10px] border border-[var(--aurora-orange)]/40 bg-[var(--aurora-orange)]/10 px-4 py-3 text-[13px] text-[var(--nord0)]"
+            role="alert"
+        >
+            <p class="font-medium">{{ alertaPreventiva.mensaje }}</p>
+            <p class="text-[12px] text-[var(--nord3)] mt-1">
+                Umbral: {{ alertaPreventiva.umbral }} ausencias en {{ alertaPreventiva.ventana_dias }} días.
+            </p>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] p-4 mb-6">

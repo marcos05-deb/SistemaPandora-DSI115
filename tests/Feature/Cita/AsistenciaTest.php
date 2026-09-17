@@ -246,6 +246,39 @@ it('alimenta estadísticas preventivas al registrar ausencia', function () {
     expect(\App\Models\EstadisticaPreventivaAusencia::count())->toBe(1);
 });
 
+it('muestra alerta preventiva al registrar la segunda ausencia', function () {
+    Cita::create([
+        'expediente_id' => $this->expediente->id,
+        'profesional_id' => $this->profesional->id,
+        'area_id' => $this->area->id,
+        'fecha_hora' => now()->subDays(2),
+        'motivo' => 'Ausencia previa',
+        'estado' => EstadoCita::Ausente->value,
+        'fecha_registro_asistencia' => now()->subDays(2),
+        'registrado_por_profesional_id' => $this->profesional->id,
+    ]);
+
+    \Artisan::call('pandora:reconciliar-datos-lab2');
+
+    $cita = Cita::create([
+        'expediente_id' => $this->expediente->id,
+        'profesional_id' => $this->profesional->id,
+        'area_id' => $this->area->id,
+        'fecha_hora' => now()->subMinutes(30),
+        'motivo' => 'Segunda ausencia',
+        'estado' => EstadoCita::Programada->value,
+    ]);
+
+    $this->actingAs($this->user)
+        ->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->patch("/expedientes/{$this->expediente->id}/citas/{$cita->id}/asistencia", [
+            'estado' => EstadoCita::Ausente->value,
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('variant', 'warning')
+        ->assertSessionHas('message', fn ($msg) => str_contains((string) $msg, 'Alerta preventiva'));
+});
+
 it('no incrementa ausencias al marcar asistida y aísla por área', function () {
     $cita = Cita::create([
         'expediente_id' => $this->expediente->id,

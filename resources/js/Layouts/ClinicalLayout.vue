@@ -96,6 +96,7 @@ const sidebarLinks = computed(() => allLinks.filter(link => !link.roles || link.
                 flashExit ? 'opacity-0 translate-x-4' : 'opacity-100',
                 page.props.flash?.variant === 'success' ? 'bg-[var(--chrome-topbar)] border-[var(--aurora-green)]/40' :
                 page.props.flash?.variant === 'error' ? 'bg-[var(--chrome-topbar)] border-[var(--aurora-red)]/40' :
+                page.props.flash?.variant === 'warning' ? 'bg-[var(--chrome-topbar)] border-[var(--aurora-orange)]/50' :
                 'bg-[var(--chrome-topbar)] border-[var(--chrome-border)]'
             ]">
                 <div class="flex items-center gap-2.5 px-4 py-3">
@@ -103,10 +104,12 @@ const sidebarLinks = computed(() => allLinks.filter(link => !link.roles || link.
                         'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
                         page.props.flash?.variant === 'success' ? 'bg-[var(--aurora-green)]/15' :
                         page.props.flash?.variant === 'error' ? 'bg-[var(--aurora-red)]/15' :
+                        page.props.flash?.variant === 'warning' ? 'bg-[var(--aurora-orange)]/20' :
                         'bg-white/10'
                     ]">
                         <svg v-if="page.props.flash?.variant === 'success'" class="h-4 w-4 text-[var(--aurora-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
                         <svg v-else-if="page.props.flash?.variant === 'error'" class="h-4 w-4 text-[var(--aurora-red)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <svg v-else-if="page.props.flash?.variant === 'warning'" class="h-4 w-4 text-[var(--aurora-orange)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
                         <svg v-else class="h-4 w-4 text-[var(--frost2)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                     <span class="text-[13px] font-medium text-white flex-1">{{ page.props.flash.message }}</span>
@@ -117,7 +120,7 @@ const sidebarLinks = computed(() => allLinks.filter(link => !link.roles || link.
                 <!-- Progress bar -->
                 <div class="h-0.5 w-full bg-white/10">
                     <div class="h-full transition-all duration-100 ease-linear"
-                        :class="page.props.flash?.variant === 'success' ? 'bg-[var(--aurora-green)]' : page.props.flash?.variant === 'error' ? 'bg-[var(--aurora-red)]' : 'bg-[var(--frost2)]'"
+                        :class="page.props.flash?.variant === 'success' ? 'bg-[var(--aurora-green)]' : page.props.flash?.variant === 'error' ? 'bg-[var(--aurora-red)]' : page.props.flash?.variant === 'warning' ? 'bg-[var(--aurora-orange)]' : 'bg-[var(--frost2)]'"
                         :style="{ width: flashProgress + '%' }">
                     </div>
                 </div>
