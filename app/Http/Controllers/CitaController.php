@@ -61,7 +61,13 @@ class CitaController extends Controller
             $estado = null;
         }
 
-        $query = Cita::with(['expediente.paciente', 'profesional.especialista', 'registradoPor.especialista']);
+        $query = Cita::with([
+            'expediente.paciente',
+            'profesional.especialista',
+            'registradoPor.especialista',
+            'area',
+            'citaOrigen',
+        ]);
 
         if (! $user->hasRole('area_coordinator')) {
             $profesionalIds = $user->perfilesProfesionales()->pluck('id');
