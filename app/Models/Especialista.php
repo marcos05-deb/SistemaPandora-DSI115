@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -56,12 +57,30 @@ class Especialista extends Authenticatable
     }
 
     /**
-     * Perfil profesional del especialista.
-     * Contiene UUID, área, especialidad, número de registro.
+     * Perfil profesional del especialista (compatibilidad: primer perfil).
+     * Para operaciones clínicas multiárea usar profesionalParaArea().
      */
     public function profesional(): HasOne
     {
         return $this->hasOne(Profesional::class, 'user_id');
+    }
+
+    /**
+     * Todos los perfiles profesionales del usuario (uno por área autorizada).
+     */
+    public function perfilesProfesionales(): HasMany
+    {
+        return $this->hasMany(Profesional::class, 'user_id');
+    }
+
+    /**
+     * Resuelve el perfil profesional correspondiente a un área clínica (R593-01).
+     */
+    public function profesionalParaArea(int|string $areaId): ?Profesional
+    {
+        return $this->perfilesProfesionales()
+            ->where('area_id', $areaId)
+            ->first();
     }
 
     /**

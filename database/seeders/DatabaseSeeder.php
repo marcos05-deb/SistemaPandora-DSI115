@@ -71,8 +71,19 @@ class DatabaseSeeder extends Seeder
             numeroRegistro: 'NUT-001'
         );
 
+        // 5. Especialista 2 — Psicología (Para probar aislamiento AreaScope)
+        $this->createProfessional(
+            email: 'especialista-psi@pandora.com',
+            name: 'Lic. Psicólogo Dos',
+            roleSlug: 'specialist',
+            areaNombre: 'Psicología',
+            especialidad: 'Psicología Infantil',
+            numeroRegistro: 'PSI-002'
+        );
+
         $this->call([
             ExpedienteSeeder::class,
+            CitaSeeder::class,
         ]);
     }
 

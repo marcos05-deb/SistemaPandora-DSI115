@@ -64,6 +64,7 @@ function formatDate(dateStr) {
                             <th class="py-[12px] px-[16px] font-semibold">Creado por</th>
                             <th class="py-[12px] px-[16px] font-semibold">Fecha de Registro</th>
                             <th class="py-[12px] px-[16px] font-semibold">Última Actualización</th>
+                            <th class="py-[12px] px-[16px] font-semibold">Última Acción</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[var(--nord5)]">
@@ -74,6 +75,11 @@ function formatDate(dateStr) {
                             <td class="py-[12px] px-[16px] text-[12px] text-[var(--nord3)]">{{ paciente.creator?.name || 'Desconocido' }}</td>
                             <td class="py-[12px] px-[16px] text-[12px] text-[var(--nord3)]">{{ formatDate(paciente.created_at) }}</td>
                             <td class="py-[12px] px-[16px] text-[12px] text-[var(--nord3)]">{{ formatDate(paciente.updated_at) }}</td>
+                            <td class="py-[12px] px-[16px] text-[12px] text-[var(--nord3)]">
+                                <span class="bg-[var(--surface-header)] px-2 py-1 rounded-md text-[11px] font-medium border border-[var(--nord4)]">
+                                    {{ paciente.ultima_accion }}
+                                </span>
+                            </td>
                         </tr>
                         <tr v-if="!pacientes.data || pacientes.data.length === 0">
                             <td colspan="4" class="py-16 text-center">

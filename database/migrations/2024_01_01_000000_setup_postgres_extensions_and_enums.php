@@ -20,6 +20,20 @@ return new class extends Migration
         
         DB::statement("DROP TYPE IF EXISTS parentesco_enum CASCADE;");
         DB::statement("CREATE TYPE parentesco_enum AS ENUM ('Padre', 'Madre', 'Tutor', 'Otro');");
+
+        // Mínimo privilegio: DML sin CREATE/DDL en schema public para el rol de app.
+        $appUser = config('database.connections.pgsql.username');
+        $adminUser = config('database.connections.pgsql_admin.username');
+
+        if ($appUser && $appUser !== $adminUser) {
+            DB::statement("REVOKE CREATE ON SCHEMA public FROM PUBLIC");
+            DB::statement("REVOKE ALL ON SCHEMA public FROM {$appUser}");
+            DB::statement("GRANT USAGE ON SCHEMA public TO {$appUser}");
+            DB::statement("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {$appUser}");
+            DB::statement("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO {$appUser}");
+            DB::statement("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {$appUser}");
+            DB::statement("GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO {$appUser}");
+        }
     }
 
     /**

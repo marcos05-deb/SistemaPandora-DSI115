@@ -20,6 +20,10 @@ class PacienteController extends Controller
     {
         $user = auth()->user();
 
+        if ($user->hasRole('sysadmin')) {
+            abort(403);
+        }
+
         if ($user->hasRole('area_coordinator')) {
             return redirect()->route('busqueda-segura');
         }
@@ -66,7 +70,8 @@ class PacienteController extends Controller
         $facultades = Facultad::with('carreras')->get();
 
         return Inertia::render('Pacientes/Create', [
-            'facultades' => $facultades
+            'facultades' => $facultades,
+            'etiquetasValidas' => \App\Http\Requests\StorePacienteRequest::ETIQUETAS_VALIDAS
         ]);
     }
 
@@ -92,6 +97,8 @@ class PacienteController extends Controller
                 'referido_por' => $validated['referido_por'],
                 'llevado_por' => $validated['llevado_por'],
                 'motivo_consulta' => $validated['motivo_consulta'],
+                'etiquetas_motivo' => $validated['etiquetas_motivo'] ?? null,
+                'ultima_accion' => 'Registro de paciente',
             ]);
 
             // Crear Padre
@@ -141,19 +148,127 @@ class PacienteController extends Controller
     /**
      * Display the specified patient.
      */
-    public function show($carnet): Response
+    public function show(Request $request, $carnet): Response
     {
-        $paciente = Paciente::with(['contactos', 'carrera.facultad'])
-            ->where('carnet', $carnet)
-            ->firstOrFail();
-
         $user = auth()->user();
+
+        $pacienteQuery = Paciente::with(['contactos', 'carrera.facultad']);
+
+        if ($user->hasRole('psychosocial_referent')) {
+            $pacienteQuery->with(['expedientes' => function ($q) {
+                // Bypass seguro (ESTANDARES.md Sec 4): columnas de trazabilidad de derivación
+                // (incluye motivo cifrado; el cast descifra solo en lectura autorizada del referente).
+                $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class)
+                  ->with(['citas.citaOrigen', 'area:id,nombre'])
+                  ->select(
+                      'id',
+                      'paciente_id',
+                      'area_id',
+                      'estado',
+                      'fecha_derivacion',
+                      'motivo_derivacion',
+                      'motivo_consulta',
+                      'notas_clinicas',
+                      'diagnostico',
+                      'resultado_final',
+                      'motivo_cierre',
+                      'fecha_cierre',
+                      'created_at',
+                      'updated_at'
+                  );
+            }]);
+        } else {
+            $pacienteQuery->with(['expedientes' => function ($q) {
+                $q->with(['citas.citaOrigen', 'area:id,nombre']);
+            }]);
+        }
+
+        $paciente = $pacienteQuery->where('carnet', $carnet)->firstOrFail();
 
         // Aplicamos la política IDOR
         $this->authorize('view', $paciente);
 
+        $auditor = app(\App\Services\ClinicalAccessAuditor::class);
+        $auditor->record($user, $paciente, 'view_patient');
+
+        // RP-06: auditar cada expediente efectivamente entregado en la vista.
+        foreach ($paciente->expedientes as $expedienteVisible) {
+            $auditor->record($user, $expedienteVisible, 'view_expediente');
+        }
+
+        // R593-04: alerta clínica solo para especialistas/coordinadores del área.
+        $alertaPreventiva = ['activa' => false, 'total' => 0, 'umbral' => 2, 'ventana_dias' => 30, 'mensaje' => null];
+        if ($user->hasRole('specialist') || $user->hasRole('area_coordinator')) {
+            $alertaPreventiva = app(\App\Services\AlertasPreventivasService::class)
+                ->alertaPaciente($user, $paciente->codigo);
+        }
+
+        $areasDisponibles = [];
+        if ($user->hasRole('psychosocial_referent')) {
+            $areasDisponibles = \App\Models\Area::select('id', 'nombre')->orderBy('nombre')->get();
+        } else {
+            $areasDisponibles = $user->areas()
+                ->get(['areas.id', 'areas.nombre'])
+                ->unique('id')
+                ->values();
+        }
+
+        $hasAnyExpediente = \App\Models\Expediente::withoutGlobalScopes()
+            ->where('paciente_id', $paciente->codigo)
+            ->exists();
+
+        $expedientesActivos = $paciente->expedientes
+            ->where('estado', '!=', 'cerrado')
+            ->values();
+
+        $expedienteSeleccionadoId = $request->query('expediente_id');
+        $expedienteActivo = $expedientesActivos->firstWhere('id', $expedienteSeleccionadoId)
+            ?? $expedientesActivos->first();
+
+        $expedienteCerrado = $expedienteActivo
+            ? null
+            : $paciente->expedientes->where('estado', 'cerrado')->sortByDesc('fecha_cierre')->first();
+        $canCloseExpediente = $expedienteActivo ? $user->can('close', $expedienteActivo) : false;
+        $canUpdateExpediente = $expedienteActivo ? $user->can('update', $expedienteActivo) : false;
+        $canAssignCita = $expedienteActivo ? $user->can('create', [\App\Models\Cita::class, $expedienteActivo]) : false;
+        $canCreateConsulta = $expedienteActivo ? $user->can('create', [\App\Models\Consulta::class, $expedienteActivo]) : false;
+
+        $citasPendientes = [];
+        $canUpdateCita = false;
+        $consultaActivaId = null;
+        if ($expedienteActivo) {
+            $citasPendientes = $expedienteActivo->citas->where('estado', 'programada')->values()->all();
+            if (count($citasPendientes) > 0) {
+                $canUpdateCita = $user->can('update', $citasPendientes[0]);
+            }
+
+            $consultaActivaId = \App\Models\Consulta::activaParaExpediente($expedienteActivo)?->id;
+            $canAssignCita = $canAssignCita && $consultaActivaId !== null;
+        }
+
         return Inertia::render('Pacientes/Show', [
-            'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve()
+            'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve(),
+            'hasAnyExpediente' => $hasAnyExpediente,
+            'areasDisponibles' => $areasDisponibles,
+            'expedientesActivos' => $expedientesActivos->map(fn ($exp) => [
+                'id' => $exp->id,
+                'area_id' => $exp->area_id,
+                'area_nombre' => $exp->area?->nombre ?? 'Área',
+                'estado' => $exp->estado,
+            ])->values(),
+            'expedienteSeleccionadoId' => $expedienteActivo?->id,
+            'citasPendientes' => $citasPendientes,
+            'consultaActivaId' => $consultaActivaId,
+            'expedienteCerrado' => $expedienteCerrado,
+            'alertaPreventiva' => $alertaPreventiva,
+            'can' => [
+                'closeExpediente' => $canCloseExpediente,
+                'updateExpediente' => $canUpdateExpediente,
+                'assignCita' => $canAssignCita,
+                'updateCita' => $canUpdateCita,
+                'createConsulta' => $canCreateConsulta,
+                'derivar' => $user->can('derivar', [\App\Models\Expediente::class, $paciente]),
+            ],
         ]);
     }
 }

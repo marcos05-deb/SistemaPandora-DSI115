@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Casts;
+namespace App\Casts;
 
 use App\Exceptions\DecryptionException;
 use App\Services\Crypto\EncryptionContextService;

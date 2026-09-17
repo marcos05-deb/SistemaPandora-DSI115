@@ -4,9 +4,14 @@ namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use App\Events\CitaAusenciaRegistrada;
+use App\Listeners\RegistrarAusenciaEnEstadisticasPreventivas;
+use OwenIt\Auditing\Models\Audit;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +29,35 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureRateLimiting();
+        $this->configureClinicalAuditGuards();
+        $this->configureHttpsForProxies();
+
+        Event::listen(
+            CitaAusenciaRegistrada::class,
+            RegistrarAusenciaEnEstadisticasPreventivas::class
+        );
+    }
+
+    /**
+     * App Service termina TLS en el proxy; forzar https evita assets/redirects en http.
+     */
+    private function configureHttpsForProxies(): void
+    {
+        $appUrl = (string) config('app.url', '');
+        if (str_starts_with($appUrl, 'https://')) {
+            URL::forceScheme('https');
+        }
+    }
+
+    private function configureClinicalAuditGuards(): void
+    {
+        Audit::updating(function (): bool {
+            throw new \RuntimeException('Los registros de auditoría son inmutables.');
+        });
+
+        Audit::deleting(function (): bool {
+            throw new \RuntimeException('Los registros de auditoría son inmutables.');
+        });
     }
 
     private function configureRateLimiting(): void

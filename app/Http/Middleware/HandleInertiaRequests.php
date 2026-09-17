@@ -32,6 +32,8 @@ class HandleInertiaRequests extends Middleware
                 'message' => fn () => $request->session()->get('message'),
                 'variant' => fn () => $request->session()->get('variant', 'success'),
                 'generated_password' => fn () => $request->session()->get('generated_password'),
+                'prompt_cita_expediente_id' => fn () => $request->session()->get('prompt_cita_expediente_id'),
+                'prompt_cita_consulta_id' => fn () => $request->session()->get('prompt_cita_consulta_id'),
             ],
         ];
     }

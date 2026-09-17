@@ -331,3 +331,114 @@
   - **Cobertura Antifragilidad (OWASP ASVS v4):** 
     - **Mass Assignment:** Se creó `test_mass_assignment_es_ignorado` inyectando propiedades críticas falsas (`is_admin`) asegurando su filtrado de persistencia nativo por el modelo de Eloquent.
     - **Inyección SQL (SQLi):** Se construyó `test_inyeccion_sql_rechazada_por_form_request` disparando vectores de ataque al servidor. Se certificó que el protocolo `FormRequest` atrapa, bloquea (302) y rechaza el payload inyectado valiéndose de validaciones RegEx mucho antes de tocar la capa ORM.
+
+### [2026-09-01] Resolución de Deuda Arquitectónica C-09: Cifrado Multi-Especialista
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se resolvió la deuda técnica C-09 del Sistema Pandora transicionando de una clave individual por especialista a una **Clave Compartida por Área** para cifrar y descifrar los campos clínicos protegidos (PHI). Esto permite que distintos especialistas de una misma área puedan leer el expediente de un paciente, manteniendo el aislamiento estricto frente a otras áreas clínicas.
+- **Cambios realizados:**
+  - **Servicio Criptográfico:** Se creó `app/Services/AreaEncryptionService.php` utilizando `libsodium` nativo de PHP (`sodium_crypto_generichash` y `sodium_crypto_aead_xchacha20poly1305_ietf_*`) para derivar determinísticamente una clave simétrica combinando el secreto maestro de la aplicación y el UUID del Área.
+  - **Casteo de Eloquent:** Se implementó `app/Casts/EncryptedFieldCast.php`, que resuelve dinámicamente el `area_id` del modelo e interactúa con el servicio de encriptación de manera transparente para el ORM.
+  - **Pruebas de Seguridad (AAA):** Se implementó `tests/Unit/Cryptography/AreaEncryptionTest.php` comprobando que (a) el cifrado es determinista por área, (b) dos especialistas de la misma área descifran con éxito, y (c) se lanza una excepción al intentar acceder con la clave de un área ajena.
+- **Cómo verificar:**
+  - Ejecutar el comando `./vendor/bin/pest tests/Unit/Cryptography/AreaEncryptionTest.php` en la terminal. Los 4 tests del flujo criptográfico deben pasar exitosamente (`PASS`).
+
+### [2026-09-01] Implementación de US-07: Derivar un paciente a un área clínica
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se requiere permitir a los Referentes Psicosociales derivar pacientes registrados hacia distintas áreas clínicas del sistema, creando un nuevo `Expediente` con estado "abierto" de forma aislada y controlada.
+- **Cambios realizados:**
+  - **Base de Datos:** Se creó una migración para agregar las columnas `estado` (string), `derivado_por_profesional_id` (foreignUuid) y `fecha_derivacion` (timestampTz) a la tabla `expedientes`.
+  - **Modelos y Autorización:** Se actualizó `Expediente.php` con el trait `Auditable` para registrar logs de auditoría nativos. Se modificó `ExpedientePolicy.php` añadiendo el método `derivar()` que restringe esta acción de manera estricta al rol `psychosocial_referent`.
+  - **Controlador y Servicio:** Se crearon `DerivacionController.php` (para el flujo HTTP y autorización) y `DerivacionService.php` (para aislar la lógica de creación del expediente dentro de una transacción `DB::transaction`).
+  - **Validación Anti-duplicidad:** Se implementó el form request `DerivacionStoreRequest.php` que cuenta con una regla custom (`after`) para verificar y abortar la derivación si ya existe un expediente "abierto" para el mismo paciente en el área seleccionada, previniendo duplicados lógicos.
+  - **Frontend:** Se creó `resources/js/Pages/Expediente/Derivacion/Create.vue` usando Vue 3 Composition API y Tailwind CSS v4, integrando la paleta Nord y un diseño UX limpio y reactivo mediante `useForm`.
+  - **Pruebas:** Se desarrolló la suite Pest `tests/Feature/Expediente/DerivacionTest.php` utilizando estrictamente el patrón AAA y la sintaxis `expect()`, cubriendo casos de éxito, validación por duplicidad y rechazos de acceso (403 Forbidden).
+
+### [2026-09-04] Implementación de US-08: Registrar una consulta clínica
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se implementó la historia de usuario US-08 para permitir a los especialistas registrar atenciones y notas clínicas protegidas en expedientes activos, incluyendo la interfaz gráfica, backend, seguridad de encriptación por área, y validaciones. Durante el proceso se depuraron problemas críticos de ruteo frontend y ciclos de vida del ORM en Laravel.
+- **Cambios realizados:**
+  - **Base de Datos y Modelos:** Se creó la migración para la tabla `consultas` con relación al `expediente`. Se adaptó el modelo `Consulta` para habilitar el cifrado/descifrado transparente de `motivo_consulta`, `notas_clinicas` y `diagnostico` mediante `EncryptedFieldCast`.
+  - **Core Criptográfico (Resolución de Bugs):** Se solucionó un `ArgumentCountError` en `EncryptedFieldCast` refactorizando la clase para resolver su servicio vía contenedor `app()`. Se añadió la capacidad del Cast para hacer autodescubrimiento o *lazy-loading* del `area_id` a través del expediente. Además, se parchó el archivo `.env` y `config/app.php` mapeando correctamente `AREA_KEY_SECRET` para prevenir excepciones al instanciar el motor de cifrado XSalsa20 en el servidor.
+  - **Backend y Transaccionalidad:** Se encapsuló la lógica de persistencia en `ConsultaService.php`, instanciando la consulta manualmente y vinculándola a su expediente antes del `fill()` para garantizar que el encriptador reconozca el área asignada en el instante exacto del casteo. La política de acceso (`ConsultaPolicy.php`) garantiza que el especialista pertenezca al área del expediente, impidiendo operar expedientes cerrados.
+  - **Frontend Vue (UI/UX):** Se diseñó `Consultas/Create.vue` como formulario a página completa respetando el tema *Nord*, con UX reactivo (limpieza instantánea de bordes rojos mediante `@input="form.clearErrors()"`). El botón principal implementa prevención de doble-envío.
+  - **Adaptación Frontend (Ziggy Route Bug):** Se eliminó la dependencia de `route()` en `Pacientes/Show.vue` y `Consultas/Create.vue` construyendo rutas mediante literales (ej. `/pacientes/MT20045`), esquivando un Crash Fatal de Vue ya que el plugin Ziggy no estaba expuesto en este proyecto. Se validó que las redirecciones en el controlador utilicen `carnet` en lugar de `codigo` UUID para evitar errores HTTP 404 de retorno.
+  - **Pruebas Integrales (Pest):** Se añadió el feature test `ConsultaTest.php` comprobando el correcto flujo de autorización cruzada (cross-area) y garantizando que los datos sensibles se guarden encriptados en la base de datos de pruebas bajo transacciones seguras.
+
+### [2026-09-06] Resolución de Vulnerabilidad AreaScope e Implementación de US-09: Historial Multidisciplinario
+- **Agente:** Antigravity (IA)
+- **Contexto:** Antes de proceder con la US-09, se corrigió una vulnerabilidad crítica donde el uso de `withoutGlobalScopes()` en `PacienteController@show` exponía expedientes cruzados al frontend sin filtrado por área. Tras resolver esto, se completó la US-09 para que los especialistas y coordinadores puedan revisar el historial completo de atenciones del paciente estrictamente limitado a sus áreas autorizadas.
+
+### [2026-09-06] Implementación de US-10: Cierre de Expediente Clínico y Mejoras Visuales en el Dashboard
+- **Contexto:** Se desarrolló la historia de usuario US-10 para permitir que el Coordinador de Área cierre formalmente un expediente. 
+- **Desarrollo:** 
+  - Se agregó migración para los campos de cierre (`motivo_cierre`, `fecha_cierre`, `cerrado_por_profesional_id`).
+  - Se configuró la `ExpedientePolicy` asegurando que solo el rol `area_coordinator` del área correcta pueda cerrar expedientes, y esto se comunicó reactivamente al frontend (Inertia Props).
+  - Se añadió la columna `ultima_accion` en la tabla de pacientes para un seguimiento de auditoría eficiente (mostrada en la vista de Sysadmin).
+  - Se corrigió el cálculo de expedientes "activos" en el Dashboard, excluyendo los cerrados.
+  - Se incluyeron diferenciadores visuales elegantes (Nord Theme) en el Dashboard (opacity, escala de grises, badges "Cerrado" / "Activo", nombre tachado) para pacientes con expediente finalizado.
+  - Las pruebas de integración en `CerrarExpedienteTest` aseguran que todos los casos de autorización y estado funcionan a la perfección.
+- **Cambios realizados:**
+  - **Hardening de Seguridad (Pre-requisito):** 
+    - Se creó la rama efímera `fix/area-scope-leak-pacientes-show` y se corrigió el leak en `PacienteController@show` removiendo `withoutGlobalScope(AreaScope::class)` y delegando el filtrado orgánico al frontend (mediante una propiedad segura `hasAnyExpediente`).
+    - Se actualizó la sección 4 de `ESTANDARES.md` estableciendo reglas estrictas para `withoutGlobalScopes()`, permitiéndolo exclusivamente en operaciones `exists()`/`count()` debidamente justificadas mediante comentarios en el código. Esto se aplicó en `DerivacionStoreRequest.php` para validar la duplicidad.
+  - **Modelo y Relación Segura (Backend):** Se agregó la relación `historialMultidisciplinario()` en `App\Models\Paciente.php` a través de un `hasManyThrough`. Para evitar la omisión de Global Scopes inherente de Laravel en relaciones through, se inyectó un `->whereHas('expediente')` asegurando que el `AreaScope` actúe como un candado irrompible a nivel SQL para todas las consultas.
+  - **Controlador y Recurso API:** Se construyeron `HistorialController` y `HistorialResource`. El recurso empaqueta selectivamente los campos desencriptados al vuelo (ej: `motivo_consulta`, `diagnostico`) y transfiere el nombre real del profesional vía la relación `profesional.especialista`.
+  - **UI (Línea de Tiempo Nord):** Se diseñó `resources/js/Pages/Historial/Show.vue`, presentando las atenciones de manera cronológica mediante una elegante línea de tiempo (Timeline) renderizada con colores dinámicos por área, y un "Empty State" corporativo si los filtros deniegan acceso a expedientes ajenos. 
+  - **Pruebas de Aislamiento:** En `tests/Feature/Historial/ConsultarHistorialTest.php` se verificaron los límites de acceso: (1) `sysadmin` recibe 403; (2) el especialista de psicología ve estrictamente psicología; y (3) el coordinador de área ve la consolidación multidisciplinaria (psicología y odontología). Todos los entornos pasaron en verde.
+  - **Seeders:** Se actualizó `ExpedienteSeeder` inyectando automáticamente una `Consulta` dummy por cada expediente para disponer de datos visuales inmediatos para la HU-09.
+
+### [2026-09-06] Implementación de US-11: Asignar la próxima cita durante la atención
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se desarrolló la historia de usuario US-11 permitiendo a los especialistas clínicos programar citas de seguimiento directamente desde el expediente del paciente, facilitando la continuidad del tratamiento y manteniendo un control estricto sobre los horarios (previniendo colisiones de citas para un mismo profesional).
+- **Cambios realizados:**
+  - **Estructura DB y Modelo:** Se creó la migración para la tabla `citas` (`fecha_hora`, `motivo` cifrado, llaves foráneas a `expediente`, `profesional` y `area`). El modelo `Cita` implementa `EncryptedFieldCast` para resguardar el motivo clínico.
+  - **Restricción de Concurrencia:** En base de datos, se impuso una restricción de unicidad (`unique(['profesional_id', 'fecha_hora'])`) para evitar el doble agendamiento, reforzada a nivel de aplicación en el `CitaStoreRequest` con la regla de validación pertinente.
+  - **Políticas de Acceso (RBAC):** Se implementó la lógica en `CitaPolicy` para autorizar exclusivamente a perfiles autorizados (`specialist`, `psychosocial_referent`, `area_coordinator`) que pertenezcan al área del expediente, denegando rotundamente las asignaciones en expedientes que ya fueron clasificados como "cerrados".
+  - **Frontend UI/UX:** Se desarrolló el componente modal estandarizado `AgendarCitaModal.vue`, acoplándolo armónicamente al flujo post-consulta a través del estado efímero del servidor (`$page.props.flash.prompt_cita_expediente_id`) en conjunto con un trigger manual (botón flotante) en la vista `Show.vue`.
+  - **Resolución de Bugs en el Frontend:** Durante el despliegue del modal, se solventó una anomalía de Renderizado Crítico (Pantalla Blanca de la Muerte) originada por el desacoplamiento global del inyector de propiedades inerciales `$page` en Vue 3 `<script setup>`. Se subsanó mediante la importación explícita del composable `usePage()`. Además, se rediseñó el contenedor emergente ajustando sus propiedades (opacity, blur y z-index) para sincronizarlo estrictamente a las convenciones estéticas *Nord* de los demás modales institucionales.
+  - **Testing Continuo:** La batería de pruebas `CitaTest.php` certifica la indemnidad funcional del sistema verificando exhaustivamente las secuencias exitosas, denegación ante colisión de horarios, vulneraciones transversales (cross-area) y resiliencia lógica.
+
+### [2026-09-06] Implementación de US-12: Registrar asistencia o ausencia a una cita
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se implementó la historia de usuario US-12, permitiendo a los Especialistas Clínicos marcar si un paciente asistió o faltó a una cita programada.
+- **Cambios realizados:**
+  - **Base de Datos y Modelo:** Se agregaron los campos `registrado_por_profesional_id` (UUID) y `fecha_registro_asistencia` (timestamp) a la tabla `citas` mediante una nueva migración. Se definió el método `registrarAsistencia()` en el modelo `Cita`.
+  - **Lógica de Negocio y Validación:** Se creó el form request `CitaAsistenciaRequest`, implementando validación estricta de la fecha: solo se puede marcar asistencia en citas pasadas o del día en curso (usando `startOfDay()` para permitir marcados tempranos en el mismo día, acorde a las directrices de negocio). Se valida estrictamente que la cita esté en estado `programada`.
+  - **Políticas de Acceso (RBAC):** Se actualizó `CitaPolicy` (`update`) restringiendo la acción exclusivamente al profesional dueño de la cita en cuestión.
+  - **Controlador y Respuestas:** El método en `CitaController` despacha la acción y emite notificaciones Toast unificadas hacia el cliente.
+  - **Auditoría (Compliance):** Los eventos de estado activan los disparadores de trazabilidad (`laravel-auditing`), resguardando criptográficamente quién ejecutó el marcado.
+  - **Test Suite y Datos Semilla:** Se crearon 5 tests en `AsistenciaTest.php` comprobando cada una de las bifurcaciones lógicas. Se agregaron datos enriquecidos en `ExpedienteSeeder` con 3 tipos de citas (pasada, presente, futura) para pruebas visuales en el paciente FL22067.
+
+### [2026-09-06] Resolución de Deuda de Infraestructura/Compliance (ISO 27001 A.14)
+- **Agente:** Antigravity (IA)
+- **Contexto:** Durante las verificaciones de la suite completa antes de abordar la US-14, se determinó que la base de datos de test (`testing`) no aplicaba correctamente el principio de Mínimo Privilegio sobre el rol de la aplicación (`pandora_app`) en versiones de PostgreSQL 15+. Existía un bypass manual (`GRANT ALL PRIVILEGES`) temporal que corrompía la prueba de aislamiento estructural `InfrastructureIsolationTest`.
+- **Cambios realizados:**
+  - **Inyección Transparente de Políticas:** Se resolvió de raíz en la base del sistema. En la migración inicial `2024_01_01_000000_setup_postgres_extensions_and_enums.php`, se insertaron comandos `ALTER DEFAULT PRIVILEGES` que aseguran que `pandora_app` reciba permisos restrictivos de DML (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) de forma automática en toda la base de datos, en todas las ejecuciones.
+  - **Test de Regresión Permanente:** Se programó la suite `PrivilegesTest.php`, la cual verifica exhaustivamente que operaciones destructivas DDL y `TRUNCATE` sean denegadas con códigos `42501` (Permission Denied), blindando el contenedor. (Este fix está encapsulado en la rama `fix/compliance-db-least-privilege` para trazabilidad pura en CI/CD).
+
+### [2026-09-06] Implementación de US-13: Reprogramar o cancelar una cita
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se desarrolló la historia de usuario US-13 que permite a los Especialistas Clínicos y Coordinadores gestionar la agenda reprogramando o cancelando citas previamente agendadas, garantizando la trazabilidad histórica de los cambios (audit logging) y previniendo colisiones de horario.
+- **Cambios realizados:**
+  - **Corrección de Bug US-11 (Índice Único Parcial):** Se identificó y resolvió un defecto retroactivo heredado de US-11 donde el `unique(['profesional_id', 'fecha_hora'])` bloqueaba incondicionalmente un horario, incluso si la cita había sido cancelada. Se reemplazó con un índice único parcial condicionado a `estado = 'programada' AND deleted_at IS NULL`.
+  - **Ampliación del Modelo y Migraciones:** Se introdujeron los campos `motivo_cancelacion` (cifrado con `EncryptedFieldCast`) y `cita_origen_id` (para vincular la nueva cita con la reprogramada) en la tabla `citas`.
+  - **Controlador y Políticas:** Se implementaron los métodos `CitaController@reprogramar` y `cancelar` encapsulados en transacciones atómicas (`DB::transaction`). La `CitaPolicy` se actualizó autorizando las modificaciones al titular de la cita o al coordinador del área.
+  - **Frontend UI/UX:** Se construyó el componente `GestionarCitaModal.vue`, que se integra directamente al listado de "Citas Pendientes" en la vista `Pacientes/Show.vue`. Presenta un formulario reactivo con campos dinámicos (datepicker y textarea para motivos).
+  - **Test Suite y Datos Semilla:** Se incluyó el script `ReprogramarCancelarCitaTest.php` abarcando todas las excepciones de negocio (Conflictos de fecha, rechazos por permisos, clonación exitosa). Se nutrieron los datos en el `ExpedienteSeeder` con escenarios listos para pruebas de reprogramación en el paciente `RM24033`.
+
+### [2026-09-07] Implementación de US-14: Consultar citas asignadas e historial de asistencia
+- **Agente:** Antigravity (IA)
+- **Contexto:** Se desarrolló la historia de usuario final del Sprint 2 (US-14), habilitando la consulta integral de citas para Especialistas y Coordinadores mediante vistas tabulares y paginadas. Además, a solicitud expresa de mejora arquitectónica, se incorporó un módulo visual de alto rendimiento ("Calendario de Citas") dedicado exclusivamente para el rol de `sysadmin`, superando las especificaciones iniciales.
+- **Cambios realizados:**
+  - **Eficiencia Estructural y Paginación (CitaController):** Se construyó el listado tabular para roles clínicos. Los Especialistas ven su propia agenda, y los Coordinadores obtienen una visión global de su área, empleando el método `paginate(15)` en conjunto con Local Scopes (`scopeProgramadas`, `scopePorFecha`, `scopePorEstado`) y respetando el cerrojo estructural de `AreaScope`.
+  - **Recursos API Ultra-seguros:** El `CitaResource` se optimizó rigurosamente para exponer el código de paciente (anonimizado), el estado, fecha y el nombre público del profesional a cargo de la atención, protegiendo todo dato adicional ajeno a la necesidad de agenda.
+  - **Arquitectura de Alto Rendimiento (Calendario Admin):** 
+    - Se creó un controlador dedicado `Admin\CitaController` para eludir conflictos lógicos y de carga. 
+    - Se incluyó una migración explícita para generar un **Índice B-Tree** sobre la columna `fecha_hora` en la tabla de citas.
+    - Las consultas en base de datos emplean fronteras calculadas mediante `whereBetween()` utilizando objetos `CarbonImmutable` convertidos nativamente a zona horaria UTC, evitando bloqueos de Table Scans completos.
+  - **Seguridad Anticolapso (FormRequests):** Se desarrollaron `IndexCitasRequest` y `CitasPorDiaRequest`, introduciendo un límite estricto que rechaza solicitudes de rangos temporales mayores a 45 días (prevención de Denegación de Servicio), y sobrescribiendo `prepareForValidation` para sanear parámetros nativos de URL.
+  - **Frontend Resiliente y Preciso (Vue + Day.js + Inertia):** 
+    - Se reemplazó el objeto nativo Date de JavaScript por **Day.js** (y sus plugins `utc` y `timezone` configurados en `America/El_Salvador`), logrando un emparejamiento milimétrico con el timestamp `toIso8601String` devuelto por los API Resources, erradicando fallos de desfase a medianoche.
+    - La cuadrícula visual aplica _Padding_ (relleno) calculando orgánicamente fechas extremas (lunes inicial a domingo final).
+    - **Control de Condiciones de Carrera:** El módulo de detalles invocado al dar clic (Axios) implementa la clase nativa `AbortController`, anulando inmediatamente peticiones desfasadas o concurrentes provocadas por el doble clic rápido de los usuarios, previniendo inconsistencias de UI.
+  - **Test Suite y Privilegios DML:** Se consolidaron las pruebas con `ConsultarCitasTest.php`, simulando interacciones entre todos los roles e intentando forzar visibilidad cross-area, aprobando con cobertura 100%. Adicionalmente se fusionaron los parches definitivos de Postgres asegurando Privilegios Mínimos para el demonio de la App.

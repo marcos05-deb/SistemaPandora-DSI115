@@ -3,7 +3,7 @@
 use App\Models\Especialista;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
+
 
 /**
  * Tests de HU-02: Cierre de Sesión.

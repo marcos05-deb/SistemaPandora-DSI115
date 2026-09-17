@@ -9,7 +9,8 @@ import VueDatePicker from '@vuepic/vue-datepicker';
 defineOptions({ layout: ClinicalLayout });
 
 const props = defineProps({
-    facultades: { type: Array, default: () => [] }
+    facultades: { type: Array, default: () => [] },
+    etiquetasValidas: { type: Array, default: () => [] }
 });
 
 const currentStep = ref(1);
@@ -23,6 +24,7 @@ const form = useForm({
     fecha_nacimiento: '', profesion_ocupacion: '',
     fecha_primera_consulta: '', referido_por: '', llevado_por: '',
     motivo_consulta: '',
+    etiquetas_motivo: [],
     padre_nombre: '', padre_telefono: '',
     madre_nombre: '', madre_telefono: '',
     responsable_parentesco: '', responsable_nombre: '',
@@ -31,7 +33,6 @@ const form = useForm({
 
 const stepTitles = ['Datos del Estudiante', 'Familiares y Responsable', 'Revisar y Guardar'];
 
-// Qué campos del step 1 faltan
 const step1Missing = computed(() => {
     const missing = [];
     if (!form.carnet)            missing.push({ field: 'carnet',           label: 'Carnet' });
@@ -44,6 +45,16 @@ const step1Missing = computed(() => {
     if (!form.motivo_consulta)   missing.push({ field: 'motivo_consulta',  label: 'Motivo de Consulta' });
     return missing;
 });
+
+const toggleTag = (tag) => {
+    const index = form.etiquetas_motivo.indexOf(tag);
+    if (index > -1) {
+        form.etiquetas_motivo.splice(index, 1);
+    } else {
+        form.etiquetas_motivo.push(tag);
+    }
+    form.clearErrors('etiquetas_motivo');
+};
 
 // Qué campos del step 2 faltan
 const step2Missing = computed(() => {
@@ -265,6 +276,22 @@ function submit() {
                         </div>
 
                         <div class="md:col-span-2">
+                            <label class="block text-[13px] font-medium text-[var(--nord3)] mb-2">Etiquetas de Motivo (Opcional) <FieldTooltip text="Etiquetas rápidas para clasificar el motivo de la consulta" /></label>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" 
+                                        v-for="tag in etiquetasValidas" :key="tag"
+                                        @click="toggleTag(tag)"
+                                        :class="form.etiquetas_motivo.includes(tag) ? 'bg-[var(--nord10)] text-white border-[var(--nord10)]' : 'bg-white text-[var(--nord3)] border-[var(--nord4)] hover:border-[var(--nord9)]'"
+                                        class="px-3 py-1.5 rounded-full text-[12px] font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--nord8)]/30">
+                                    {{ tag }}
+                                </button>
+                            </div>
+                            <p v-if="form.errors.etiquetas_motivo" class="form-field-error text-[11px] text-[var(--aurora-red)] mt-1 flex items-center gap-1">
+                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{{ form.errors.etiquetas_motivo }}
+                            </p>
+                        </div>
+
+                        <div class="md:col-span-2">
                             <label for="field-motivo_consulta" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Motivo de Consulta <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Describe brevemente el problema, síntoma o situación por la cual el estudiante busca ayuda" /></label>
                             <textarea id="field-motivo_consulta" v-model="form.motivo_consulta" rows="3" placeholder="Describa el motivo por el cual el estudiante acude a consulta" class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all resize-none" :class="form.errors.motivo_consulta ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required />
                             <p v-if="form.errors.motivo_consulta" class="form-field-error text-[11px] text-[var(--aurora-red)] mt-1 flex items-center gap-1"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{{ form.errors.motivo_consulta }}</p>
@@ -446,7 +473,15 @@ function submit() {
                                 <div><span class="text-[var(--nord3)]">Estado Civil:</span> <strong class="text-[var(--nord0)]">{{ form.estado_civil || '—' }}</strong></div>
                                 <div><span class="text-[var(--nord3)]">Fecha Nac.:</span> <strong class="text-[var(--nord0)]">{{ form.fecha_nacimiento || '—' }}</strong></div>
                                 <div v-if="form.profesion_ocupacion"><span class="text-[var(--nord3)]">Ocupación:</span> <strong class="text-[var(--nord0)]">{{ form.profesion_ocupacion }}</strong></div>
-                                <div class="col-span-2" v-if="form.motivo_consulta"><span class="text-[var(--nord3)]">Motivo:</span> <strong class="text-[var(--nord0)] block mt-1">{{ form.motivo_consulta }}</strong></div>
+                                <div class="col-span-2" v-if="form.motivo_consulta">
+                                    <span class="text-[var(--nord3)]">Motivo:</span> 
+                                    <strong class="text-[var(--nord0)] block mt-1">{{ form.motivo_consulta }}</strong>
+                                    <div v-if="form.etiquetas_motivo.length > 0" class="flex flex-wrap gap-1 mt-2">
+                                        <span v-for="tag in form.etiquetas_motivo" :key="tag" class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--nord10)] text-white">
+                                            {{ tag }}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

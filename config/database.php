@@ -18,6 +18,8 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
+            // Alinea timestamptz con la zona clínica (HU-12: comparar hora local real).
+            'timezone' => env('DB_TIMEZONE', 'America/El_Salvador'),
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
         'pgsql_admin' => [
@@ -32,6 +34,7 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
+            'timezone' => env('DB_TIMEZONE', 'America/El_Salvador'),
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
     ],
