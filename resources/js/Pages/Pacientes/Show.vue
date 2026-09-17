@@ -9,6 +9,7 @@ import AgendarCitaModal from '@/Components/Expediente/AgendarCitaModal.vue';
 import GestionarCitaModal from '@/Components/Expediente/GestionarCitaModal.vue';
 import { computed, ref, onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { formatLocalDate, formatLocalDateTime, formatLocalTime } from '@/utils/dates';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -49,17 +50,8 @@ const seleccionarExpediente = (expedienteId) => {
     });
 };
 
-const formatDate = (dateString) => {
-    if (!dateString) return 'No registrada';
-    return new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-};
-
-const formatDateTime = (dateString) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleString('es-ES', {
-        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-};
+const formatDate = (dateString) => formatLocalDate(dateString);
+const formatDateTime = (dateString) => formatLocalDateTime(dateString);
 
 const getAreaName = (areaId) => {
     const area = props.areasDisponibles.find(a => a.id === areaId);
@@ -411,7 +403,7 @@ onMounted(() => {
                             <div class="flex flex-col gap-2">
                                 <div class="flex items-center gap-2">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-[var(--surface-header)] text-[var(--nord3)] border border-[var(--nord4)]">
-                                        {{ formatDate(cita.fecha_hora) }} a las {{ new Date(cita.fecha_hora).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'}) }}
+                                        {{ formatDate(cita.fecha_hora) }} a las {{ formatLocalTime(cita.fecha_hora) }}
                                     </span>
                                 </div>
                                 <p class="text-[13px] text-[var(--nord0)] font-medium mt-1">{{ cita.motivo }}</p>

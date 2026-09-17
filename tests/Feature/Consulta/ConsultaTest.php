@@ -116,6 +116,32 @@ it('can registrar una consulta exitosamente y cifrar datos', function () {
         ->and(base64_decode($rawPlan, true))->not->toBeFalse();
 });
 
+it('asigna fecha_primera_consulta solo en la primera consulta clínica', function () {
+    $this->paciente->update(['fecha_primera_consulta' => null]);
+    $fechaClinica = '2026-09-10';
+
+    $this->actingAs($this->userSpecialist)
+        ->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('consultas.store', $this->expediente->id), payloadConsulta([
+            'fecha_consulta' => $fechaClinica,
+            'motivo_consulta' => 'Primera consulta clínica',
+        ]))
+        ->assertRedirect();
+
+    expect($this->paciente->fresh()->fecha_primera_consulta)->toBe($fechaClinica);
+
+    $this->actingAs($this->userSpecialist)
+        ->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('consultas.store', $this->expediente->id), payloadConsulta([
+            'fecha_consulta' => '2026-09-15',
+            'motivo_consulta' => 'Segunda consulta',
+            'evaluacion_inicial' => null,
+        ]))
+        ->assertRedirect();
+
+    expect($this->paciente->fresh()->fecha_primera_consulta)->toBe($fechaClinica);
+});
+
 it('rejects cross-area consultation registration', function () {
     $this->actingAs($this->otraAreaSpecialist);
 

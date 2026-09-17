@@ -4,6 +4,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import EmptyState from '@/Components/UI/EmptyState.vue';
 import DerivacionModal from '@/Components/Expediente/DerivacionModal.vue';
+import { formatLocalDate } from '@/utils/dates';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -46,8 +47,7 @@ const getAreaName = (areaId) => {
 };
 
 function formatDate(dateStr) {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
+    return formatLocalDate(dateStr, { year: 'numeric', month: 'short', day: 'numeric' }, 'es-ES', '-');
 }
 
 const isExpedienteClosed = (paciente) => {

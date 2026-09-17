@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { Head, useForm, Link, usePage, router } from '@inertiajs/vue3';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import GestionarCitaModal from '@/Components/Expediente/GestionarCitaModal.vue';
+import { formatLocalDate, formatLocalTime, todayLocalYmd } from '@/utils/dates';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -78,7 +79,7 @@ function clearFilters() {
 function setVista(vista) {
     form.vista = vista;
     if (!form.referencia) {
-        form.referencia = props.navegacion.hoy || new Date().toISOString().slice(0, 10);
+        form.referencia = props.navegacion.hoy || todayLocalYmd();
     }
     applyFilters();
 }
@@ -104,15 +105,11 @@ function cambiarPaginaAgenda(pageNum) {
 }
 
 function formatDay(dateStr) {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    return formatLocalDate(dateStr, { day: '2-digit', month: 'short', year: 'numeric' }, 'es-ES', '-');
 }
 
 function formatTime(dateStr) {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase();
+    return formatLocalTime(dateStr);
 }
 
 function pacienteLabel(cita) {
