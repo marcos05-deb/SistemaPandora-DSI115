@@ -187,6 +187,49 @@ class CerrarExpedienteTest extends TestCase
         $this->assertArrayHasKey('motivo_consulta', $audit->old_values ?? []);
     }
 
+    public function test_cierre_cancela_citas_futuras_programadas(): void
+    {
+        $profesional = $this->especialista->profesional;
+        $citaFutura = \App\Models\Cita::factory()->create([
+            'expediente_id' => $this->expediente->id,
+            'profesional_id' => $profesional->id,
+            'area_id' => $this->expediente->area_id,
+            'fecha_hora' => now()->addDays(3),
+            'estado' => 'programada',
+            'motivo' => 'Cita futura de prueba',
+        ]);
+        $citaPasada = \App\Models\Cita::factory()->create([
+            'expediente_id' => $this->expediente->id,
+            'profesional_id' => $profesional->id,
+            'area_id' => $this->expediente->area_id,
+            'fecha_hora' => now()->subDay(),
+            'estado' => 'programada',
+            'motivo' => 'Cita pasada pendiente de asistencia',
+        ]);
+
+        $this->post('/login', [
+            'email' => $this->especialista->email,
+            'password' => $this->testPassword,
+        ]);
+
+        $response = $this->post(route('expedientes.cerrar', $this->expediente->id), [
+            'resultado_final' => $this->resultadoFinal,
+            'motivo_cierre' => $this->motivoCierre,
+            'confirmacion_irreversible' => true,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertEquals('cerrado', $this->expediente->fresh()->estado);
+
+        $citaFutura->refresh();
+        $this->assertEquals('cancelada', $citaFutura->estado);
+        $this->assertStringContainsString('cierre', (string) $citaFutura->motivo_cancelacion);
+        $this->assertEquals($profesional->id, $citaFutura->cancelado_por_profesional_id);
+
+        $citaPasada->refresh();
+        $this->assertEquals('programada', $citaPasada->estado);
+    }
+
     public function test_rechaza_actualizacion_de_expediente_cerrado(): void
     {
         $this->expediente->update([
