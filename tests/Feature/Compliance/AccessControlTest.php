@@ -7,6 +7,7 @@ use App\Models\Especialista;
 use App\Models\Role;
 use App\Models\Paciente;
 use App\Models\Expediente;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Group;
 
 #[Group('hipaa')]
@@ -46,14 +47,17 @@ class AccessControlTest extends ComplianceTestCase
         $responsePositiva = $this->get('/pacientes/' . $pacienteOdon->carnet);
         $responsePositiva->assertStatus(200);
 
-        // Cobertura Negativa (Fuga Cero y 403)
+        // Cobertura Negativa (403 + sin PHI clínico en props)
         $responseNegativa = $this->get('/pacientes/' . $pacientePsico->carnet);
         $responseNegativa->assertStatus(403);
-        
-        if ($responseNegativa->status() === 403) {
-            $responseNegativa->assertDontSee($pacientePsico->carnet);
-            $responseNegativa->assertDontSee($pacientePsico->codigo);
-        }
+        $responseNegativa->assertInertia(fn (Assert $page) => $page
+            ->component('Error')
+            ->where('status', 403)
+            ->missing('paciente')
+            ->missing('expedienteActivo')
+        );
+        // El UUID clínico no debe aparecer en el cuerpo; el carnet puede figurar solo en la URL del request.
+        $responseNegativa->assertDontSee((string) $pacientePsico->codigo);
     }
 
     public function test_idor_en_nivel_psicosocial()
@@ -72,7 +76,12 @@ class AccessControlTest extends ComplianceTestCase
         
         $responseGet = $this->get('/pacientes/' . $pacienteB->carnet);
         $responseGet->assertStatus(403);
-        $responseGet->assertDontSee($pacienteB->carnet);
+        $responseGet->assertInertia(fn (Assert $page) => $page
+            ->component('Error')
+            ->where('status', 403)
+            ->missing('paciente')
+        );
+        $responseGet->assertDontSee((string) $pacienteB->codigo);
 
         // Vectores de mutación IDOR
         $responsePut = $this->put('/pacientes/' . $pacienteB->carnet, ['nombre_completo' => 'Hack']);

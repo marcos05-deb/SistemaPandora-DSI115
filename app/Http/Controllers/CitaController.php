@@ -190,9 +190,28 @@ class CitaController extends Controller
                 ->values();
         }
 
+        $alertaPreventiva = ['activa' => false, 'total' => 0, 'umbral' => 2, 'ventana_dias' => 30, 'mensaje' => null];
+        if (! empty($validated['paciente']) && ($user->hasRole('specialist') || $user->hasRole('area_coordinator'))) {
+            $term = (string) $validated['paciente'];
+            $pacienteFiltro = \App\Models\Paciente::query()
+                ->where(function ($q) use ($term) {
+                    $q->where('carnet', $term);
+                    if (\Illuminate\Support\Str::isUuid($term)) {
+                        $q->orWhere('codigo', $term);
+                    }
+                })
+                ->first();
+
+            if ($pacienteFiltro) {
+                $alertaPreventiva = app(\App\Services\AlertasPreventivasService::class)
+                    ->alertaPaciente($user, $pacienteFiltro->codigo);
+            }
+        }
+
         return Inertia::render('Citas/Index', [
             'citas' => CitaResource::collection($citas),
             'citasPorDia' => $agrupadas,
+            'alertaPreventiva' => $alertaPreventiva,
             'filtros' => [
                 'especialista_id' => $validated['especialista_id'] ?? null,
                 'estado' => $validated['estado'] ?? 'todos',
@@ -289,9 +308,27 @@ class CitaController extends Controller
             ? 'Asistió'
             : 'Ausente';
 
+        $mensaje = "Asistencia registrada: {$etiqueta}.";
+        $variant = 'success';
+
+        if ($request->validated('estado') === \App\Enums\EstadoCita::Ausente->value) {
+            $pacienteId = $cita->expediente?->paciente_id
+                ?? $cita->loadMissing('expediente')->expediente?->paciente_id;
+
+            if ($pacienteId) {
+                $alerta = app(\App\Services\AlertasPreventivasService::class)
+                    ->alertaPaciente($request->user(), $pacienteId);
+
+                if ($alerta['activa']) {
+                    $mensaje = $alerta['mensaje'];
+                    $variant = 'warning';
+                }
+            }
+        }
+
         return redirect()->back()
-            ->with('message', "Asistencia registrada: {$etiqueta}.")
-            ->with('variant', 'success');
+            ->with('message', $mensaje)
+            ->with('variant', $variant);
     }
 
     public function reprogramar(CitaReprogramarRequest $request, Expediente $expediente, Cita $cita): RedirectResponse

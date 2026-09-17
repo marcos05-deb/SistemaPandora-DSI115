@@ -568,13 +568,17 @@ onMounted(() => {
         <div v-if="historialCambios.length > 0" class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
             <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--surface-header)]">
                 <h2 class="text-[14px] font-medium text-[var(--nord0)]">Historial de cambios del expediente</h2>
-                <p class="text-[12px] text-[var(--nord3)] mt-0.5">Versiones anteriores conservadas por auditoría (PAN-17).</p>
+                <p class="text-[12px] text-[var(--nord3)] mt-0.5">
+                    Cada actualización conserva la versión anterior. Los valores clínicos aparecen como
+                    <span class="font-mono">[CIFRADO]</span> por seguridad; autor, fecha y motivo sí son visibles.
+                </p>
             </div>
             <div class="divide-y divide-[var(--nord4)]">
                 <div v-for="cambio in historialCambios" :key="cambio.id" class="px-6 py-4">
                     <div class="flex flex-wrap items-center gap-2 text-[12px] text-[var(--nord3)] mb-2">
                         <span class="font-semibold text-[var(--nord0)] uppercase">{{ cambio.event }}</span>
                         <span>{{ cambio.created_at }}</span>
+                        <span v-if="cambio.autor" class="text-[var(--nord0)]">· Autor: {{ cambio.autor }}</span>
                         <span v-if="cambio.motivo_cambio" class="text-[var(--nord0)]">· Motivo: {{ cambio.motivo_cambio }}</span>
                     </div>
                     <div v-if="cambio.campos?.length" class="space-y-2">
@@ -588,6 +592,7 @@ onMounted(() => {
                             </p>
                         </div>
                     </div>
+                    <p v-else class="text-[12px] text-[var(--nord3)]">Sin detalle de campos (evento de sistema).</p>
                 </div>
             </div>
         </div>
