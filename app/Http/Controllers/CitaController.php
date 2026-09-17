@@ -37,6 +37,16 @@ class CitaController extends Controller
             abort(403);
         }
 
+        $request->merge([
+            'especialista_id' => $request->filled('especialista_id') ? $request->input('especialista_id') : null,
+            'resultado_asistencia' => $request->filled('resultado_asistencia') ? $request->input('resultado_asistencia') : null,
+            'fecha' => $request->filled('fecha') ? $request->input('fecha') : null,
+            'fecha_desde' => $request->filled('fecha_desde') ? $request->input('fecha_desde') : null,
+            'fecha_hasta' => $request->filled('fecha_hasta') ? $request->input('fecha_hasta') : null,
+            'paciente' => $request->filled('paciente') ? trim((string) $request->input('paciente')) : null,
+            'referencia' => $request->filled('referencia') ? $request->input('referencia') : null,
+        ]);
+
         $validated = $request->validate([
             'especialista_id' => 'nullable|uuid|exists:profesionales,id',
             'estado' => 'nullable|string|in:programada,asistida,ausente,reprogramada,cancelada,todos',
@@ -92,10 +102,15 @@ class CitaController extends Controller
         }
 
         if (! empty($validated['paciente'])) {
-            $pacienteTerm = $validated['paciente'];
+            $pacienteTerm = (string) $validated['paciente'];
             $query->whereHas('expediente.paciente', function ($q) use ($pacienteTerm) {
-                $q->where('codigo', $pacienteTerm)
-                    ->orWhere('carnet', $pacienteTerm);
+                $q->where(function ($inner) use ($pacienteTerm) {
+                    $inner->where('carnet', 'ilike', $pacienteTerm);
+                    // codigo es UUID: comparar solo si el término es un UUID válido (evita 500 en PG).
+                    if (\Illuminate\Support\Str::isUuid($pacienteTerm)) {
+                        $inner->orWhere('codigo', $pacienteTerm);
+                    }
+                });
             });
         }
 

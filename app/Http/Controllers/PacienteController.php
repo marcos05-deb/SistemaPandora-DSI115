@@ -256,6 +256,37 @@ class PacienteController extends Controller
             $consultaActivaId = \App\Models\Consulta::activaParaExpediente($expedienteActivo)?->id;
         }
 
+        $historialCambios = [];
+        $expedienteParaHistorial = $expedienteActivo ?? $expedienteCerrado;
+        if ($expedienteParaHistorial) {
+            $historialCambios = $expedienteParaHistorial->audits()
+                ->latest('id')
+                ->limit(8)
+                ->get()
+                ->map(function ($audit) {
+                    $old = is_array($audit->old_values) ? $audit->old_values : [];
+                    $new = is_array($audit->new_values) ? $audit->new_values : [];
+
+                    return [
+                        'id' => $audit->id,
+                        'event' => $audit->event,
+                        'created_at' => $audit->created_at?->timezone(config('app.timezone'))->format('Y-m-d H:i'),
+                        'motivo_cambio' => $new['motivo_cambio'] ?? null,
+                        'campos' => collect(array_unique(array_merge(array_keys($old), array_keys($new))))
+                            ->reject(fn ($k) => $k === 'motivo_cambio')
+                            ->map(fn ($campo) => [
+                                'campo' => $campo,
+                                'anterior' => $old[$campo] ?? null,
+                                'nuevo' => $new[$campo] ?? null,
+                            ])
+                            ->values()
+                            ->all(),
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
         return Inertia::render('Pacientes/Show', [
             'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve(),
             'hasAnyExpediente' => $hasAnyExpediente,
@@ -271,6 +302,7 @@ class PacienteController extends Controller
             'consultaActivaId' => $consultaActivaId,
             'expedienteCerrado' => $expedienteCerrado,
             'alertaPreventiva' => $alertaPreventiva,
+            'historialCambios' => $historialCambios,
             'can' => [
                 'closeExpediente' => $canCloseExpediente,
                 'updateExpediente' => $canUpdateExpediente,

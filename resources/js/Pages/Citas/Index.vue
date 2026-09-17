@@ -55,6 +55,15 @@ const applyFilters = debounce(() => {
     });
 }, 300);
 
+function buscarAhora() {
+    applyFilters.flush?.();
+    form.get('/citas', {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true
+    });
+}
+
 watch(() => form.estado, applyFilters);
 watch(() => form.fecha, applyFilters);
 watch(() => form.fecha_desde, applyFilters);
@@ -200,8 +209,13 @@ const statusLabels = {
         <div class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] p-4 mb-6">
             <div class="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
                 <div class="flex flex-wrap gap-2 items-center">
-                    <input v-model="form.paciente" type="text" placeholder="Buscar por carnet o código..."
-                        class="w-full md:w-56 border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" />
+                    <input
+                        v-model="form.paciente"
+                        type="text"
+                        placeholder="Buscar por carnet o código..."
+                        class="w-full md:w-56 border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2"
+                        @keydown.enter.prevent="buscarAhora"
+                    />
                     <select v-model="form.estado" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 pr-8 appearance-none cursor-pointer">
                         <option value="todos">Estado: todos</option>
                         <option value="programada">Programada</option>

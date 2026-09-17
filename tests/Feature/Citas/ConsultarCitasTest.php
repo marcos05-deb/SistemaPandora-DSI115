@@ -193,6 +193,29 @@ it('expone carnet y nombre legible del paciente autorizado en la agenda', functi
     expect($citas[0]['paciente']['carnet'])->not->toBe($citas[0]['paciente']['codigo']);
 });
 
+it('permite filtrar citas por carnet sin error 500', function () {
+    actingAs($this->especialistaPsicologia1);
+    session(['_sym_key' => str_repeat('a', 32)]);
+
+    $carnet = $this->expedientePsico->paciente->carnet;
+
+    $response = get(route('citas.index', ['paciente' => $carnet]));
+    $response->assertOk();
+
+    $citas = $response->viewData('page')['props']['citas']['data'];
+    expect(collect($citas)->every(fn ($c) => ($c['paciente']['carnet'] ?? null) === $carnet))->toBeTrue();
+});
+
+it('devuelve lista vacia al buscar un carnet inexistente', function () {
+    actingAs($this->especialistaPsicologia1);
+
+    $response = get(route('citas.index', ['paciente' => 'ZZ99999']));
+    $response->assertOk();
+
+    $citas = $response->viewData('page')['props']['citas']['data'];
+    expect($citas)->toBeArray()->toBeEmpty();
+});
+
 it('muestra más de 30 citas en la vista semanal sin truncar por paginación', function () {
     actingAs($this->coordinadorPsicologia);
 
