@@ -1,7 +1,8 @@
 <script setup>
-import { computed, watch } from 'vue';
-import { Head, useForm, Link, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
+import { Head, useForm, Link, usePage, router } from '@inertiajs/vue3';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
+import GestionarCitaModal from '@/Components/Expediente/GestionarCitaModal.vue';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -27,6 +28,10 @@ const page = usePage();
 const isCoordinator = computed(() => {
     return page.props.auth?.user?.roles?.includes('area_coordinator');
 });
+
+const isGestionarCitaModalOpen = ref(false);
+const gestionarCitaMode = ref('reprogramar');
+const selectedCita = ref(null);
 
 const form = useForm({
     estado: props.filtros.estado || 'todos',
@@ -93,8 +98,8 @@ function verRangoEnLista() {
     applyFilters();
 }
 
-function cambiarPaginaAgenda(page) {
-    form.page = page;
+function cambiarPaginaAgenda(pageNum) {
+    form.page = pageNum;
     applyFilters();
 }
 
@@ -108,6 +113,44 @@ function formatTime(dateStr) {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
     return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase();
+}
+
+function pacienteLabel(cita) {
+    const nombre = cita.paciente?.nombre_completo;
+    const carnet = cita.paciente?.carnet;
+    if (nombre && carnet) return `${nombre} (${carnet})`;
+    if (carnet) return carnet;
+    if (nombre) return nombre;
+    return 'Sin identificación';
+}
+
+function pacienteInicial(cita) {
+    const base = cita.paciente?.nombre_completo || cita.paciente?.carnet || '?';
+    return String(base).charAt(0).toUpperCase();
+}
+
+function puedeRegistrarAsistencia(cita) {
+    if (!cita?.can?.registrar_asistencia || cita.estado !== 'programada') return false;
+    if (!cita?.fecha_hora) return false;
+    return new Date(cita.fecha_hora).getTime() <= Date.now();
+}
+
+function puedeGestionarFutura(cita) {
+    if (cita.estado !== 'programada' || !cita?.fecha_hora) return false;
+    return new Date(cita.fecha_hora).getTime() > Date.now();
+}
+
+function marcarAsistencia(cita, estado) {
+    if (!puedeRegistrarAsistencia(cita) || !cita.expediente_id) return;
+    router.patch(`/expedientes/${cita.expediente_id}/citas/${cita.id}/asistencia`, {
+        estado,
+    }, { preserveScroll: true });
+}
+
+function openGestionarCitaModal(cita, mode) {
+    selectedCita.value = cita;
+    gestionarCitaMode.value = mode;
+    isGestionarCitaModalOpen.value = true;
 }
 
 const statusColors = {
@@ -151,89 +194,49 @@ const statusLabels = {
                         class="underline ml-1"
                         @click="verRangoEnLista"
                     >
-                        Ver resultados restantes en lista
+                        Ver en lista
                     </button>
                 </p>
-                <div
-                    v-if="agendaMeta?.truncada && (citas?.meta?.last_page || citas?.last_page || 1) > 1"
-                    class="mt-2 flex items-center gap-2 text-[12px]"
-                >
-                    <button
-                        type="button"
-                        class="px-2 py-1 rounded border border-[var(--nord4)] disabled:opacity-40"
-                        :disabled="(citas?.meta?.current_page || citas?.current_page || 1) <= 1"
-                        @click="cambiarPaginaAgenda((citas?.meta?.current_page || citas?.current_page || 1) - 1)"
-                    >
-                        Anterior
-                    </button>
-                    <span class="text-[var(--nord3)]">
-                        Página {{ citas?.meta?.current_page || citas?.current_page || 1 }} de {{ citas?.meta?.last_page || citas?.last_page || 1 }}
-                    </span>
-                    <button
-                        type="button"
-                        class="px-2 py-1 rounded border border-[var(--nord4)] disabled:opacity-40"
-                        :disabled="(citas?.meta?.current_page || citas?.current_page || 1) >= (citas?.meta?.last_page || citas?.last_page || 1)"
-                        @click="cambiarPaginaAgenda((citas?.meta?.current_page || citas?.current_page || 1) + 1)"
-                    >
-                        Siguiente
-                    </button>
-                </div>
             </div>
-            
-            <!-- Filters -->
-            <div class="flex flex-wrap items-center gap-3 bg-white p-2.5 rounded-2xl shadow-sm border border-[var(--nord4)] w-full md:w-auto">
-                <div v-if="form.vista !== 'lista'" class="flex items-center gap-1">
-                    <button type="button" @click="navegar(navegacion.anterior)" class="px-2 py-1.5 text-[12px] rounded-lg border border-[var(--nord4)] text-[var(--nord3)]">←</button>
-                    <button type="button" @click="navegar(navegacion.hoy)" class="px-2 py-1.5 text-[12px] rounded-lg border border-[var(--nord4)] text-[var(--nord3)]">Hoy</button>
-                    <button type="button" @click="navegar(navegacion.siguiente)" class="px-2 py-1.5 text-[12px] rounded-lg border border-[var(--nord4)] text-[var(--nord3)]">→</button>
-                    <input type="date" v-model="form.referencia" @change="applyFilters" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" />
-                </div>
-                <div v-else class="relative">
-                    <input 
-                        type="date" 
-                        v-model="form.fecha"
-                        class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 focus:ring-2 focus:ring-[var(--frost4)] transition-shadow"
-                        title="Fecha exacta"
-                    >
-                </div>
-                <div v-if="form.vista === 'lista'" class="flex items-center gap-2">
-                    <input type="date" v-model="form.fecha_desde" title="Desde" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" />
-                    <span class="text-[11px] text-[var(--nord3)]">a</span>
-                    <input type="date" v-model="form.fecha_hasta" title="Hasta" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" />
-                </div>
-                <input type="text" v-model="form.paciente" placeholder="Código/carnet" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 w-36" />
-                <div class="relative">
-                    <select v-model="form.estado" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 pr-8 focus:ring-2 focus:ring-[var(--frost4)] transition-shadow appearance-none cursor-pointer">
-                        <option value="todos">Todos los estados</option>
-                        <option v-for="(label, key) in statusLabels" :key="key" :value="key">{{ label }}</option>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] p-4 mb-6">
+            <div class="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+                <div class="flex flex-wrap gap-2 items-center">
+                    <input v-model="form.paciente" type="text" placeholder="Buscar por carnet o código..."
+                        class="w-full md:w-56 border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" />
+                    <select v-model="form.estado" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 pr-8 appearance-none cursor-pointer">
+                        <option value="todos">Estado: todos</option>
+                        <option value="programada">Programada</option>
+                        <option value="asistida">Asistida</option>
+                        <option value="ausente">Ausente</option>
+                        <option value="reprogramada">Reprogramada</option>
+                        <option value="cancelada">Cancelada</option>
                     </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--nord3)]">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                    </div>
-                </div>
-                <div class="relative">
                     <select v-model="form.resultado_asistencia" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 pr-8 appearance-none cursor-pointer">
                         <option value="">Asistencia: todas</option>
                         <option value="asistida">Asistió</option>
                         <option value="ausente">Ausente</option>
                     </select>
-                </div>
-                <div v-if="isCoordinator" class="relative">
-                    <select v-model="form.especialista_id" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 pr-8 focus:ring-2 focus:ring-[var(--frost4)] transition-shadow appearance-none cursor-pointer">
-                        <option value="">Todos los especialistas</option>
+                    <select v-if="isCoordinator" v-model="form.especialista_id" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2 pr-8 appearance-none cursor-pointer">
+                        <option value="">Especialista: todos</option>
                         <option v-for="esp in especialistas" :key="esp.id" :value="esp.id">{{ esp.nombre }}</option>
                     </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--nord3)]">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                    </div>
+                    <template v-if="form.vista === 'lista'">
+                        <input v-model="form.fecha" type="date" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" />
+                        <input v-model="form.fecha_desde" type="date" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" title="Desde" />
+                        <input v-model="form.fecha_hasta" type="date" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" title="Hasta" />
+                    </template>
+                    <button v-if="form.fecha || form.fecha_desde || form.fecha_hasta || (form.estado && form.estado !== 'todos') || form.especialista_id || form.paciente || form.resultado_asistencia" @click="clearFilters"
+                        type="button" class="text-[12px] font-semibold text-[var(--aurora-red)] px-2 py-1">
+                        Limpiar
+                    </button>
                 </div>
-                
-                <button v-if="form.fecha || form.fecha_desde || form.fecha_hasta || (form.estado && form.estado !== 'todos') || form.especialista_id || form.paciente || form.resultado_asistencia" @click="clearFilters" 
-                    class="p-2 text-[var(--nord3)] hover:text-[var(--aurora-red)] hover:bg-[var(--aurora-red)]/10 rounded-xl transition-colors" title="Limpiar filtros">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                <div v-if="form.vista === 'diaria' || form.vista === 'semanal'" class="flex items-center gap-2">
+                    <button type="button" @click="navegar(navegacion.anterior)" class="px-3 py-1.5 text-[12px] rounded-lg border border-[var(--nord4)]">Anterior</button>
+                    <button type="button" @click="navegar(navegacion.hoy)" class="px-3 py-1.5 text-[12px] rounded-lg border border-[var(--nord4)] font-semibold">Hoy</button>
+                    <button type="button" @click="navegar(navegacion.siguiente)" class="px-3 py-1.5 text-[12px] rounded-lg border border-[var(--nord4)]">Siguiente</button>
+                </div>
             </div>
         </div>
 
@@ -251,14 +254,44 @@ const statusLabels = {
                     <div v-for="cita in dia.citas" :key="cita.id" class="px-5 py-3 flex flex-wrap items-center justify-between gap-3 hover:bg-[var(--nord6)]/30">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="text-[13px] font-semibold text-[var(--nord0)] tabular-nums">{{ formatTime(cita.fecha_hora) }}</span>
-                            <span class="text-[13px] font-mono text-[var(--nord0)]">{{ cita.paciente?.codigo || 'Anonimizado' }}</span>
-                            <span class="text-[12px] text-[var(--nord3)] truncate">{{ cita.profesional?.nombre || '-' }}</span>
+                            <div class="min-w-0">
+                                <p class="text-[13px] font-medium text-[var(--nord0)] truncate">{{ pacienteLabel(cita) }}</p>
+                                <p class="text-[11px] text-[var(--nord3)] truncate">{{ cita.profesional?.nombre || '-' }}</p>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border"
                                 :class="statusColors[cita.estado] || statusColors.programada">
                                 {{ statusLabels[cita.estado] || cita.estado }}
                             </span>
+                            <template v-if="cita.estado === 'programada'">
+                                <button
+                                    v-if="cita.can?.registrar_asistencia"
+                                    type="button"
+                                    :disabled="!puedeRegistrarAsistencia(cita)"
+                                    @click="marcarAsistencia(cita, 'asistida')"
+                                    class="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-[var(--aurora-green)] text-white disabled:opacity-40"
+                                >Asistió</button>
+                                <button
+                                    v-if="cita.can?.registrar_asistencia"
+                                    type="button"
+                                    :disabled="!puedeRegistrarAsistencia(cita)"
+                                    @click="marcarAsistencia(cita, 'ausente')"
+                                    class="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-[var(--aurora-red)] text-white disabled:opacity-40"
+                                >Ausente</button>
+                                <button
+                                    v-if="cita.can?.reprogramar && puedeGestionarFutura(cita)"
+                                    type="button"
+                                    @click="openGestionarCitaModal(cita, 'reprogramar')"
+                                    class="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[var(--nord8)] text-[var(--nord8)]"
+                                >Reprogramar</button>
+                                <button
+                                    v-if="cita.can?.cancelar && puedeGestionarFutura(cita)"
+                                    type="button"
+                                    @click="openGestionarCitaModal(cita, 'cancelar')"
+                                    class="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-[var(--aurora-red)] text-[var(--aurora-red)]"
+                                >Cancelar</button>
+                            </template>
                             <Link v-if="cita.paciente?.carnet" :href="`/pacientes/${cita.paciente?.carnet}`"
                                 class="inline-flex items-center px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white"
                                 style="background: linear-gradient(135deg, var(--frost4), var(--nord9));">
@@ -268,6 +301,18 @@ const statusLabels = {
                     </div>
                 </div>
             </div>
+            <div v-if="citas.links && citas.links.length > 3" class="flex justify-end gap-1">
+                <template v-for="(link, k) in citas.links" :key="k">
+                    <button
+                        v-if="link.url"
+                        type="button"
+                        class="px-3 py-1 text-[13px] border rounded-lg"
+                        :class="link.active ? 'bg-[var(--frost4)] text-white border-[var(--frost4)]' : 'bg-white border-[var(--nord4)]'"
+                        @click="cambiarPaginaAgenda(Number(new URL(link.url, window.location.origin).searchParams.get('page') || 1))"
+                        v-html="link.label"
+                    />
+                </template>
+            </div>
         </div>
 
         <div v-else class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden">
@@ -276,7 +321,7 @@ const statusLabels = {
                     <thead>
                         <tr class="border-b border-[var(--nord4)] text-[11px] uppercase tracking-wider text-[var(--nord3)] bg-[var(--nord6)]/50">
                             <th class="px-6 py-4 font-semibold">Fecha y Hora</th>
-                            <th class="px-6 py-4 font-semibold">Expediente</th>
+                            <th class="px-6 py-4 font-semibold">Paciente</th>
                             <th class="px-6 py-4 font-semibold">Especialista</th>
                             <th class="px-6 py-4 font-semibold">Estado</th>
                             <th class="px-6 py-4 font-semibold text-right">Acciones</th>
@@ -301,12 +346,19 @@ const statusLabels = {
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-6 h-6 rounded-full bg-[var(--nord4)] flex items-center justify-center text-[10px] font-bold text-[var(--nord0)]">
-                                        {{ (cita.paciente?.codigo || '?').charAt(0) }}
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <div class="w-6 h-6 shrink-0 rounded-full bg-[var(--nord4)] flex items-center justify-center text-[10px] font-bold text-[var(--nord0)]">
+                                        {{ pacienteInicial(cita) }}
                                     </div>
-                                    <span class="text-[14px] font-mono font-medium text-[var(--nord0)]">{{ cita.paciente?.codigo || 'Anonimizado' }}</span>
+                                    <div class="min-w-0">
+                                        <p class="text-[14px] font-medium text-[var(--nord0)] truncate">
+                                            {{ cita.paciente?.nombre_completo || 'Paciente' }}
+                                        </p>
+                                        <p class="text-[12px] font-mono text-[var(--nord3)]">
+                                            {{ cita.paciente?.carnet || 'Sin carnet' }}
+                                        </p>
+                                    </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -318,17 +370,43 @@ const statusLabels = {
                                     {{ statusLabels[cita.estado] || cita.estado }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-[13px] font-medium">
-                                <Link v-if="cita.paciente?.carnet" :href="`/pacientes/${cita.paciente?.carnet}`" 
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white font-semibold transition-transform hover:-translate-y-0.5 shadow-sm"
-                                    style="background: linear-gradient(135deg, var(--frost4), var(--nord9));">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                    Ver Exp.
-                                </Link>
-                                <span v-else class="text-[var(--nord3)] italic text-[12px]">Sin acceso</span>
+                            <td class="px-6 py-4 text-right text-[13px] font-medium">
+                                <div class="inline-flex flex-wrap justify-end gap-1.5 max-w-xs ml-auto">
+                                    <template v-if="cita.estado === 'programada'">
+                                        <button
+                                            v-if="cita.can?.registrar_asistencia"
+                                            type="button"
+                                            :disabled="!puedeRegistrarAsistencia(cita)"
+                                            @click="marcarAsistencia(cita, 'asistida')"
+                                            class="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-green)] text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >Asistió</button>
+                                        <button
+                                            v-if="cita.can?.registrar_asistencia"
+                                            type="button"
+                                            :disabled="!puedeRegistrarAsistencia(cita)"
+                                            @click="marcarAsistencia(cita, 'ausente')"
+                                            class="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--aurora-red)] text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >Ausente</button>
+                                        <button
+                                            v-if="cita.can?.reprogramar && puedeGestionarFutura(cita)"
+                                            type="button"
+                                            @click="openGestionarCitaModal(cita, 'reprogramar')"
+                                            class="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg border border-[var(--nord8)] text-[var(--nord8)]"
+                                        >Reprogramar</button>
+                                        <button
+                                            v-if="cita.can?.cancelar && puedeGestionarFutura(cita)"
+                                            type="button"
+                                            @click="openGestionarCitaModal(cita, 'cancelar')"
+                                            class="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg border border-[var(--aurora-red)] text-[var(--aurora-red)]"
+                                        >Cancelar</button>
+                                    </template>
+                                    <Link v-if="cita.paciente?.carnet" :href="`/pacientes/${cita.paciente?.carnet}`"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white font-semibold shadow-sm"
+                                        style="background: linear-gradient(135deg, var(--frost4), var(--nord9));">
+                                        Ver Exp.
+                                    </Link>
+                                    <span v-else class="text-[var(--nord3)] italic text-[12px]">Sin acceso</span>
+                                </div>
                             </td>
                         </tr>
                         <tr v-if="citas.data.length === 0">
@@ -343,20 +421,19 @@ const statusLabels = {
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Paginación -->
+
             <div v-if="citas.links && citas.links.length > 3" class="px-6 py-4 border-t border-[var(--nord4)] flex items-center justify-between bg-[var(--nord6)]/30">
                 <span class="text-[12px] text-[var(--nord3)]">
                     Mostrando del <span class="font-medium text-[var(--nord0)]">{{ citas.meta?.from || 0 }}</span> al <span class="font-medium text-[var(--nord0)]">{{ citas.meta?.to || 0 }}</span> de <span class="font-medium text-[var(--nord0)]">{{ citas.meta?.total || 0 }}</span> resultados
                 </span>
                 <div class="flex flex-wrap gap-1">
                     <template v-for="(link, k) in citas.links" :key="k">
-                        <div v-if="link.url === null" 
+                        <div v-if="link.url === null"
                             class="px-3 py-1 text-[13px] text-[var(--nord4)] border border-[var(--nord4)] rounded-lg cursor-not-allowed" v-html="link.label" />
                         <Link v-else
                             class="px-3 py-1 text-[13px] border rounded-lg transition-colors hover:-translate-y-0.5"
-                            :class="link.active 
-                                ? 'bg-[var(--frost4)] border-[var(--frost4)] text-white font-bold shadow-sm' 
+                            :class="link.active
+                                ? 'bg-[var(--frost4)] border-[var(--frost4)] text-white font-bold shadow-sm'
                                 : 'bg-white border-[var(--nord4)] text-[var(--nord0)] hover:border-[var(--frost4)] hover:text-[var(--frost4)]'"
                             :href="link.url"
                             v-html="link.label"
@@ -365,5 +442,14 @@ const statusLabels = {
                 </div>
             </div>
         </div>
+
+        <GestionarCitaModal
+            v-if="selectedCita"
+            :show="isGestionarCitaModalOpen"
+            :mode="gestionarCitaMode"
+            :cita="selectedCita"
+            :expediente="{ id: selectedCita.expediente_id }"
+            @close="isGestionarCitaModalOpen = false"
+        />
     </div>
 </template>

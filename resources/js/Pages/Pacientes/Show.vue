@@ -81,9 +81,9 @@ const openGestionarCitaModal = (cita, mode) => {
 };
 
 const marcarAsistencia = (citaId, estado) => {
-    if (!props.can?.updateCita || !expedienteActivo.value) return;
+    if (!expedienteActivo.value) return;
     const cita = props.citasPendientes.find(c => c.id === citaId);
-    if (cita && !puedeRegistrarAsistencia(cita)) return;
+    if (!cita?.can?.registrar_asistencia || !puedeRegistrarAsistencia(cita)) return;
 
     router.patch(`/expedientes/${expedienteActivo.value.id}/citas/${citaId}/asistencia`, {
         estado: estado
@@ -425,11 +425,11 @@ onMounted(() => {
                                     </p>
                                 </div>
                                 
-                                <div v-if="can?.updateCita" class="flex flex-col gap-2 mt-3 pt-3 border-t border-[var(--nord4)]/60">
-                                    <p v-if="!puedeRegistrarAsistencia(cita)" class="text-[11px] text-[var(--nord3)]">
+                                <div v-if="cita.can?.registrar_asistencia || cita.can?.reprogramar || cita.can?.cancelar" class="flex flex-col gap-2 mt-3 pt-3 border-t border-[var(--nord4)]/60">
+                                    <p v-if="cita.can?.registrar_asistencia && !puedeRegistrarAsistencia(cita)" class="text-[11px] text-[var(--nord3)]">
                                         La asistencia se habilita a partir de la hora programada de la cita.
                                     </p>
-                                    <div class="flex items-center gap-2">
+                                    <div v-if="cita.can?.registrar_asistencia" class="flex items-center gap-2">
                                         <button
                                             type="button"
                                             @click="marcarAsistencia(cita.id, 'asistida')"
@@ -447,11 +447,21 @@ onMounted(() => {
                                             Ausente
                                         </button>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <button @click="openGestionarCitaModal(cita, 'reprogramar')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--nord8)] border border-[var(--nord8)] transition-colors">
+                                    <div v-if="cita.can?.reprogramar || cita.can?.cancelar" class="flex items-center gap-2">
+                                        <button
+                                            v-if="cita.can?.reprogramar"
+                                            type="button"
+                                            @click="openGestionarCitaModal(cita, 'reprogramar')"
+                                            class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--nord8)] border border-[var(--nord8)] transition-colors"
+                                        >
                                             Reprogramar
                                         </button>
-                                        <button @click="openGestionarCitaModal(cita, 'cancelar')" class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--aurora-red)] border border-[var(--aurora-red)] transition-colors">
+                                        <button
+                                            v-if="cita.can?.cancelar"
+                                            type="button"
+                                            @click="openGestionarCitaModal(cita, 'cancelar')"
+                                            class="flex-1 py-1.5 text-[11px] font-semibold rounded-lg bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--aurora-red)] border border-[var(--aurora-red)] transition-colors"
+                                        >
                                             Cancelar
                                         </button>
                                     </div>

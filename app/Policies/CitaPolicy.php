@@ -17,15 +17,25 @@ class CitaPolicy
             && $user->areas()->where('areas.id', $expediente->area_id)->exists();
     }
 
+    /**
+     * Registrar asistencia/ausencia: especialista asignado o coordinador del área.
+     */
     public function update(Especialista $user, Cita $cita): bool
     {
-        return $user->hasRole('specialist')
-            && $user->perfilesProfesionales()
-                ->whereKey($cita->profesional_id)
-                ->exists();
+        return $this->gestionaCitaEnSuAmbito($user, $cita);
     }
 
     public function reprogramar(Especialista $user, Cita $cita): bool
+    {
+        return $this->gestionaCitaEnSuAmbito($user, $cita);
+    }
+
+    public function cancelar(Especialista $user, Cita $cita): bool
+    {
+        return $this->gestionaCitaEnSuAmbito($user, $cita);
+    }
+
+    private function gestionaCitaEnSuAmbito(Especialista $user, Cita $cita): bool
     {
         $esEspecialistaAsignado = $user->hasRole('specialist')
             && $user->perfilesProfesionales()
@@ -36,10 +46,5 @@ class CitaPolicy
             && $user->areas()->where('areas.id', $cita->area_id)->exists();
 
         return $esEspecialistaAsignado || $esCoordinadorAutorizado;
-    }
-
-    public function cancelar(Especialista $user, Cita $cita): bool
-    {
-        return $this->reprogramar($user, $cita);
     }
 }

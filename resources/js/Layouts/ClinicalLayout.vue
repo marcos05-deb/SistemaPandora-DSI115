@@ -174,12 +174,12 @@ const sidebarLinks = computed(() => allLinks.filter(link => !link.roles || link.
                                 <p class="text-[14px] font-semibold text-[var(--nord0)]">{{ page.props.auth?.user?.name }}</p>
                                 <p class="text-[12px] text-[var(--nord3)]">{{ page.props.auth?.user?.email }}</p>
                                 <span class="inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--frost4)]/10 text-[var(--frost4)]">
-                                    {{ page.props.auth?.user?.roles?.[0]?.nombre || 'Usuario' }}
+                                    {{ page.props.auth?.user?.role_label || 'Usuario' }}
                                 </span>
                             </div>
                             <div class="px-4 py-3 border-b border-[var(--nord4)] bg-[var(--nord6)]/50">
                                 <div class="text-[10px] text-[var(--nord3)] uppercase tracking-[0.1em] font-semibold">Área</div>
-                                <div class="text-[12px] text-[var(--nord0)] mt-0.5">{{ page.props.auth?.user?.area || 'General' }}</div>
+                                <div class="text-[12px] text-[var(--nord0)] mt-0.5">{{ page.props.auth?.user?.area || 'Sin área asignada' }}</div>
                             </div>
                             <div class="p-1.5">
                                 <Link href="/logout" method="post" as="button" class="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-[var(--aurora-red)] hover:bg-[var(--aurora-red)]/5 rounded-lg transition-colors font-medium">
@@ -223,7 +223,7 @@ const sidebarLinks = computed(() => allLinks.filter(link => !link.roles || link.
                 <div class="p-3 border-t border-[var(--chrome-border)]">
                     <div class="px-3 py-2 rounded-lg bg-[var(--chrome-sidebar-hover)]/30">
                         <div class="text-[10px] text-[var(--chrome-text-muted)] uppercase tracking-[0.1em] font-semibold">Área</div>
-                        <div class="text-[12px] text-[var(--chrome-text)] mt-0.5 truncate">{{ page.props.auth?.user?.area || 'General' }}</div>
+                        <div class="text-[12px] text-[var(--chrome-text)] mt-0.5 truncate">{{ page.props.auth?.user?.area || 'Sin área asignada' }}</div>
                     </div>
                 </div>
             </aside>

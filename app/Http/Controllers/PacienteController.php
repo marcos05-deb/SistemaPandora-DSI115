@@ -230,6 +230,7 @@ class PacienteController extends Controller
             : $paciente->expedientes->where('estado', 'cerrado')->sortByDesc('fecha_cierre')->first();
         $canCloseExpediente = $expedienteActivo ? $user->can('close', $expedienteActivo) : false;
         $canUpdateExpediente = $expedienteActivo ? $user->can('update', $expedienteActivo) : false;
+        // Visible para todas las áreas autorizadas; el modal exige consulta activa para enviar.
         $canAssignCita = $expedienteActivo ? $user->can('create', [\App\Models\Cita::class, $expedienteActivo]) : false;
         $canCreateConsulta = $expedienteActivo ? $user->can('create', [\App\Models\Consulta::class, $expedienteActivo]) : false;
 
@@ -237,13 +238,22 @@ class PacienteController extends Controller
         $canUpdateCita = false;
         $consultaActivaId = null;
         if ($expedienteActivo) {
-            $citasPendientes = $expedienteActivo->citas->where('estado', 'programada')->values()->all();
-            if (count($citasPendientes) > 0) {
-                $canUpdateCita = $user->can('update', $citasPendientes[0]);
-            }
+            $expedienteActivo->setRelation('paciente', $paciente);
+
+            $pendientes = $expedienteActivo->citas
+                ->where('estado', 'programada')
+                ->values();
+
+            $pendientes->each(function ($cita) use ($expedienteActivo) {
+                $cita->setRelation('expediente', $expedienteActivo);
+            });
+
+            $citasPendientes = \App\Http\Resources\CitaResource::collection($pendientes)->resolve();
+            $canUpdateCita = $pendientes->contains(
+                fn ($cita) => $user->can('update', $cita) || $user->can('reprogramar', $cita)
+            );
 
             $consultaActivaId = \App\Models\Consulta::activaParaExpediente($expedienteActivo)?->id;
-            $canAssignCita = $canAssignCita && $consultaActivaId !== null;
         }
 
         return Inertia::render('Pacientes/Show', [

@@ -177,17 +177,20 @@ it('falla con validacion si el filtro de especialista no es un UUID valido', fun
     $response->assertSessionHasErrors('especialista_id');
 });
 
-it('no expone datos de privacidad prohibidos en el resource (PHi)', function () {
+it('expone carnet y nombre legible del paciente autorizado en la agenda', function () {
     actingAs($this->coordinadorPsicologia);
 
     $response = get(route('citas.index'));
     $response->assertOk();
     $citas = $response->viewData('page')['props']['citas']['data'];
-    
-    // Verificamos que contenga paciente y código, PERO NO el nombre_completo encriptado.
+
     expect($citas[0])->toHaveKey('paciente');
     expect($citas[0]['paciente'])->toHaveKey('codigo');
-    expect($citas[0]['paciente'])->not->toHaveKey('nombre_completo');
+    expect($citas[0]['paciente'])->toHaveKey('carnet');
+    expect($citas[0]['paciente'])->toHaveKey('nombre_completo');
+    expect($citas[0]['paciente']['carnet'])->not->toBeEmpty();
+    // No debe filtrarse el UUID como única etiqueta visible; carnet es el identificador clínico.
+    expect($citas[0]['paciente']['carnet'])->not->toBe($citas[0]['paciente']['codigo']);
 });
 
 it('muestra más de 30 citas en la vista semanal sin truncar por paginación', function () {
