@@ -72,7 +72,7 @@ function marcarRevisado(id) {
                 <div>
                     <p class="text-[13px] font-semibold text-[var(--nord0)]">Corrección sensible: se modificó el carnet de un paciente.</p>
                     <p class="text-[12px] text-[var(--nord3)] mt-0.5">
-                        Paciente {{ aviso.paciente_id.substring(0, 8) }}… · {{ aviso.carnet_protegido }} · {{ formatDate(aviso.created_at) }} · {{ aviso.responsable }}
+                        Paciente {{ aviso.paciente_id.substring(0, 8) }}… · {{ formatDate(aviso.created_at) }} · {{ aviso.responsable }}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -95,7 +95,7 @@ function marcarRevisado(id) {
 
         <div class="bg-white p-4 rounded-[10px] shadow-sm border border-[var(--nord4)] space-y-3">
             <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <input v-model="pacienteFiltro" type="text" placeholder="Paciente / UUID / carnet" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" @change="applyFilters" />
+                <input v-model="pacienteFiltro" type="text" placeholder="Buscar por UUID de paciente" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" @change="applyFilters" />
                 <select v-model="tipoEvento" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" @change="applyFilters">
                     <option value="">Tipo de evento</option>
                     <option value="actualizacion_datos_paciente">Actualización de datos</option>
@@ -121,7 +121,7 @@ function marcarRevisado(id) {
                     <thead>
                         <tr class="bg-[var(--surface-header)] text-[var(--nord3)] font-medium text-[11px] uppercase tracking-[0.05em]">
                             <th class="py-[12px] px-[16px]">Paciente</th>
-                            <th class="py-[12px] px-[16px]">Carnet</th>
+                            <th class="py-[12px] px-[16px]">Identificador</th>
                             <th class="py-[12px] px-[16px]">Tipo</th>
                             <th class="py-[12px] px-[16px]">Campos</th>
                             <th class="py-[12px] px-[16px]">Responsable</th>

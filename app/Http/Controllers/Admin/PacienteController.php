@@ -40,11 +40,8 @@ class PacienteController extends Controller
             ->when($request->nivel_evento, fn ($q, $nivel) => $q->where('nivel_evento', $nivel))
             ->when($request->usuario_id, fn ($q, $uid) => $q->where('usuario_id', $uid))
             ->when($request->paciente, function ($q, $paciente) {
-                $q->where(function ($inner) use ($paciente) {
-                    $inner->whereRaw('paciente_id::text ILIKE ?', ["%{$paciente}%"])
-                        ->orWhere('carnet_anterior', 'ILIKE', "%{$paciente}%")
-                        ->orWhere('carnet_nuevo', 'ILIKE', "%{$paciente}%");
-                });
+                // Solo UUID: el admin no filtra ni ve carnets en claro.
+                $q->whereRaw('paciente_id::text ILIKE ?', ["%{$paciente}%"]);
             })
             ->when($request->fecha_desde, fn ($q, $desde) => $q->whereDate('created_at', '>=', $desde))
             ->when($request->fecha_hasta, fn ($q, $hasta) => $q->whereDate('created_at', '<=', $hasta))
@@ -88,8 +85,9 @@ class PacienteController extends Controller
             'correccion' => [
                 'id' => $correccion->id,
                 'paciente_id' => $correccion->paciente_id,
-                'carnet_anterior' => $correccion->carnet_anterior,
-                'carnet_nuevo' => $correccion->carnet_nuevo,
+                // Privacidad: el admin solo identifica al paciente por UUID.
+                'carnet_anterior' => '[CIFRADO]',
+                'carnet_nuevo' => '[CIFRADO]',
                 'tipo_evento' => $correccion->tipo_evento,
                 'nivel_evento' => $correccion->nivel_evento,
                 'aviso_sensible' => $correccion->aviso_sensible,
@@ -98,8 +96,8 @@ class PacienteController extends Controller
                 'revisado_por' => $correccion->revisadoPor?->name,
                 'motivo' => $correccion->motivo,
                 'campos_modificados' => $correccion->campos_modificados,
-                'valores_anteriores' => $correccion->valores_anteriores,
-                'valores_nuevos' => $correccion->valores_nuevos,
+                'valores_anteriores' => $this->protegerValores($correccion->valores_anteriores ?? []),
+                'valores_nuevos' => $this->protegerValores($correccion->valores_nuevos ?? []),
                 'rol_usuario' => $correccion->rol_usuario,
                 'responsable' => $correccion->usuario?->name,
                 'ip_address' => $correccion->ip_address,
@@ -137,7 +135,7 @@ class PacienteController extends Controller
         return [
             'id' => $c->id,
             'paciente_id' => $c->paciente_id,
-            'carnet_protegido' => $this->carnetProtegido($c->carnet_nuevo),
+            'carnet_protegido' => '[CIFRADO]',
             'tipo_evento' => $c->tipo_evento,
             'nivel_evento' => $c->nivel_evento,
             'campos_modificados' => $c->campos_modificados,
@@ -149,12 +147,38 @@ class PacienteController extends Controller
         ];
     }
 
-    private function carnetProtegido(string $carnet): string
+    /**
+     * Enmascara carnets y cualquier valor personal que haya quedado en claro.
+     *
+     * @param  array<string, mixed>  $valores
+     * @return array<string, mixed>
+     */
+    private function protegerValores(array $valores): array
     {
-        if (strlen($carnet) < 4) {
-            return '***';
+        $protegidos = [];
+
+        foreach ($valores as $campo => $valor) {
+            $base = str_contains((string) $campo, '.')
+                ? explode('.', (string) $campo)[1]
+                : (string) $campo;
+
+            if ($base === 'carnet' || $this->pareceCarnet($valor)) {
+                $protegidos[$campo] = ($valor === null || $valor === '') ? null : '[CIFRADO]';
+                continue;
+            }
+
+            $protegidos[$campo] = $valor;
         }
 
-        return substr($carnet, 0, 2).'***'.substr($carnet, -2);
+        return $protegidos;
+    }
+
+    private function pareceCarnet(mixed $valor): bool
+    {
+        if (! is_string($valor)) {
+            return false;
+        }
+
+        return (bool) preg_match('/^[A-Za-z]{2}\d{5}$/', $valor);
     }
 }

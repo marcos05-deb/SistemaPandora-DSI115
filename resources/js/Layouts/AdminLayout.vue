@@ -122,14 +122,14 @@ const sidebarLinks = [
             </div>
         </div>
 
-        <!-- Sidebar Backdrop (mobile) -->
-        <div v-if="sidebarOpen" class="fixed inset-0 bg-[var(--nord0)]/60 backdrop-blur-sm z-30 lg:hidden" @click="sidebarOpen = false" />
+        <!-- Sidebar Backdrop (mobile): debajo del panel, encima del contenido -->
+        <div v-if="sidebarOpen" class="fixed inset-0 bg-[var(--nord0)]/60 backdrop-blur-sm z-40 lg:hidden" @click="sidebarOpen = false" />
 
         <!-- Topbar -->
-        <header class="bg-[var(--chrome-topbar)] shadow-md z-20 h-[56px] flex-shrink-0">
+        <header class="bg-[var(--chrome-topbar)] shadow-md z-50 h-[56px] flex-shrink-0 relative">
             <div class="flex items-center justify-between px-4 lg:px-6 h-full">
                 <div class="flex items-center gap-3">
-                    <button class="lg:hidden p-1.5 -ml-1 text-[var(--chrome-text-muted)] hover:text-white rounded-lg hover:bg-[var(--chrome-topbar-hover)] transition-colors" @click="sidebarOpen = !sidebarOpen">
+                    <button type="button" class="lg:hidden p-1.5 -ml-1 text-[var(--chrome-text-muted)] hover:text-white rounded-lg hover:bg-[var(--chrome-topbar-hover)] transition-colors" :aria-expanded="sidebarOpen" aria-controls="admin-sidebar" @click="sidebarOpen = !sidebarOpen">
                         <svg v-if="!sidebarOpen" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                         <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
@@ -184,8 +184,14 @@ const sidebarLinks = [
         </header>
 
         <div class="flex flex-1 overflow-hidden">
-            <aside class="w-[240px] bg-[var(--chrome-sidebar)] shadow-xl shrink-0 z-10 flex flex-col border-r border-[var(--chrome-border)] transition-transform duration-300 lg:translate-x-0" :class="sidebarOpen ? 'fixed inset-y-0 left-0 translate-x-0' : 'fixed inset-y-0 left-0 -translate-x-full lg:relative lg:translate-x-0'">
-                <nav class="flex-1 py-4 px-3 space-y-1 mt-4 lg:mt-0">
+            <aside
+                id="admin-sidebar"
+                class="w-[240px] bg-[var(--chrome-sidebar)] shadow-xl shrink-0 z-10 flex flex-col border-r border-[var(--chrome-border)] transition-transform duration-300 lg:translate-x-0 lg:z-10"
+                :class="sidebarOpen
+                    ? 'fixed inset-y-0 left-0 translate-x-0 z-[45] pt-[56px] lg:pt-0'
+                    : 'fixed inset-y-0 left-0 -translate-x-full lg:relative lg:translate-x-0'"
+            >
+                <nav class="flex-1 py-4 px-3 space-y-1 mt-0 lg:mt-0 overflow-y-auto">
                     <div class="px-3 pb-2 mb-2 text-[10px] font-semibold text-[var(--chrome-text-muted)] uppercase tracking-[0.12em] border-b border-[var(--chrome-border)]">
                         Administración
                     </div>

@@ -73,7 +73,7 @@ class ConsultaStoreRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
+        $messages = [
             'motivo_consulta.required' => 'El motivo de la consulta es obligatorio.',
             'tecnica_utilizada.required' => 'La técnica utilizada es obligatoria.',
             'plan_atencion.required' => 'El plan de atención es obligatorio.',
@@ -82,7 +82,14 @@ class ConsultaStoreRequest extends FormRequest
             'fecha_consulta.required' => 'La fecha de la consulta es obligatoria.',
             'fecha_consulta.before_or_equal' => 'La fecha de la consulta no puede ser futura.',
             'fecha_consulta.after_or_equal' => 'La fecha de la consulta no puede ser anterior a un año.',
+            'evaluacion_inicial.required' => 'La evaluación inicial es obligatoria en la primera consulta.',
         ];
+
+        foreach (self::EVALUACION_CAMPOS as $campo) {
+            $messages["evaluacion_inicial.{$campo}.required"] = 'Este campo de la evaluación inicial es obligatorio.';
+        }
+
+        return $messages;
     }
 
     public function withValidator(Validator $validator): void
@@ -94,11 +101,11 @@ class ConsultaStoreRequest extends FormRequest
             if ($diagnostico === '' && $observacion === '') {
                 $validator->errors()->add(
                     'diagnostico',
-                    'Debe registrar un diagnóstico o una observación clínica.'
+                    'Complete al menos el diagnóstico o la observación clínica.'
                 );
                 $validator->errors()->add(
                     'notas_clinicas',
-                    'Debe registrar un diagnóstico o una observación clínica.'
+                    'Complete al menos el diagnóstico o la observación clínica.'
                 );
             }
         });
