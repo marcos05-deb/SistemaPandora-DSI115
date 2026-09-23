@@ -284,7 +284,17 @@ class PacienteCorreccionDatosTest extends ComplianceTestCase
         $this->actingAs($admin);
 
         $this->get('/admin/pacientes')->assertOk();
-        $this->get('/admin/pacientes/correcciones/'.$audit->id)->assertOk();
+        $detalle = $this->get('/admin/pacientes/correcciones/'.$audit->id)->assertOk();
+        $detalle->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Pacientes/CorreccionShow')
+            ->where('correccion.paciente_id', $this->paciente->codigo)
+            ->where('correccion.carnet_anterior', '[CIFRADO]')
+            ->where('correccion.carnet_nuevo', '[CIFRADO]')
+            ->where('correccion.valores_anteriores.carnet', '[CIFRADO]')
+            ->where('correccion.valores_nuevos.carnet', '[CIFRADO]')
+        );
+        $detalle->assertDontSee('QA26010');
+        $detalle->assertDontSee('QA26222');
 
         $this->post('/admin/pacientes/correcciones/'.$audit->id.'/revisar')
             ->assertRedirect();

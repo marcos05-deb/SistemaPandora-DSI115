@@ -55,13 +55,13 @@ function marcarRevisado() {
             <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px]">
                 <div><span class="text-[var(--nord3)]">Paciente (UUID)</span><p class="font-mono text-[12px] mt-0.5">{{ correccion.paciente_id }}</p></div>
                 <div><span class="text-[var(--nord3)]">Tipo / nivel</span><p class="mt-0.5">{{ correccion.tipo_evento }} · {{ correccion.nivel_evento }}</p></div>
-                <div><span class="text-[var(--nord3)]">Carnet anterior</span><p class="mt-0.5 font-mono">{{ correccion.carnet_anterior }}</p></div>
-                <div><span class="text-[var(--nord3)]">Carnet nuevo</span><p class="mt-0.5 font-mono">{{ correccion.carnet_nuevo }}</p></div>
+                <div><span class="text-[var(--nord3)]">Identificador anterior</span><p class="mt-0.5 font-mono text-[var(--nord3)]">{{ correccion.carnet_anterior }}</p></div>
+                <div><span class="text-[var(--nord3)]">Identificador nuevo</span><p class="mt-0.5 font-mono text-[var(--nord3)]">{{ correccion.carnet_nuevo }}</p></div>
                 <div><span class="text-[var(--nord3)]">Responsable</span><p class="mt-0.5">{{ correccion.responsable }} ({{ correccion.rol_usuario }})</p></div>
                 <div><span class="text-[var(--nord3)]">Fecha</span><p class="mt-0.5">{{ formatDate(correccion.created_at) }}</p></div>
                 <div class="md:col-span-2"><span class="text-[var(--nord3)]">Motivo</span><p class="mt-0.5">{{ correccion.motivo }}</p></div>
                 <div class="md:col-span-2"><span class="text-[var(--nord3)]">Campos modificados</span><p class="mt-0.5">{{ (correccion.campos_modificados || []).join(', ') }}</p></div>
-            </div>
+                <p class="md:col-span-2 text-[11px] text-[var(--nord3)]">El carnet no se muestra al administrador; use el UUID del paciente como identificador.</p>            </div>
 
             <div class="px-5 pb-5">
                 <h2 class="text-[13px] font-medium text-[var(--nord0)] mb-2">Valores (datos personales cifrados aparecen como [CIFRADO])</h2>

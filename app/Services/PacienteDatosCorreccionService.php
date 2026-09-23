@@ -317,7 +317,9 @@ final class PacienteDatosCorreccionService
     {
         $base = str_contains($campo, '.') ? explode('.', $campo)[1] : $campo;
 
-        if (in_array($base, self::CAMPOS_CIFRADOS, true)
+        // Carnet y datos personales: nunca quedan en texto plano en la auditoría.
+        if ($base === 'carnet'
+            || in_array($base, self::CAMPOS_CIFRADOS, true)
             || in_array($base, ['telefono_personal', 'telefono_casa', 'direccion', 'nombre_completo'], true)
         ) {
             if ($valor === null || $valor === '') {
