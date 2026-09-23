@@ -1,6 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 import PrimaryButton from '@/Components/UI/PrimaryButton.vue';
@@ -10,7 +10,7 @@ defineOptions({ layout: ClinicalLayout });
 
 const props = defineProps({
     expediente: { type: Object, required: true },
-    esPrimeraConsulta: { type: Boolean, default: false }
+    esPrimeraConsulta: { type: Boolean, default: false },
 });
 
 const hoy = todayLocalYmd();
@@ -39,20 +39,269 @@ const form = useForm({
         actitudes_tratamiento: '',
         impresion: '',
         plan_tratamiento: '',
-        pronostico: ''
-    }
+        pronostico: '',
+    },
 });
 
 const maxFechaConsulta = hoy;
 const minFechaConsulta = haceUnAno;
-
 const activeAccordion = ref(0);
+const clientBanner = ref('');
 
-const submit = () => {
+const ACCORDION_FIELDS = {
+    0: ['apariencia_externa', 'voz', 'patrones_habla', 'expresiones_faciales', 'ademanes'],
+    1: ['actitudes_tratamiento', 'impresion'],
+    2: ['plan_tratamiento', 'pronostico'],
+};
+
+const FIELD_LABELS = {
+    motivo_consulta: 'Motivo de consulta',
+    fecha_consulta: 'Fecha de la consulta',
+    tecnica_utilizada: 'Técnica utilizada',
+    diagnostico: 'Diagnóstico',
+    notas_clinicas: 'Observación / Notas clínicas',
+    plan_atencion: 'Plan de atención',
+    'evaluacion_inicial.apariencia_externa': 'Apariencia externa',
+    'evaluacion_inicial.voz': 'Voz',
+    'evaluacion_inicial.patrones_habla': 'Patrones de habla',
+    'evaluacion_inicial.expresiones_faciales': 'Expresiones faciales',
+    'evaluacion_inicial.ademanes': 'Ademanes',
+    'evaluacion_inicial.actitudes_tratamiento': 'Actitudes ante el tratamiento',
+    'evaluacion_inicial.impresion': 'Impresión',
+    'evaluacion_inicial.plan_tratamiento': 'Plan de tratamiento de la evaluación inicial',
+    'evaluacion_inicial.pronostico': 'Pronóstico',
+};
+
+const VISUAL_FIELD_ORDER = [
+    'evaluacion_inicial.apariencia_externa',
+    'evaluacion_inicial.voz',
+    'evaluacion_inicial.patrones_habla',
+    'evaluacion_inicial.expresiones_faciales',
+    'evaluacion_inicial.ademanes',
+    'evaluacion_inicial.actitudes_tratamiento',
+    'evaluacion_inicial.impresion',
+    'evaluacion_inicial.plan_tratamiento',
+    'evaluacion_inicial.pronostico',
+    'motivo_consulta',
+    'fecha_consulta',
+    'tecnica_utilizada',
+    'diagnostico',
+    'notas_clinicas',
+    'plan_atencion',
+];
+
+const ACCORDION_TITLES = {
+    0: 'Observaciones físicas y conductuales',
+    1: 'Impresión y diagnóstico',
+    2: 'Plan y Pronóstico',
+};
+
+function fieldId(key) {
+    return key.replaceAll('.', '-');
+}
+
+function errorKey(key) {
+    return key;
+}
+
+function accordionForField(key) {
+    if (!key.startsWith('evaluacion_inicial.')) {
+        return null;
+    }
+    const campo = key.replace('evaluacion_inicial.', '');
+    for (const [idx, fields] of Object.entries(ACCORDION_FIELDS)) {
+        if (fields.includes(campo)) {
+            return Number(idx);
+        }
+    }
+    return null;
+}
+
+function hasError(key) {
+    return Boolean(form.errors[errorKey(key)]);
+}
+
+function errorMessage(key) {
+    return form.errors[errorKey(key)] || '';
+}
+
+function clearFieldError(key) {
+    if (form.errors[key]) {
+        form.clearErrors(key);
+    }
+    clientBanner.value = '';
+}
+
+function isBlank(value) {
+    return !String(value ?? '').trim();
+}
+
+function runClientValidation() {
+    const errors = {};
+
+    if (isBlank(form.motivo_consulta)) {
+        errors.motivo_consulta = 'El motivo de la consulta es obligatorio.';
+    }
+    if (isBlank(form.fecha_consulta)) {
+        errors.fecha_consulta = 'La fecha de la consulta es obligatoria.';
+    }
+    if (isBlank(form.tecnica_utilizada)) {
+        errors.tecnica_utilizada = 'La técnica utilizada es obligatoria.';
+    }
+    if (isBlank(form.plan_atencion)) {
+        errors.plan_atencion = 'El plan de atención es obligatorio.';
+    } else if (String(form.plan_atencion).trim().length < 10) {
+        errors.plan_atencion = 'El plan de atención debe tener al menos 10 caracteres.';
+    }
+
+    if (isBlank(form.diagnostico) && isBlank(form.notas_clinicas)) {
+        errors.diagnostico = 'Complete al menos el diagnóstico o la observación clínica.';
+        errors.notas_clinicas = 'Complete al menos el diagnóstico o la observación clínica.';
+    }
+
+    if (props.esPrimeraConsulta) {
+        for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
+            const key = `evaluacion_inicial.${campo}`;
+            if (isBlank(form.evaluacion_inicial[campo])) {
+                errors[key] = `El campo ${FIELD_LABELS[key] || campo} es obligatorio en la primera consulta.`;
+            }
+        }
+    }
+
+    return errors;
+}
+
+const errorSummary = computed(() => {
+    const seen = new Set();
+    const items = [];
+
+    for (const key of VISUAL_FIELD_ORDER) {
+        const message = form.errors[key];
+        if (!message) continue;
+        const dedupe = `${key}:${message}`;
+        if (seen.has(dedupe) || seen.has(message)) continue;
+        seen.add(dedupe);
+        seen.add(message);
+        items.push({
+            key,
+            label: FIELD_LABELS[key] || key,
+            message,
+        });
+    }
+
+    // Cualquier error no mapeado
+    for (const [key, message] of Object.entries(form.errors)) {
+        if (!message) continue;
+        const dedupe = `${key}:${message}`;
+        if (seen.has(dedupe) || seen.has(message)) continue;
+        seen.add(dedupe);
+        items.push({ key, label: FIELD_LABELS[key] || key, message });
+    }
+
+    return items;
+});
+
+const hasAnyErrors = computed(() => errorSummary.value.length > 0);
+
+function accordionPendingCount(index) {
+    return ACCORDION_FIELDS[index].filter((campo) => hasError(`evaluacion_inicial.${campo}`)).length;
+}
+
+async function focusField(key) {
+    const accordion = accordionForField(key);
+    if (accordion !== null) {
+        activeAccordion.value = accordion;
+    }
+
+    await nextTick();
+
+    const el = document.getElementById(fieldId(key));
+    if (!el) return;
+
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (typeof el.focus === 'function') {
+        el.focus({ preventScroll: true });
+    }
+}
+
+async function focusFirstError(errorsObject) {
+    const keys = Object.keys(errorsObject || form.errors || {});
+    if (!keys.length) return;
+
+    const ordered = VISUAL_FIELD_ORDER.filter((k) => keys.includes(k));
+    const first = ordered[0] || keys[0];
+    await focusField(first);
+}
+
+const submit = async () => {
+    if (form.processing) return;
+
+    clientBanner.value = '';
+
+    const clientErrors = runClientValidation();
+    if (Object.keys(clientErrors).length > 0) {
+        form.clearErrors();
+        form.setError(clientErrors);
+        clientBanner.value = 'No se pudo guardar. Complete los campos obligatorios resaltados.';
+        await focusFirstError(clientErrors);
+        return;
+    }
+
+    form.clearErrors();
+
     form.post(`/expedientes/${props.expediente.id}/consultas`, {
         preserveScroll: true,
+        onError: async (errors) => {
+            clientBanner.value = 'No se pudo guardar la consulta. Revise los siguientes campos:';
+            await focusFirstError(errors);
+        },
+        onFinish: () => {
+            // form.processing se restaura solo; mantenemos datos y errores.
+        },
     });
 };
+
+watch(
+    () => form.motivo_consulta,
+    () => clearFieldError('motivo_consulta'),
+);
+watch(
+    () => form.fecha_consulta,
+    () => clearFieldError('fecha_consulta'),
+);
+watch(
+    () => form.tecnica_utilizada,
+    () => clearFieldError('tecnica_utilizada'),
+);
+watch(
+    () => form.plan_atencion,
+    () => clearFieldError('plan_atencion'),
+);
+watch(
+    () => form.diagnostico,
+    () => {
+        clearFieldError('diagnostico');
+        if (!isBlank(form.diagnostico) || !isBlank(form.notas_clinicas)) {
+            clearFieldError('notas_clinicas');
+        }
+    },
+);
+watch(
+    () => form.notas_clinicas,
+    () => {
+        clearFieldError('notas_clinicas');
+        if (!isBlank(form.diagnostico) || !isBlank(form.notas_clinicas)) {
+            clearFieldError('diagnostico');
+        }
+    },
+);
+
+for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
+    watch(
+        () => form.evaluacion_inicial[campo],
+        () => clearFieldError(`evaluacion_inicial.${campo}`),
+    );
+}
 </script>
 
 <template>
@@ -89,71 +338,113 @@ const submit = () => {
                 </div>
             </div>
 
-            <form @submit.prevent="submit" class="p-6 space-y-6">
-                <!-- Evaluacion Inicial (Acordeon, solo si es primera consulta) -->
+            <form novalidate @submit.prevent="submit" class="p-6 space-y-6">
+                <div
+                    v-if="hasAnyErrors || clientBanner"
+                    class="rounded-xl border border-[var(--aurora-red)]/40 bg-[var(--aurora-red)]/5 px-4 py-3"
+                    role="alert"
+                    aria-live="polite"
+                >
+                    <p class="text-[13px] font-semibold text-[var(--aurora-red)]">
+                        {{ clientBanner || 'No se pudo guardar la consulta. Revise los siguientes campos:' }}
+                    </p>
+                    <ul v-if="errorSummary.length" class="mt-2 space-y-1">
+                        <li v-for="item in errorSummary" :key="item.key">
+                            <button
+                                type="button"
+                                class="text-left text-[12px] text-[var(--aurora-red)] hover:underline"
+                                @click="focusField(item.key)"
+                            >
+                                → {{ item.label }}: {{ item.message }}
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Evaluación Inicial -->
                 <div v-if="esPrimeraConsulta" class="border border-[var(--nord4)] rounded-xl overflow-hidden shadow-sm">
                     <div class="bg-[var(--nord6)] px-4 py-3 border-b border-[var(--nord4)]">
                         <h2 class="text-[14px] font-semibold text-[var(--nord0)] flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[var(--nord9)]" viewBox="0 0 20 20" fill="currentColor">
-                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
                             </svg>
                             Evaluación Inicial (Requerido - Primera Cita)
                         </h2>
+                        <p class="text-[12px] text-[var(--nord3)] mt-1">
+                            Los campos marcados con <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">asterisco</span> son obligatorios.
+                        </p>
                     </div>
                     <div class="p-0 bg-white">
-                        <!-- Pestaña 1 -->
-                        <div class="border-b border-[var(--nord4)]">
-                            <button type="button" @click="activeAccordion = 0" class="w-full text-left px-4 py-3 font-medium text-[13px] text-[var(--nord0)] flex justify-between items-center hover:bg-[var(--nord6)] transition-colors">
-                                1. Observaciones Físicas y Conductuales
-                                <svg :class="{'rotate-180': activeAccordion === 0}" class="h-4 w-4 text-[var(--nord3)] transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <div
+                            v-for="(fields, index) in ACCORDION_FIELDS"
+                            :key="index"
+                            :class="Number(index) < 2 ? 'border-b border-[var(--nord4)]' : ''"
+                        >
+                            <button
+                                type="button"
+                                class="w-full text-left px-4 py-3 font-medium text-[13px] flex justify-between items-center hover:bg-[var(--nord6)] transition-colors"
+                                :class="accordionPendingCount(Number(index)) > 0 ? 'text-[var(--aurora-red)] border-l-4 border-l-[var(--aurora-red)]' : 'text-[var(--nord0)]'"
+                                :aria-expanded="activeAccordion === Number(index)"
+                                @click="activeAccordion = Number(index)"
+                            >
+                                <span class="inline-flex items-center gap-2">
+                                    <svg
+                                        v-if="accordionPendingCount(Number(index)) > 0"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="h-4 w-4 text-[var(--aurora-red)] shrink-0"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                        aria-hidden="true"
+                                    >
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l6.518 11.597c.75 1.335-.213 2.999-1.742 2.999H3.48c-1.53 0-2.492-1.664-1.742-2.999L8.257 3.1zM11 14a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V8a1 1 0 112 0v3a1 1 0 01-1 1z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>
+                                        {{ Number(index) + 1 }}. {{ ACCORDION_TITLES[Number(index)] }}
+                                        <template v-if="accordionPendingCount(Number(index)) > 0">
+                                            — {{ accordionPendingCount(Number(index)) }} campo{{ accordionPendingCount(Number(index)) === 1 ? '' : 's' }} pendiente{{ accordionPendingCount(Number(index)) === 1 ? '' : 's' }}
+                                        </template>
+                                    </span>
+                                </span>
+                                <svg :class="{ 'rotate-180': activeAccordion === Number(index) }" class="h-4 w-4 text-[var(--nord3)] transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                 </svg>
                             </button>
-                            <div v-show="activeAccordion === 0" class="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div v-for="campo in ['apariencia_externa', 'voz', 'patrones_habla', 'expresiones_faciales', 'ademanes']" :key="campo">
-                                    <label class="block text-[12px] font-semibold text-[var(--nord0)] mb-1.5 capitalize">{{ campo.replace('_', ' ') }}</label>
-                                    <input type="text" v-model="form.evaluacion_inicial[campo]"
-                                        class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[13px] border-[var(--nord4)] focus:border-[var(--nord8)] focus:ring-0" />
-                                    <p v-if="form.errors[`evaluacion_inicial.${campo}`]" class="text-[var(--aurora-red)] text-[11px] mt-1">{{ form.errors[`evaluacion_inicial.${campo}`] }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Pestaña 2 -->
-                        <div class="border-b border-[var(--nord4)]">
-                            <button type="button" @click="activeAccordion = 1" class="w-full text-left px-4 py-3 font-medium text-[13px] text-[var(--nord0)] flex justify-between items-center hover:bg-[var(--nord6)] transition-colors">
-                                2. Impresión y Diagnóstico
-                                <svg :class="{'rotate-180': activeAccordion === 1}" class="h-4 w-4 text-[var(--nord3)] transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                            <div v-show="activeAccordion === 1" class="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div v-for="campo in ['actitudes_tratamiento', 'impresion']" :key="campo">
-                                    <label class="block text-[12px] font-semibold text-[var(--nord0)] mb-1.5 capitalize">{{ campo.replace('_', ' ') }}</label>
-                                    <input type="text" v-model="form.evaluacion_inicial[campo]"
-                                        class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[13px] border-[var(--nord4)] focus:border-[var(--nord8)] focus:ring-0" />
-                                    <p v-if="form.errors[`evaluacion_inicial.${campo}`]" class="text-[var(--aurora-red)] text-[11px] mt-1">{{ form.errors[`evaluacion_inicial.${campo}`] }}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Pestaña 3 -->
-                        <div>
-                            <button type="button" @click="activeAccordion = 2" class="w-full text-left px-4 py-3 font-medium text-[13px] text-[var(--nord0)] flex justify-between items-center hover:bg-[var(--nord6)] transition-colors">
-                                3. Plan y Pronóstico
-                                <svg :class="{'rotate-180': activeAccordion === 2}" class="h-4 w-4 text-[var(--nord3)] transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                            <div v-show="activeAccordion === 2" class="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div v-for="campo in ['plan_tratamiento', 'pronostico']" :key="campo">
-                                    <label class="block text-[12px] font-semibold text-[var(--nord0)] mb-1.5 capitalize">
-                                        <template v-if="campo === 'plan_tratamiento'">Plan de tratamiento (evaluación inicial)</template>
-                                        <template v-else>{{ campo.replace('_', ' ') }}</template>
+                            <div v-show="activeAccordion === Number(index)" class="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div v-for="campo in fields" :key="campo">
+                                    <label
+                                        :for="fieldId('evaluacion_inicial.' + campo)"
+                                        class="block text-[12px] font-semibold text-[var(--nord0)] mb-1.5"
+                                    >
+                                        <template v-if="campo === 'apariencia_externa'">Apariencia externa</template>
+                                        <template v-else-if="campo === 'patrones_habla'">Patrones de habla</template>
+                                        <template v-else-if="campo === 'expresiones_faciales'">Expresiones faciales</template>
+                                        <template v-else-if="campo === 'actitudes_tratamiento'">Actitudes ante el tratamiento</template>
+                                        <template v-else-if="campo === 'impresion'">Impresión</template>
+                                        <template v-else-if="campo === 'plan_tratamiento'">Plan de tratamiento de la evaluación inicial</template>
+                                        <template v-else-if="campo === 'pronostico'">Pronóstico</template>
+                                        <template v-else-if="campo === 'voz'">Voz</template>
+                                        <template v-else-if="campo === 'ademanes'">Ademanes</template>
+                                        <template v-else>{{ campo.replaceAll('_', ' ') }}</template>
+                                        <span class="text-[var(--aurora-red)]" aria-hidden="true"> *</span>
+                                        <span class="sr-only">(obligatorio)</span>
                                     </label>
-                                    <input type="text" v-model="form.evaluacion_inicial[campo]"
-                                        class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[13px] border-[var(--nord4)] focus:border-[var(--nord8)] focus:ring-0" />
-                                    <p v-if="form.errors[`evaluacion_inicial.${campo}`]" class="text-[var(--aurora-red)] text-[11px] mt-1">{{ form.errors[`evaluacion_inicial.${campo}`] }}</p>
+                                    <input
+                                        :id="fieldId('evaluacion_inicial.' + campo)"
+                                        v-model="form.evaluacion_inicial[campo]"
+                                        type="text"
+                                        aria-required="true"
+                                        :aria-invalid="hasError('evaluacion_inicial.' + campo) ? 'true' : 'false'"
+                                        :aria-describedby="hasError('evaluacion_inicial.' + campo) ? fieldId('evaluacion_inicial.' + campo) + '-error' : undefined"
+                                        class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[13px] focus:border-[var(--nord8)] focus:ring-0"
+                                        :class="hasError('evaluacion_inicial.' + campo) ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                                    />
+                                    <p
+                                        v-if="hasError('evaluacion_inicial.' + campo)"
+                                        :id="fieldId('evaluacion_inicial.' + campo) + '-error'"
+                                        class="text-[var(--aurora-red)] text-[11px] mt-1"
+                                    >
+                                        {{ errorMessage('evaluacion_inicial.' + campo) }}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -163,85 +454,100 @@ const submit = () => {
                 <!-- Motivo de Consulta -->
                 <div>
                     <label for="motivo_consulta" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
-                        Motivo de Consulta <span class="text-[var(--aurora-red)]">*</span>
+                        Motivo de Consulta <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
                     </label>
-                    <textarea 
+                    <textarea
                         id="motivo_consulta"
                         v-model="form.motivo_consulta"
                         rows="2"
+                        aria-required="true"
+                        :aria-invalid="hasError('motivo_consulta') ? 'true' : 'false'"
+                        :aria-describedby="hasError('motivo_consulta') ? 'motivo_consulta-error' : undefined"
                         class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2.5 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
-                        :class="form.errors.motivo_consulta ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                        :class="hasError('motivo_consulta') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
                     ></textarea>
-                    <p v-if="form.errors.motivo_consulta" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ form.errors.motivo_consulta }}</p>
+                    <p v-if="hasError('motivo_consulta')" id="motivo_consulta-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('motivo_consulta') }}</p>
                 </div>
 
                 <!-- Fecha de consulta -->
                 <div>
                     <label for="fecha_consulta" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
-                        Fecha de la consulta <span class="text-[var(--aurora-red)]">*</span>
+                        Fecha de la consulta <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
                     </label>
                     <input
-                        type="date"
                         id="fecha_consulta"
                         v-model="form.fecha_consulta"
+                        type="date"
                         :min="minFechaConsulta"
                         :max="maxFechaConsulta"
+                        aria-required="true"
+                        :aria-invalid="hasError('fecha_consulta') ? 'true' : 'false'"
+                        :aria-describedby="hasError('fecha_consulta') ? 'fecha_consulta-error' : undefined"
                         class="w-full sm:w-64 rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
-                        :class="form.errors.fecha_consulta ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                        :class="hasError('fecha_consulta') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
                     />
                     <p class="text-[11px] text-[var(--nord3)] mt-1">Fecha clínica de la atención (no puede ser futura).</p>
-                    <p v-if="form.errors.fecha_consulta" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ form.errors.fecha_consulta }}</p>
+                    <p v-if="hasError('fecha_consulta')" id="fecha_consulta-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('fecha_consulta') }}</p>
                 </div>
-
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Técnica Utilizada -->
                     <div>
                         <label for="tecnica_utilizada" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
-                            Técnica Utilizada <span class="text-[var(--aurora-red)]">*</span>
+                            Técnica Utilizada <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
                         </label>
-                        <input type="text"
+                        <input
                             id="tecnica_utilizada"
                             v-model="form.tecnica_utilizada"
+                            type="text"
+                            aria-required="true"
+                            :aria-invalid="hasError('tecnica_utilizada') ? 'true' : 'false'"
+                            :aria-describedby="hasError('tecnica_utilizada') ? 'tecnica_utilizada-error' : undefined"
                             class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
-                            :class="form.errors.tecnica_utilizada ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'" />
-                        <p v-if="form.errors.tecnica_utilizada" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ form.errors.tecnica_utilizada }}</p>
+                            :class="hasError('tecnica_utilizada') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                        />
+                        <p v-if="hasError('tecnica_utilizada')" id="tecnica_utilizada-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('tecnica_utilizada') }}</p>
                     </div>
 
-                    <!-- Diagnóstico -->
                     <div>
                         <label for="diagnostico" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
-                            Diagnóstico <span class="text-[11px] font-medium text-[var(--nord3)]">(o observación)</span>
+                            Diagnóstico
                         </label>
-                        <input type="text"
+                        <input
                             id="diagnostico"
                             v-model="form.diagnostico"
+                            type="text"
+                            :aria-invalid="hasError('diagnostico') ? 'true' : 'false'"
+                            :aria-describedby="hasError('diagnostico') ? 'diagnostico-error dx-obs-hint' : 'dx-obs-hint'"
                             class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
-                            :class="form.errors.diagnostico ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'" />
-                        <p v-if="form.errors.diagnostico" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ form.errors.diagnostico }}</p>
+                            :class="hasError('diagnostico') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                        />
+                        <p v-if="hasError('diagnostico')" id="diagnostico-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('diagnostico') }}</p>
                     </div>
                 </div>
 
-                <!-- Notas / Observación clínica -->
+                <p id="dx-obs-hint" class="text-[12px] text-[var(--nord3)] -mt-2">
+                    Complete al menos el diagnóstico o la observación clínica <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio al menos uno)</span>
+                </p>
+
                 <div>
                     <label for="notas_clinicas" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
                         Observación / Notas clínicas
-                        <span class="text-[11px] font-medium text-[var(--nord3)]">(al menos diagnóstico u observación)</span>
                     </label>
-                    <textarea 
+                    <textarea
                         id="notas_clinicas"
                         v-model="form.notas_clinicas"
                         rows="4"
+                        :aria-invalid="hasError('notas_clinicas') ? 'true' : 'false'"
+                        :aria-describedby="hasError('notas_clinicas') ? 'notas_clinicas-error dx-obs-hint' : 'dx-obs-hint'"
                         class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2.5 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
-                        :class="form.errors.notas_clinicas ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                        :class="hasError('notas_clinicas') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
                     ></textarea>
-                    <p v-if="form.errors.notas_clinicas" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ form.errors.notas_clinicas }}</p>
+                    <p v-if="hasError('notas_clinicas')" id="notas_clinicas-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('notas_clinicas') }}</p>
                 </div>
 
-                <!-- Plan de atención (cada consulta) -->
                 <div>
                     <label for="plan_atencion" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
-                        Plan de atención <span class="text-[var(--aurora-red)]">*</span>
+                        Plan de atención <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
                     </label>
                     <textarea
                         id="plan_atencion"
@@ -249,26 +555,45 @@ const submit = () => {
                         rows="3"
                         maxlength="1000"
                         placeholder="Indique el plan de atención acordado en esta consulta (mín. 10 caracteres)"
+                        aria-required="true"
+                        :aria-invalid="hasError('plan_atencion') ? 'true' : 'false'"
+                        :aria-describedby="hasError('plan_atencion') ? 'plan_atencion-error' : undefined"
                         class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2.5 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
-                        :class="form.errors.plan_atencion ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                        :class="hasError('plan_atencion') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
                     ></textarea>
-                    <p v-if="form.errors.plan_atencion" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ form.errors.plan_atencion }}</p>
+                    <p v-if="hasError('plan_atencion')" id="plan_atencion-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('plan_atencion') }}</p>
                 </div>
 
                 <div class="pt-4 border-t border-[var(--nord4)] flex items-center justify-end gap-3">
-                    <Link :href="'/pacientes/' + expediente.paciente.carnet" 
-                        class="px-4 py-2 text-[13px] font-medium text-[var(--nord3)] hover:bg-[var(--nord6)] rounded-lg transition-colors border border-transparent hover:border-[var(--nord4)]">
+                    <Link
+                        :href="'/pacientes/' + expediente.paciente.carnet"
+                        class="px-4 py-2 text-[13px] font-medium text-[var(--nord3)] hover:bg-[var(--nord6)] rounded-lg transition-colors border border-transparent hover:border-[var(--nord4)]"
+                    >
                         Cancelar
                     </Link>
                     <PrimaryButton type="submit" :disabled="form.processing" class="gap-2 px-5 text-[13px]">
-                        <svg v-if="form.processing" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg v-if="form.processing" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Guardar Consulta
+                        {{ form.processing ? 'Guardando...' : 'Guardar Consulta' }}
                     </PrimaryButton>
                 </div>
             </form>
         </div>
     </div>
 </template>
+
+<style scoped>
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+</style>
