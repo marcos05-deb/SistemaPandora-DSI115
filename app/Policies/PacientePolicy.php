@@ -47,7 +47,8 @@ class PacientePolicy
      * Determine whether the user can update the model.
      *
      * Solo el referente psicosocial que registró al paciente puede corregir
-     * datos generales. Especialistas, coordinadores y administradores: denegado.
+     * datos generales. Tras la primera corrección, el servicio exige un permiso
+     * admin aprobado (consumible). Especialistas, coordinadores y administradores: denegado.
      */
     public function update(Especialista $especialista, Paciente $paciente): bool
     {

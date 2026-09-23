@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RevisarSolicitudCorreccionRequest;
 use App\Models\Paciente;
 use App\Models\PacienteCorreccionAuditoria;
+use App\Models\SolicitudCorreccionExpediente;
+use App\Services\SolicitudCorreccionExpedienteService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,11 +17,11 @@ use Inertia\Response;
 class PacienteController extends Controller
 {
     /**
-     * Auditoría de pacientes: listado anonimizado + correcciones de datos generales.
+     * Auditoría anonimizada: UUID, campos tocados, solicitudes de permiso. Sin PII.
      */
     public function index(Request $request): Response
     {
-        $pacientes = Paciente::select('codigo', 'created_at', 'updated_at', 'carnet', 'ultima_accion')
+        $pacientes = Paciente::select('codigo', 'created_at', 'updated_at', 'ultima_accion', 'datos_corregidos_en')
             ->when($request->search, function ($query, $search) {
                 $query->whereRaw('codigo::text ILIKE ?', ["%{$search}%"]);
             })
@@ -31,6 +34,7 @@ class PacienteController extends Controller
                     'created_at' => $paciente->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $paciente->updated_at->format('Y-m-d H:i:s'),
                     'ultima_accion' => $paciente->ultima_accion ?? 'Registro de paciente',
+                    'datos_corregidos' => (bool) $paciente->datos_corregidos_en,
                 ];
             });
 
@@ -40,7 +44,6 @@ class PacienteController extends Controller
             ->when($request->nivel_evento, fn ($q, $nivel) => $q->where('nivel_evento', $nivel))
             ->when($request->usuario_id, fn ($q, $uid) => $q->where('usuario_id', $uid))
             ->when($request->paciente, function ($q, $paciente) {
-                // Solo UUID: el admin no filtra ni ve carnets en claro.
                 $q->whereRaw('paciente_id::text ILIKE ?', ["%{$paciente}%"]);
             })
             ->when($request->fecha_desde, fn ($q, $desde) => $q->whereDate('created_at', '>=', $desde))
@@ -61,10 +64,29 @@ class PacienteController extends Controller
             ->get()
             ->map(fn (PacienteCorreccionAuditoria $c) => $this->mapCorreccionResumen($c));
 
+        $solicitudes = SolicitudCorreccionExpediente::query()
+            ->with(['solicitante:id,name', 'revisadoPor:id,name'])
+            ->when($request->solicitud_estado, fn ($q, $e) => $q->where('estado', $e))
+            ->orderByRaw("CASE WHEN estado = 'pendiente' THEN 0 ELSE 1 END")
+            ->orderByDesc('created_at')
+            ->paginate(15, ['*'], 'solicitudes_page')
+            ->withQueryString()
+            ->through(fn (SolicitudCorreccionExpediente $s) => app(SolicitudCorreccionExpedienteService::class)->mapSolicitudResumen($s));
+
+        $solicitudesPendientes = SolicitudCorreccionExpediente::query()
+            ->with(['solicitante:id,name'])
+            ->pendientes()
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get()
+            ->map(fn (SolicitudCorreccionExpediente $s) => app(SolicitudCorreccionExpedienteService::class)->mapSolicitudResumen($s));
+
         return Inertia::render('Admin/Pacientes/Index', [
             'pacientes' => $pacientes,
             'correcciones' => $correcciones,
             'avisosPendientes' => $avisosPendientes,
+            'solicitudes' => $solicitudes,
+            'solicitudesPendientes' => $solicitudesPendientes,
             'filters' => $request->only([
                 'search',
                 'tipo_evento',
@@ -73,6 +95,7 @@ class PacienteController extends Controller
                 'paciente',
                 'fecha_desde',
                 'fecha_hasta',
+                'solicitud_estado',
             ]),
         ]);
     }
@@ -85,9 +108,6 @@ class PacienteController extends Controller
             'correccion' => [
                 'id' => $correccion->id,
                 'paciente_id' => $correccion->paciente_id,
-                // Privacidad: el admin solo identifica al paciente por UUID.
-                'carnet_anterior' => '[CIFRADO]',
-                'carnet_nuevo' => '[CIFRADO]',
                 'tipo_evento' => $correccion->tipo_evento,
                 'nivel_evento' => $correccion->nivel_evento,
                 'aviso_sensible' => $correccion->aviso_sensible,
@@ -96,8 +116,6 @@ class PacienteController extends Controller
                 'revisado_por' => $correccion->revisadoPor?->name,
                 'motivo' => $correccion->motivo,
                 'campos_modificados' => $correccion->campos_modificados,
-                'valores_anteriores' => $this->protegerValores($correccion->valores_anteriores ?? []),
-                'valores_nuevos' => $this->protegerValores($correccion->valores_nuevos ?? []),
                 'rol_usuario' => $correccion->rol_usuario,
                 'responsable' => $correccion->usuario?->name,
                 'ip_address' => $correccion->ip_address,
@@ -127,6 +145,30 @@ class PacienteController extends Controller
             ->with('variant', 'success');
     }
 
+    public function aprobarSolicitud(
+        RevisarSolicitudCorreccionRequest $request,
+        SolicitudCorreccionExpediente $solicitud,
+        SolicitudCorreccionExpedienteService $service
+    ) {
+        $service->aprobar($solicitud, $request->user(), $request->validated('nota_admin'));
+
+        return redirect()->back()
+            ->with('message', 'Permiso aprobado. El solicitante puede realizar una corrección en los campos autorizados.')
+            ->with('variant', 'success');
+    }
+
+    public function rechazarSolicitud(
+        RevisarSolicitudCorreccionRequest $request,
+        SolicitudCorreccionExpediente $solicitud,
+        SolicitudCorreccionExpedienteService $service
+    ) {
+        $service->rechazar($solicitud, $request->user(), $request->validated('nota_admin'));
+
+        return redirect()->back()
+            ->with('message', 'Solicitud rechazada. El expediente permanece bloqueado para nuevas correcciones.')
+            ->with('variant', 'success');
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -135,7 +177,6 @@ class PacienteController extends Controller
         return [
             'id' => $c->id,
             'paciente_id' => $c->paciente_id,
-            'carnet_protegido' => '[CIFRADO]',
             'tipo_evento' => $c->tipo_evento,
             'nivel_evento' => $c->nivel_evento,
             'campos_modificados' => $c->campos_modificados,
@@ -145,40 +186,5 @@ class PacienteController extends Controller
             'aviso_revisado' => $c->aviso_revisado,
             'created_at' => $c->created_at?->format('Y-m-d H:i:s'),
         ];
-    }
-
-    /**
-     * Enmascara carnets y cualquier valor personal que haya quedado en claro.
-     *
-     * @param  array<string, mixed>  $valores
-     * @return array<string, mixed>
-     */
-    private function protegerValores(array $valores): array
-    {
-        $protegidos = [];
-
-        foreach ($valores as $campo => $valor) {
-            $base = str_contains((string) $campo, '.')
-                ? explode('.', (string) $campo)[1]
-                : (string) $campo;
-
-            if ($base === 'carnet' || $this->pareceCarnet($valor)) {
-                $protegidos[$campo] = ($valor === null || $valor === '') ? null : '[CIFRADO]';
-                continue;
-            }
-
-            $protegidos[$campo] = $valor;
-        }
-
-        return $protegidos;
-    }
-
-    private function pareceCarnet(mixed $valor): bool
-    {
-        if (! is_string($valor)) {
-            return false;
-        }
-
-        return (bool) preg_match('/^[A-Za-z]{2}\d{5}$/', $valor);
     }
 }

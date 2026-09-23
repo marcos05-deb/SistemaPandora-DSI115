@@ -36,7 +36,9 @@ class Paciente extends Model
         'llevado_por',
         'motivo_consulta',
         'etiquetas_motivo',
-        'ultima_accion'
+        'ultima_accion',
+        'datos_corregidos_en',
+        'datos_corregidos_por_usuario_id',
     ];
 
     protected $casts = [
@@ -48,6 +50,7 @@ class Paciente extends Model
         'llevado_por' => EncryptedFieldCast::class,
         'motivo_consulta' => EncryptedFieldCast::class,
         'etiquetas_motivo' => \App\Casts\EncryptedJsonFieldCast::class,
+        'datos_corregidos_en' => 'datetime',
     ];
 
     public function expedientes(): HasMany
@@ -75,6 +78,16 @@ class Paciente extends Model
     public function carrera(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'carrera_id', 'id');
+    }
+
+    public function datosCorregidosPor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Especialista::class, 'datos_corregidos_por_usuario_id');
+    }
+
+    public function solicitudesCorreccion(): HasMany
+    {
+        return $this->hasMany(SolicitudCorreccionExpediente::class, 'paciente_id', 'codigo');
     }
 
     /**

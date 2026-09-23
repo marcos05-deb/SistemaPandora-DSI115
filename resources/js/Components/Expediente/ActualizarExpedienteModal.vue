@@ -1,10 +1,12 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { watch, ref } from 'vue';
+import { watch, ref, computed } from 'vue';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
     expediente: { type: Object, default: null },
+    /** Si hay permiso aprobado, solo estos campos son editables. Vacío = primera vez (todos). */
+    camposAutorizados: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(['close']);
@@ -17,6 +19,13 @@ const form = useForm({
 });
 
 const isSubmitting = ref(false);
+
+const restringido = computed(() => (props.camposAutorizados?.length || 0) > 0);
+
+function puedeEditar(campo) {
+    if (!restringido.value) return true;
+    return props.camposAutorizados.includes(campo);
+}
 
 watch(() => props.show, (open) => {
     if (open && props.expediente) {
@@ -34,7 +43,13 @@ const close = () => emit('close');
 const submit = () => {
     if (!props.expediente) return;
     isSubmitting.value = true;
-    form.patch(`/expedientes/${props.expediente.id}`, {
+
+    const data = { motivo_cambio: form.motivo_cambio };
+    if (puedeEditar('motivo_consulta')) data.motivo_consulta = form.motivo_consulta;
+    if (puedeEditar('notas_clinicas')) data.notas_clinicas = form.notas_clinicas;
+    if (puedeEditar('diagnostico')) data.diagnostico = form.diagnostico;
+
+    form.transform(() => data).patch(`/expedientes/${props.expediente.id}`, {
         preserveScroll: true,
         onSuccess: () => {
             isSubmitting.value = false;
@@ -55,21 +70,27 @@ const submit = () => {
             <div class="relative z-10 inline-block align-bottom bg-[var(--surface)] rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-[var(--nord4)]">
                 <div class="bg-[var(--surface-header)] px-6 py-4 border-b border-[var(--nord4)]">
                     <h3 class="text-[16px] font-semibold text-[var(--nord0)]">Actualizar expediente clínico</h3>
-                    <p class="text-[12px] text-[var(--nord3)] mt-1">La versión anterior queda registrada en auditoría. Indique el motivo del cambio.</p>
+                    <p class="text-[12px] text-[var(--nord3)] mt-1">
+                        La primera actualización es libre. Las siguientes requieren permiso del administrador (un solo uso).
+                        La versión anterior queda en auditoría; el admin solo ve nombres de campo, no valores.
+                    </p>
+                    <p v-if="restringido" class="text-[11px] text-[var(--aurora-orange)] mt-2">
+                        Campos autorizados: {{ camposAutorizados.join(', ') }}
+                    </p>
                 </div>
                 <form @submit.prevent="submit" class="px-6 py-5 space-y-4">
                     <div>
                         <label class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">Motivo de consulta</label>
-                        <textarea v-model="form.motivo_consulta" rows="2" class="w-full rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)]" :disabled="isSubmitting"></textarea>
+                        <textarea v-model="form.motivo_consulta" rows="2" class="w-full rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)] disabled:opacity-50" :disabled="isSubmitting || !puedeEditar('motivo_consulta')"></textarea>
                         <p v-if="form.errors.motivo_consulta" class="text-[12px] text-[var(--aurora-red)] mt-1">{{ form.errors.motivo_consulta }}</p>
                     </div>
                     <div>
                         <label class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">Notas clínicas</label>
-                        <textarea v-model="form.notas_clinicas" rows="3" class="w-full rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)]" :disabled="isSubmitting"></textarea>
+                        <textarea v-model="form.notas_clinicas" rows="3" class="w-full rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)] disabled:opacity-50" :disabled="isSubmitting || !puedeEditar('notas_clinicas')"></textarea>
                     </div>
                     <div>
                         <label class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">Diagnóstico</label>
-                        <textarea v-model="form.diagnostico" rows="2" class="w-full rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)]" :disabled="isSubmitting"></textarea>
+                        <textarea v-model="form.diagnostico" rows="2" class="w-full rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)] disabled:opacity-50" :disabled="isSubmitting || !puedeEditar('diagnostico')"></textarea>
                     </div>
                     <div>
                         <label class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">Motivo del cambio <span class="text-[var(--aurora-red)]">*</span></label>
@@ -77,13 +98,13 @@ const submit = () => {
                         <p v-if="form.errors.motivo_cambio" class="text-[12px] text-[var(--aurora-red)] mt-1">{{ form.errors.motivo_cambio }}</p>
                         <p v-if="form.errors.estado" class="text-[12px] text-[var(--aurora-red)] mt-1">{{ form.errors.estado }}</p>
                     </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" class="px-4 py-2 text-[13px] rounded-lg border border-[var(--nord4)]" :disabled="isSubmitting" @click="close">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 text-[13px] rounded-lg bg-[var(--nord8)] text-white" :disabled="isSubmitting">
+                            {{ isSubmitting ? 'Guardando…' : 'Guardar cambios' }}
+                        </button>
+                    </div>
                 </form>
-                <div class="bg-[var(--surface-subtle)] px-6 py-4 flex justify-end gap-3 border-t border-[var(--nord4)]">
-                    <button type="button" @click="close" class="px-4 py-2 text-[13px] font-medium text-[var(--nord3)] rounded-lg border border-[var(--nord4)]">Cancelar</button>
-                    <button type="button" @click="submit" :disabled="isSubmitting || !form.motivo_cambio" class="px-5 py-2 text-white text-[13px] font-medium rounded-lg bg-[var(--nord8)] hover:bg-[var(--nord9)] disabled:opacity-50">
-                        Guardar cambios
-                    </button>
-                </div>
             </div>
         </div>
     </div>

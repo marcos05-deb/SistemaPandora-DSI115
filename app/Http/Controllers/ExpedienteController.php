@@ -9,6 +9,7 @@ use App\Http\Requests\ExpedienteCloseRequest;
 use App\Http\Requests\ExpedienteUpdateRequest;
 use App\Models\Cita;
 use App\Models\Expediente;
+use App\Services\ExpedienteActualizacionService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
@@ -16,27 +17,16 @@ class ExpedienteController extends Controller
 {
     /**
      * Actualizar campos clínicos permitidos del expediente (HU-10).
+     * Primera actualización libre; las siguientes requieren permiso admin consumible.
      */
-    public function update(ExpedienteUpdateRequest $request, Expediente $expediente)
-    {
+    public function update(
+        ExpedienteUpdateRequest $request,
+        Expediente $expediente,
+        ExpedienteActualizacionService $service
+    ) {
         Gate::authorize('update', $expediente);
 
-        $validated = $request->validated();
-        $motivoCambio = $validated['motivo_cambio'];
-        unset($validated['motivo_cambio']);
-
-        $payload = [];
-        foreach (['motivo_consulta', 'notas_clinicas', 'diagnostico'] as $campo) {
-            if (array_key_exists($campo, $validated)) {
-                $payload[$campo] = $validated[$campo];
-            }
-        }
-
-        // Incluye motivo_cambio en el INSERT original de auditoría (RP-04).
-        $expediente->auditMotivoCambio = $motivoCambio;
-        $expediente->update($payload);
-
-        $expediente->paciente->update(['ultima_accion' => 'Actualización de expediente clínico']);
+        $service->actualizar($expediente, $request->user(), $request->validated());
 
         return redirect()->back()
             ->with('message', 'Expediente actualizado correctamente.')

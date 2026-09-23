@@ -116,13 +116,70 @@ class PacienteCorreccionDatosTest extends ComplianceTestCase
         $this->paciente->refresh();
         $this->assertSame('Paciente Corregido', $this->paciente->nombre_completo);
         $this->assertSame('Corrección de datos generales', $this->paciente->ultima_accion);
+        $this->assertNotNull($this->paciente->datos_corregidos_en);
+        $this->assertSame($this->referenteCreador->id, $this->paciente->datos_corregidos_por_usuario_id);
 
         $this->assertDatabaseHas('paciente_correcciones_auditoria', [
             'paciente_id' => $this->paciente->codigo,
             'tipo_evento' => PacienteCorreccionAuditoria::TIPO_ACTUALIZACION,
             'nivel_evento' => PacienteCorreccionAuditoria::NIVEL_NORMAL,
             'usuario_id' => $this->referenteCreador->id,
+            'carnet_anterior' => '[CIFRADO]',
+            'carnet_nuevo' => '[CIFRADO]',
         ]);
+    }
+
+    public function test_segunda_correccion_sin_permiso_es_rechazada(): void
+    {
+        $this->actingAs($this->referenteCreador);
+        $this->patch('/pacientes/'.$this->paciente->codigo, $this->payload([
+            'nombre_completo' => 'Primera',
+        ]))->assertRedirect();
+
+        $this->patch('/pacientes/'.$this->paciente->codigo, $this->payload([
+            'nombre_completo' => 'Segunda',
+        ]))->assertSessionHasErrors('motivo_correccion');
+
+        $this->paciente->refresh();
+        $this->assertSame('Primera', $this->paciente->nombre_completo);
+        $this->assertSame(1, PacienteCorreccionAuditoria::query()->count());
+    }
+
+    public function test_solicitud_admin_aprueba_y_consume_permiso(): void
+    {
+        $this->actingAs($this->referenteCreador);
+        $this->patch('/pacientes/'.$this->paciente->codigo, $this->payload([
+            'nombre_completo' => 'Primera',
+        ]))->assertRedirect();
+
+        $this->post('/pacientes/'.$this->paciente->codigo.'/solicitudes-correccion', [
+            'campos' => ['nombre_completo'],
+            'motivo' => 'Necesito corregir el nombre por error de tipeo documentado en acta.',
+        ])->assertRedirect();
+
+        $solicitud = \App\Models\SolicitudCorreccionExpediente::query()->first();
+        $this->assertNotNull($solicitud);
+        $this->assertSame('pendiente', $solicitud->estado);
+
+        $admin = Especialista::factory()->withRole('sysadmin')->create();
+        $this->actingAs($admin);
+        $this->post('/admin/pacientes/solicitudes/'.$solicitud->id.'/aprobar')->assertRedirect();
+        $solicitud->refresh();
+        $this->assertSame('aprobada', $solicitud->estado);
+
+        $this->actingAs($this->referenteCreador);
+        $this->patch('/pacientes/'.$this->paciente->codigo, $this->payload([
+            'nombre_completo' => 'Segunda Autorizada',
+        ]))->assertRedirect();
+
+        $this->paciente->refresh();
+        $this->assertSame('Segunda Autorizada', $this->paciente->nombre_completo);
+        $solicitud->refresh();
+        $this->assertSame('consumida', $solicitud->estado);
+
+        $this->patch('/pacientes/'.$this->paciente->codigo, $this->payload([
+            'nombre_completo' => 'Tercera Bloqueada',
+        ]))->assertSessionHasErrors('motivo_correccion');
     }
 
     public function test_otro_referente_recibe_403(): void
@@ -288,10 +345,11 @@ class PacienteCorreccionDatosTest extends ComplianceTestCase
         $detalle->assertInertia(fn (Assert $page) => $page
             ->component('Admin/Pacientes/CorreccionShow')
             ->where('correccion.paciente_id', $this->paciente->codigo)
-            ->where('correccion.carnet_anterior', '[CIFRADO]')
-            ->where('correccion.carnet_nuevo', '[CIFRADO]')
-            ->where('correccion.valores_anteriores.carnet', '[CIFRADO]')
-            ->where('correccion.valores_nuevos.carnet', '[CIFRADO]')
+            ->where('correccion.campos_modificados', fn ($campos) => collect($campos)->contains('carnet'))
+            ->missing('correccion.valores_anteriores')
+            ->missing('correccion.valores_nuevos')
+            ->missing('correccion.carnet_anterior')
+            ->missing('correccion.carnet_nuevo')
         );
         $detalle->assertDontSee('QA26010');
         $detalle->assertDontSee('QA26222');
