@@ -40,9 +40,9 @@ function marcarRevisado() {
             v-if="correccion.aviso_sensible"
             class="rounded-[10px] border border-[var(--aurora-orange)]/50 bg-[var(--aurora-orange)]/10 px-4 py-3"
         >
-            <p class="text-[13px] font-semibold text-[var(--nord0)]">Corrección sensible: se modificó el carnet de un paciente.</p>
+            <p class="text-[13px] font-semibold text-[var(--nord0)]">Aviso sensible: se modificó el campo carnet.</p>
             <p class="text-[12px] text-[var(--nord3)] mt-1">
-                Estado del aviso:
+                No se muestra el valor del carnet. Estado del aviso:
                 {{ correccion.aviso_revisado ? `Revisado${correccion.revisado_por ? ' por ' + correccion.revisado_por : ''} (${formatDate(correccion.revisado_en)})` : 'Pendiente de revisión' }}
             </p>
         </div>
@@ -55,35 +55,22 @@ function marcarRevisado() {
             <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px]">
                 <div><span class="text-[var(--nord3)]">Paciente (UUID)</span><p class="font-mono text-[12px] mt-0.5">{{ correccion.paciente_id }}</p></div>
                 <div><span class="text-[var(--nord3)]">Tipo / nivel</span><p class="mt-0.5">{{ correccion.tipo_evento }} · {{ correccion.nivel_evento }}</p></div>
-                <div><span class="text-[var(--nord3)]">Identificador anterior</span><p class="mt-0.5 font-mono text-[var(--nord3)]">{{ correccion.carnet_anterior }}</p></div>
-                <div><span class="text-[var(--nord3)]">Identificador nuevo</span><p class="mt-0.5 font-mono text-[var(--nord3)]">{{ correccion.carnet_nuevo }}</p></div>
                 <div><span class="text-[var(--nord3)]">Responsable</span><p class="mt-0.5">{{ correccion.responsable }} ({{ correccion.rol_usuario }})</p></div>
                 <div><span class="text-[var(--nord3)]">Fecha</span><p class="mt-0.5">{{ formatDate(correccion.created_at) }}</p></div>
                 <div class="md:col-span-2"><span class="text-[var(--nord3)]">Motivo</span><p class="mt-0.5">{{ correccion.motivo }}</p></div>
-                <div class="md:col-span-2"><span class="text-[var(--nord3)]">Campos modificados</span><p class="mt-0.5">{{ (correccion.campos_modificados || []).join(', ') }}</p></div>
-                <p class="md:col-span-2 text-[11px] text-[var(--nord3)]">El carnet no se muestra al administrador; use el UUID del paciente como identificador.</p>            </div>
-
-            <div class="px-5 pb-5">
-                <h2 class="text-[13px] font-medium text-[var(--nord0)] mb-2">Valores (datos personales cifrados aparecen como [CIFRADO])</h2>
-                <div class="overflow-x-auto border border-[var(--nord4)] rounded-lg">
-                    <table class="w-full text-left text-[12px]">
-                        <thead class="bg-[var(--surface-header)] text-[var(--nord3)]">
-                            <tr>
-                                <th class="py-2 px-3">Campo</th>
-                                <th class="py-2 px-3">Anterior</th>
-                                <th class="py-2 px-3">Nuevo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="campo in correccion.campos_modificados" :key="campo" class="border-t border-[var(--nord5)]">
-                                <td class="py-2 px-3 font-mono">{{ campo }}</td>
-                                <td class="py-2 px-3">{{ correccion.valores_anteriores?.[campo] ?? '—' }}</td>
-                                <td class="py-2 px-3">{{ correccion.valores_nuevos?.[campo] ?? '—' }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="md:col-span-2">
+                    <span class="text-[var(--nord3)]">Campos modificados</span>
+                    <ul class="mt-1 list-disc pl-5 space-y-0.5">
+                        <li v-for="campo in correccion.campos_modificados" :key="campo" class="font-mono text-[12px]">{{ campo }}</li>
+                    </ul>
                 </div>
-                <p class="text-[11px] text-[var(--nord3)] mt-3">Esta pantalla es solo consulta. No permite editar ni eliminar el registro de auditoría.</p>
+                <p class="md:col-span-2 text-[11px] text-[var(--nord3)]">
+                    Por privacidad, el administrador solo ve qué campos se modificaron y quién lo hizo.
+                    No se exponen carnet, nombre ni ningún valor de dato personal o clínico.
+                </p>
+            </div>
+            <div class="px-5 pb-5">
+                <p class="text-[11px] text-[var(--nord3)]">Esta pantalla es solo consulta. No permite editar ni eliminar el registro de auditoría.</p>
             </div>
         </div>
     </div>

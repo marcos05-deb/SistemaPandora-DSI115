@@ -442,3 +442,12 @@
     - La cuadrícula visual aplica _Padding_ (relleno) calculando orgánicamente fechas extremas (lunes inicial a domingo final).
     - **Control de Condiciones de Carrera:** El módulo de detalles invocado al dar clic (Axios) implementa la clase nativa `AbortController`, anulando inmediatamente peticiones desfasadas o concurrentes provocadas por el doble clic rápido de los usuarios, previniendo inconsistencias de UI.
   - **Test Suite y Privilegios DML:** Se consolidaron las pruebas con `ConsultarCitasTest.php`, simulando interacciones entre todos los roles e intentando forzar visibilidad cross-area, aprobando con cobertura 100%. Adicionalmente se fusionaron los parches definitivos de Postgres asegurando Privilegios Mínimos para el demonio de la App.
+
+### [2026-09-23] Permiso de corrección del expediente (1 libre + autorización admin)
+- **Contexto:** Limitar correcciones de datos generales y actualizaciones clínicas del expediente: una modificación libre; las siguientes requieren solicitud al administrador. El admin no ve valores de PII ni clínicos, solo nombres de campo, autor y motivo.
+- **Cambios realizados:**
+  - Flags `datos_corregidos_en` / `datos_corregidos_por_usuario_id` en `pacientes` y `actualizado_clinicamente_*` en `expedientes`.
+  - Tabla `solicitudes_correccion_expediente` (pendiente | aprobada | rechazada | consumida).
+  - Servicios `SolicitudCorreccionExpedienteService`, `ExpedienteActualizacionService`; endurecimiento de `PacienteDatosCorreccionService` (bloqueo 2ª corrección, auditoría siempre `[CIFRADO]`).
+  - UI: botones “Solicitar permiso”, cola admin en `/admin/pacientes`, detalle de corrección sin valores.
+  - Documentación de reglas en `README.md`.

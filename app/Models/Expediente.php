@@ -64,6 +64,8 @@ class Expediente extends Model implements Auditable
         'resultado_final',
         'fecha_cierre',
         'cerrado_por_profesional_id',
+        'actualizado_clinicamente_en',
+        'actualizado_clinicamente_por_usuario_id',
     ];
 
     protected $casts = [
@@ -75,6 +77,7 @@ class Expediente extends Model implements Auditable
         'motivo_cierre'   => AreaEncryptedFieldCast::class,
         'resultado_final' => AreaEncryptedFieldCast::class,
         'fecha_cierre'    => 'datetime',
+        'actualizado_clinicamente_en' => 'datetime',
     ];
 
     /**
@@ -128,6 +131,16 @@ class Expediente extends Model implements Auditable
     public function cerradoPor(): BelongsTo
     {
         return $this->belongsTo(Profesional::class, 'cerrado_por_profesional_id');
+    }
+
+    public function actualizadoClinicamentePor(): BelongsTo
+    {
+        return $this->belongsTo(Especialista::class, 'actualizado_clinicamente_por_usuario_id');
+    }
+
+    public function solicitudesCorreccion(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(SolicitudCorreccionExpediente::class, 'expediente_id');
     }
 
     public function citas(): \Illuminate\Database\Eloquent\Relations\HasMany

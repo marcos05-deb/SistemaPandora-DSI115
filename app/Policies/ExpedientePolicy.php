@@ -33,6 +33,7 @@ class ExpedientePolicy
 
     /**
      * Actualizar campos clínicos: especialista/coordinador del área, expediente no cerrado.
+     * La primera actualización es libre; las siguientes requieren permiso admin (servicio).
      */
     public function update(Especialista $especialista, Expediente $expediente): bool
     {

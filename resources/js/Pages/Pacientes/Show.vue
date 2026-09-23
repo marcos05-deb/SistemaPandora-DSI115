@@ -5,6 +5,7 @@ import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 import DerivacionModal from '@/Components/Expediente/DerivacionModal.vue';
 import CierreExpedienteModal from '@/Components/Expediente/CierreExpedienteModal.vue';
 import ActualizarExpedienteModal from '@/Components/Expediente/ActualizarExpedienteModal.vue';
+import SolicitudCorreccionModal from '@/Components/Expediente/SolicitudCorreccionModal.vue';
 import AgendarCitaModal from '@/Components/Expediente/AgendarCitaModal.vue';
 import GestionarCitaModal from '@/Components/Expediente/GestionarCitaModal.vue';
 import { computed, ref, onMounted } from 'vue';
@@ -24,6 +25,8 @@ const props = defineProps({
     expedienteCerrado: { type: Object, default: null },
     alertaPreventiva: { type: Object, default: () => ({ activa: false, total: 0 }) },
     historialCambios: { type: Array, default: () => [] },
+    estadoCorreccionDatos: { type: Object, default: () => ({}) },
+    estadoActualizacionClinica: { type: Object, default: null },
     can: { type: Object, default: () => ({}) }
 });
 
@@ -62,10 +65,20 @@ const getAreaName = (areaId) => {
 const isDerivacionModalOpen = ref(false);
 const isCierreModalOpen = ref(false);
 const isActualizarModalOpen = ref(false);
+const isSolicitudDatosOpen = ref(false);
+const isSolicitudClinicoOpen = ref(false);
 const isCitaModalOpen = ref(false);
 const isGestionarCitaModalOpen = ref(false);
 const gestionarCitaMode = ref('reprogramar');
 const selectedCita = ref(null);
+
+const camposDatos = [
+    'carnet', 'nombre_completo', 'direccion', 'fecha_nacimiento', 'sexo', 'estado_civil',
+    'carrera_id', 'profesion_ocupacion', 'referido_por', 'llevado_por',
+    'padre_nombre', 'padre_telefono', 'madre_nombre', 'madre_telefono',
+    'responsable_parentesco', 'responsable_nombre', 'responsable_telefono', 'responsable_direccion',
+];
+const camposClinico = ['motivo_consulta', 'notas_clinicas', 'diagnostico'];
 
 const openGestionarCitaModal = (cita, mode) => {
     selectedCita.value = cita;
@@ -168,9 +181,31 @@ onMounted(() => {
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[var(--nord10)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
-                        Corregir datos del paciente
+                        {{ estadoCorreccionDatos?.permiso_aprobado ? 'Corregir (autorizado)' : 'Corregir datos del paciente' }}
                     </Link>
                 </template>
+                <template v-else-if="can.solicitarCorreccionDatos">
+                    <button
+                        type="button"
+                        class="px-3 py-1.5 bg-white hover:bg-[var(--surface-subtle)] text-[var(--nord0)] text-[11px] font-medium rounded-lg border border-[var(--nord4)] shadow-sm transition-colors inline-flex items-center gap-1.5"
+                        @click="isSolicitudDatosOpen = true"
+                    >
+                        Solicitar permiso de corrección
+                    </button>
+                </template>
+                <span
+                    v-else-if="estadoCorreccionDatos?.solicitud_pendiente"
+                    class="px-3 py-1.5 bg-[var(--aurora-orange)]/10 text-[var(--aurora-orange)] text-[11px] font-medium rounded-lg border border-[var(--aurora-orange)]/40"
+                >
+                    Corrección pendiente de autorización
+                </span>
+                <span
+                    v-else-if="estadoCorreccionDatos?.ya_corregido"
+                    class="px-3 py-1.5 bg-[var(--surface-subtle)] text-[var(--nord3)] text-[11px] font-medium rounded-lg border border-[var(--nord4)]"
+                    :title="estadoCorreccionDatos.corregido_por ? `Corregido por ${estadoCorreccionDatos.corregido_por}` : ''"
+                >
+                    Datos ya corregidos (1 vez)
+                </span>
 
                 <template v-if="can.derivar">
                     <template v-if="paciente.expedientes && paciente.expedientes.length > 0">
@@ -496,8 +531,31 @@ onMounted(() => {
 
                             <button v-if="can?.updateExpediente" @click="isActualizarModalOpen = true" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                Actualizar Expediente
+                                {{ estadoActualizacionClinica?.permiso_aprobado ? 'Actualizar (autorizado)' : 'Actualizar Expediente' }}
                             </button>
+                            <button
+                                v-else-if="can?.solicitarActualizacionClinica"
+                                type="button"
+                                @click="isSolicitudClinicoOpen = true"
+                                class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm"
+                            >
+                                Solicitar permiso de actualización
+                            </button>
+                            <p
+                                v-else-if="estadoActualizacionClinica?.solicitud_pendiente"
+                                class="text-[11px] text-[var(--aurora-orange)] text-center"
+                            >
+                                Actualización pendiente de autorización del administrador
+                            </p>
+                            <p
+                                v-else-if="estadoActualizacionClinica?.ya_actualizado"
+                                class="text-[11px] text-[var(--nord3)] text-center"
+                            >
+                                Expediente ya actualizado una vez
+                                <template v-if="estadoActualizacionClinica.actualizado_por">
+                                    ({{ estadoActualizacionClinica.actualizado_por }})
+                                </template>
+                            </p>
                             
                             <button v-if="can?.assignCita" @click="isCitaModalOpen = true" class="w-full py-2 text-[12px] font-medium rounded-lg flex items-center justify-center gap-2 bg-[var(--surface-header)] hover:bg-[var(--nord6)] text-[var(--nord0)] border border-[var(--nord4)] transition-colors shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -625,7 +683,25 @@ onMounted(() => {
         <ActualizarExpedienteModal
             :show="isActualizarModalOpen"
             :expediente="expedienteActivo"
+            :campos-autorizados="estadoActualizacionClinica?.campos_autorizados || []"
             @close="isActualizarModalOpen = false"
+        />
+
+        <SolicitudCorreccionModal
+            :show="isSolicitudDatosOpen"
+            tipo="datos"
+            :endpoint="`/pacientes/${paciente.codigo}/solicitudes-correccion`"
+            :campos-disponibles="camposDatos"
+            @close="isSolicitudDatosOpen = false"
+        />
+
+        <SolicitudCorreccionModal
+            v-if="expedienteActivo"
+            :show="isSolicitudClinicoOpen"
+            tipo="clinico"
+            :endpoint="`/expedientes/${expedienteActivo.id}/solicitudes-correccion`"
+            :campos-disponibles="camposClinico"
+            @close="isSolicitudClinicoOpen = false"
         />
         
         <AgendarCitaModal

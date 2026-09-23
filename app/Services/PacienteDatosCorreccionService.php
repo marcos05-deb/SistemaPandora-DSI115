@@ -8,21 +8,12 @@ use App\Models\ContactoPaciente;
 use App\Models\Especialista;
 use App\Models\Paciente;
 use App\Models\PacienteCorreccionAuditoria;
+use App\Models\SolicitudCorreccionExpediente;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class PacienteDatosCorreccionService
 {
-    /** @var list<string> */
-    private const CAMPOS_CIFRADOS = [
-        'nombre_completo',
-        'direccion',
-        'fecha_nacimiento',
-        'profesion_ocupacion',
-        'referido_por',
-        'llevado_por',
-    ];
-
     /** @var list<string> */
     private const CAMPOS_PACIENTE = [
         'carnet',
@@ -36,6 +27,10 @@ final class PacienteDatosCorreccionService
         'referido_por',
         'llevado_por',
     ];
+
+    public function __construct(
+        private readonly SolicitudCorreccionExpedienteService $solicitudes
+    ) {}
 
     /**
      * @param  array<string, mixed>  $validated
@@ -55,7 +50,6 @@ final class PacienteDatosCorreccionService
         return DB::transaction(function () use ($paciente, $usuario, $profesional, $validated, $motivo, $ip) {
             $paciente = Paciente::query()->whereKey($paciente->codigo)->lockForUpdate()->firstOrFail();
 
-            // Revalidar autorización dentro de la transacción
             if (
                 ! $usuario->hasRole('psychosocial_referent')
                 || $paciente->creado_por_profesional_id !== $profesional->id
@@ -63,11 +57,22 @@ final class PacienteDatosCorreccionService
                 abort(403);
             }
 
+            $permiso = null;
+            $esPrimera = $paciente->datos_corregidos_en === null;
+
+            if (! $esPrimera) {
+                $permiso = $this->solicitudes->permisoDatosVigente($paciente);
+                if (! $permiso) {
+                    throw ValidationException::withMessages([
+                        'motivo_correccion' => 'Este paciente ya fue corregido una vez. Solicite permiso al administrador para una nueva corrección.',
+                    ]);
+                }
+            }
+
             $codigoOriginal = $paciente->codigo;
-            $carnetAnterior = $paciente->carnet;
 
             $cambiosPaciente = $this->diffPaciente($paciente, $validated);
-            $cambiosContactos = $this->diffYAplicarContactos($paciente, $validated);
+            $cambiosContactos = $this->diffYAplicarContactos($paciente, $validated, aplicar: true);
 
             $todosLosCambios = array_merge($cambiosPaciente, $cambiosContactos);
 
@@ -77,10 +82,11 @@ final class PacienteDatosCorreccionService
                 ]);
             }
 
+            if ($permiso) {
+                $this->asegurarCamposDentroDePermiso($todosLosCambios, $permiso);
+            }
+
             $carnetCambio = array_key_exists('carnet', $cambiosPaciente);
-            $carnetNuevo = $carnetCambio
-                ? (string) $cambiosPaciente['carnet']['nuevo']
-                : $carnetAnterior;
 
             if ($cambiosPaciente !== []) {
                 $payload = [];
@@ -88,9 +94,18 @@ final class PacienteDatosCorreccionService
                     $payload[$campo] = $diff['nuevo'];
                 }
                 $payload['ultima_accion'] = 'Corrección de datos generales';
+                if ($esPrimera) {
+                    $payload['datos_corregidos_en'] = now();
+                    $payload['datos_corregidos_por_usuario_id'] = $usuario->id;
+                }
                 $paciente->update($payload);
             } else {
-                $paciente->update(['ultima_accion' => 'Corrección de datos generales']);
+                $payload = ['ultima_accion' => 'Corrección de datos generales'];
+                if ($esPrimera) {
+                    $payload['datos_corregidos_en'] = now();
+                    $payload['datos_corregidos_por_usuario_id'] = $usuario->id;
+                }
+                $paciente->update($payload);
             }
 
             $camposModificados = array_keys($todosLosCambios);
@@ -111,8 +126,8 @@ final class PacienteDatosCorreccionService
 
             PacienteCorreccionAuditoria::create([
                 'paciente_id' => $codigoOriginal,
-                'carnet_anterior' => $carnetAnterior,
-                'carnet_nuevo' => $carnetNuevo,
+                'carnet_anterior' => '[CIFRADO]',
+                'carnet_nuevo' => '[CIFRADO]',
                 'usuario_id' => $usuario->id,
                 'profesional_id' => $profesional->id,
                 'rol_usuario' => $rol,
@@ -130,15 +145,57 @@ final class PacienteDatosCorreccionService
                 'aviso_sensible' => $carnetCambio,
             ]);
 
+            if ($permiso) {
+                $permiso->consumir();
+            }
+
             $paciente->refresh();
 
-            // Garantizar integridad del UUID
             if ($paciente->codigo !== $codigoOriginal) {
                 throw new \RuntimeException('El UUID del paciente no debe cambiar durante la corrección.');
             }
 
             return $paciente;
         });
+    }
+
+    /**
+     * @param  array<string, array{anterior: mixed, nuevo: mixed}>  $cambios
+     */
+    private function asegurarCamposDentroDePermiso(array $cambios, SolicitudCorreccionExpediente $permiso): void
+    {
+        $autorizados = $permiso->camposAutorizados();
+        $modificados = array_keys($cambios);
+
+        // Mapear claves de contacto (contacto_padre.nombre_completo) a campos de solicitud
+        $mapeo = [
+            'contacto_padre.nombre_completo' => 'padre_nombre',
+            'contacto_padre.telefono_personal' => 'padre_telefono',
+            'contacto_madre.nombre_completo' => 'madre_nombre',
+            'contacto_madre.telefono_personal' => 'madre_telefono',
+            'contacto_otro.nombre_completo' => 'responsable_nombre',
+            'contacto_otro.telefono_personal' => 'responsable_telefono',
+            'contacto_otro.direccion' => 'responsable_direccion',
+            'contacto_padre.direccion' => 'responsable_direccion',
+            'contacto_madre.direccion' => 'responsable_direccion',
+            'contacto_padre.es_responsable' => 'responsable_parentesco',
+            'contacto_madre.es_responsable' => 'responsable_parentesco',
+            'contacto_otro.es_responsable' => 'responsable_parentesco',
+        ];
+
+        $fuera = [];
+        foreach ($modificados as $campo) {
+            $clave = $mapeo[$campo] ?? $campo;
+            if (! in_array($clave, $autorizados, true) && ! in_array($campo, $autorizados, true)) {
+                $fuera[] = $campo;
+            }
+        }
+
+        if ($fuera !== []) {
+            throw ValidationException::withMessages([
+                'motivo_correccion' => 'Solo puede modificar los campos autorizados por el administrador: '.implode(', ', $autorizados).'.',
+            ]);
+        }
     }
 
     /**
@@ -190,7 +247,7 @@ final class PacienteDatosCorreccionService
      * @param  array<string, mixed>  $validated
      * @return array<string, array{anterior: mixed, nuevo: mixed}>
      */
-    private function diffYAplicarContactos(Paciente $paciente, array $validated): array
+    private function diffYAplicarContactos(Paciente $paciente, array $validated, bool $aplicar = true): array
     {
         $cambios = [];
         $contactos = $paciente->contactos()->get()->keyBy('parentesco');
@@ -215,7 +272,7 @@ final class PacienteDatosCorreccionService
                 'parentesco' => 'Padre',
             ];
             if (! empty($data['nombre_completo'])) {
-                $cambios = array_merge($cambios, $this->upsertContacto($paciente, $contactos->get('Padre'), $data, 'padre'));
+                $cambios = array_merge($cambios, $this->upsertContacto($paciente, $contactos->get('Padre'), $data, 'padre', $aplicar));
             }
         }
 
@@ -230,7 +287,7 @@ final class PacienteDatosCorreccionService
                 'parentesco' => 'Madre',
             ];
             if (! empty($data['nombre_completo'])) {
-                $cambios = array_merge($cambios, $this->upsertContacto($paciente, $contactos->get('Madre'), $data, 'madre'));
+                $cambios = array_merge($cambios, $this->upsertContacto($paciente, $contactos->get('Madre'), $data, 'madre', $aplicar));
             }
         }
 
@@ -243,16 +300,18 @@ final class PacienteDatosCorreccionService
                 'es_responsable' => true,
                 'parentesco' => 'Otro',
             ];
-            $cambios = array_merge($cambios, $this->upsertContacto($paciente, $contactos->get('Otro'), $data, 'otro'));
+            $cambios = array_merge($cambios, $this->upsertContacto($paciente, $contactos->get('Otro'), $data, 'otro', $aplicar));
         }
 
-        // Asegurar un único responsable activo
-        $paciente->contactos()->get()->each(function (ContactoPaciente $c) use ($parentescoResp) {
-            $debeSer = $c->parentesco === $parentescoResp;
-            if ((bool) $c->es_responsable !== $debeSer) {
-                $c->update(['es_responsable' => $debeSer]);
-            }
-        });
+        if ($aplicar) {
+            // Asegurar un único responsable activo
+            $paciente->contactos()->get()->each(function (ContactoPaciente $c) use ($parentescoResp) {
+                $debeSer = $c->parentesco === $parentescoResp;
+                if ((bool) $c->es_responsable !== $debeSer) {
+                    $c->update(['es_responsable' => $debeSer]);
+                }
+            });
+        }
 
         return $cambios;
     }
@@ -261,20 +320,22 @@ final class PacienteDatosCorreccionService
      * @param  array<string, mixed>  $data
      * @return array<string, array{anterior: mixed, nuevo: mixed}>
      */
-    private function upsertContacto(Paciente $paciente, ?ContactoPaciente $contacto, array $data, string $prefijo): array
+    private function upsertContacto(Paciente $paciente, ?ContactoPaciente $contacto, array $data, string $prefijo, bool $aplicar = true): array
     {
         $cambios = [];
         $campos = ['nombre_completo', 'telefono_personal', 'direccion', 'es_responsable'];
 
         if (! $contacto) {
-            ContactoPaciente::create([
-                'paciente_id' => $paciente->codigo,
-                'nombre_completo' => $data['nombre_completo'],
-                'parentesco' => $data['parentesco'],
-                'telefono_personal' => $data['telefono_personal'],
-                'direccion' => $data['direccion'],
-                'es_responsable' => $data['es_responsable'],
-            ]);
+            if ($aplicar) {
+                ContactoPaciente::create([
+                    'paciente_id' => $paciente->codigo,
+                    'nombre_completo' => $data['nombre_completo'],
+                    'parentesco' => $data['parentesco'],
+                    'telefono_personal' => $data['telefono_personal'],
+                    'direccion' => $data['direccion'],
+                    'es_responsable' => $data['es_responsable'],
+                ]);
+            }
 
             foreach ($campos as $campo) {
                 $cambios["contacto_{$prefijo}.{$campo}"] = [
@@ -301,7 +362,7 @@ final class PacienteDatosCorreccionService
             }
         }
 
-        if ($cambios !== []) {
+        if ($aplicar && $cambios !== []) {
             $contacto->update([
                 'nombre_completo' => $data['nombre_completo'],
                 'telefono_personal' => $data['telefono_personal'],
@@ -315,21 +376,12 @@ final class PacienteDatosCorreccionService
 
     private function valorAuditoria(string $campo, mixed $valor): mixed
     {
-        $base = str_contains($campo, '.') ? explode('.', $campo)[1] : $campo;
-
-        // Carnet y datos personales: nunca quedan en texto plano en la auditoría.
-        if ($base === 'carnet'
-            || in_array($base, self::CAMPOS_CIFRADOS, true)
-            || in_array($base, ['telefono_personal', 'telefono_casa', 'direccion', 'nombre_completo'], true)
-        ) {
-            if ($valor === null || $valor === '') {
-                return null;
-            }
-
-            return '[CIFRADO]';
+        if ($valor === null || $valor === '') {
+            return null;
         }
 
-        return $valor;
+        // Privacidad: la auditoría nunca guarda valores en claro (ni carnet, ni nombre, ni demográficos).
+        return '[CIFRADO]';
     }
 
     private function normalizarComparable(mixed $valor): string

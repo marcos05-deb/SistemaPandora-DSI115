@@ -11,6 +11,7 @@ defineOptions({ layout: ClinicalLayout });
 const props = defineProps({
     paciente: { type: Object, required: true },
     facultades: { type: Array, default: () => [] },
+    estadoCorreccion: { type: Object, default: () => ({}) },
 });
 
 const showConfirm = ref(false);
@@ -99,8 +100,12 @@ function confirmAndSave() {
             <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--surface-header)]">
                 <h1 class="text-[16px] font-medium text-[var(--nord0)]">Corregir datos del paciente</h1>
                 <p class="text-[12px] text-[var(--nord3)] mt-1">
-                    Solo datos generales y contactos. No modifica expedientes, consultas ni historial clínico.
-                    La operación quedará registrada en auditoría.
+                    Solo datos generales y contactos. La primera corrección es libre; las siguientes requieren permiso del administrador (un solo uso).
+                    Queda registrado quién corrigió y qué campos; el admin no ve valores (carnet, nombre, etc.).
+                </p>
+                <p v-if="estadoCorreccion?.permiso_aprobado" class="text-[11px] text-[var(--aurora-orange)] mt-2">
+                    Permiso autorizado para: {{ (estadoCorreccion.campos_autorizados || []).join(', ') }}.
+                    Tras guardar, el permiso se consume.
                 </p>
             </div>
 

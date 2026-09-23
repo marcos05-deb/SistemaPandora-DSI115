@@ -175,6 +175,20 @@ docker compose exec app php artisan test
 docker compose -f docker-compose.prod.yml up --build
 ```
 
+## Reglas de corrección del expediente
+
+El sistema limita las correcciones de **datos generales** y de **campos clínicos del expediente** para reducir errores y proteger la privacidad:
+
+1. **Primera modificación**: libre para el rol autorizado (referente creador en datos generales; especialista/coordinador del área en clínico), con motivo obligatorio y registro en auditoría.
+2. **Modificaciones siguientes**: el usuario debe **solicitar permiso** al administrador indicando los campos y el motivo. El admin aprueba o rechaza. Si aprueba, se habilita **un solo** cambio; al guardar, el permiso se consume y el expediente vuelve a quedar bloqueado.
+3. **Visibilidad del administrador**: en auditoría solo ve UUID del paciente, nombres de campos modificados, autor, fecha y motivo. **No** ve carnet, nombre, direcciones, notas clínicas ni ningún valor de dato personal o clínico.
+
+Rutas relevantes:
+- Corrección de datos: `/pacientes/{uuid}/editar`
+- Solicitud de permiso (datos): `POST /pacientes/{uuid}/solicitudes-correccion`
+- Solicitud de permiso (clínico): `POST /expedientes/{id}/solicitudes-correccion`
+- Cola admin: `/admin/pacientes` (aprobar/rechazar solicitudes)
+
 ## Protocolo de Reporte de Errores y Contribución
 
 Cualquier hallazgo de defectos de software, bugs o degradación de servicio debe ser rigurosamente documentado en el sistema de seguimiento de Issues del proyecto. Un reporte técnico válido debe cumplir estrictamente con la siguiente estructura:

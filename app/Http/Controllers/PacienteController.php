@@ -8,6 +8,7 @@ use App\Models\Facultad;
 use App\Models\Paciente;
 use App\Models\ContactoPaciente;
 use App\Services\PacienteDatosCorreccionService;
+use App\Services\SolicitudCorreccionExpedienteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -231,7 +232,16 @@ class PacienteController extends Controller
             ? null
             : $paciente->expedientes->where('estado', 'cerrado')->sortByDesc('fecha_cierre')->first();
         $canCloseExpediente = $expedienteActivo ? $user->can('close', $expedienteActivo) : false;
-        $canUpdateExpediente = $expedienteActivo ? $user->can('update', $expedienteActivo) : false;
+        $canUpdateExpedientePolicy = $expedienteActivo ? $user->can('update', $expedienteActivo) : false;
+
+        $solicitudService = app(SolicitudCorreccionExpedienteService::class);
+        $estadoCorreccionDatos = $solicitudService->estadoDatosParaUi($paciente, $user);
+        $estadoActualizacionClinica = $expedienteActivo
+            ? $solicitudService->estadoClinicoParaUi($expedienteActivo, $user)
+            : null;
+
+        $canUpdateExpediente = $canUpdateExpedientePolicy
+            && ($estadoActualizacionClinica['puede_editar'] ?? false);
         // Visible para todas las áreas autorizadas; el modal exige consulta activa para enviar.
         $canAssignCita = $expedienteActivo ? $user->can('create', [\App\Models\Cita::class, $expedienteActivo]) : false;
         $canCreateConsulta = $expedienteActivo ? $user->can('create', [\App\Models\Consulta::class, $expedienteActivo]) : false;
@@ -313,6 +323,8 @@ class PacienteController extends Controller
             'expedienteCerrado' => $expedienteCerrado,
             'alertaPreventiva' => $alertaPreventiva,
             'historialCambios' => $historialCambios,
+            'estadoCorreccionDatos' => $estadoCorreccionDatos,
+            'estadoActualizacionClinica' => $estadoActualizacionClinica,
             'can' => [
                 'closeExpediente' => $canCloseExpediente,
                 'updateExpediente' => $canUpdateExpediente,
@@ -320,7 +332,9 @@ class PacienteController extends Controller
                 'updateCita' => $canUpdateCita,
                 'createConsulta' => $canCreateConsulta,
                 'derivar' => $user->can('derivar', [\App\Models\Expediente::class, $paciente]),
-                'updatePaciente' => $user->can('update', $paciente),
+                'updatePaciente' => $estadoCorreccionDatos['puede_editar'],
+                'solicitarCorreccionDatos' => $estadoCorreccionDatos['necesita_permiso'],
+                'solicitarActualizacionClinica' => (bool) ($estadoActualizacionClinica['necesita_permiso'] ?? false),
             ],
         ]);
     }
@@ -328,9 +342,12 @@ class PacienteController extends Controller
     /**
      * Formulario de corrección de datos generales (solo referente creador).
      */
-    public function edit(Paciente $paciente): Response
+    public function edit(Paciente $paciente, SolicitudCorreccionExpedienteService $solicitudService): Response
     {
         $this->authorize('update', $paciente);
+
+        $estado = $solicitudService->estadoDatosParaUi($paciente, auth()->user());
+        abort_unless($estado['puede_editar'], 403);
 
         $paciente->load(['contactos', 'carrera.facultad']);
         $facultades = Facultad::with('carreras')->get();
@@ -368,6 +385,7 @@ class PacienteController extends Controller
                 'responsable_direccion' => $responsable?->direccion,
             ],
             'facultades' => $facultades,
+            'estadoCorreccion' => $estado,
         ]);
     }
 

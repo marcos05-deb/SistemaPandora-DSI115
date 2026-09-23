@@ -109,6 +109,9 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         Route::patch('/pacientes/{paciente}', [\App\Http\Controllers\PacienteController::class, 'update'])
             ->name('pacientes.update')
             ->middleware('throttle:20,1');
+        Route::post('/pacientes/{paciente}/solicitudes-correccion', [\App\Http\Controllers\SolicitudCorreccionController::class, 'storeDatos'])
+            ->name('pacientes.solicitudes-correccion.store')
+            ->middleware('throttle:10,1');
 
         Route::post('/pacientes/{paciente}/derivar', [\App\Http\Controllers\DerivacionController::class, 'store'])->name('pacientes.derivar.store');
     });
@@ -124,6 +127,9 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
             Route::post('/expedientes/{expediente}/consultas', [\App\Http\Controllers\ConsultaController::class, 'store'])->name('consultas.store');
             Route::post('/expedientes/{expediente}/cerrar', [\App\Http\Controllers\ExpedienteController::class, 'close'])->name('expedientes.cerrar');
             Route::patch('/expedientes/{expediente}', [\App\Http\Controllers\ExpedienteController::class, 'update'])->name('expedientes.update');
+            Route::post('/expedientes/{expediente}/solicitudes-correccion', [\App\Http\Controllers\SolicitudCorreccionController::class, 'storeClinico'])
+                ->name('expedientes.solicitudes-correccion.store')
+                ->middleware('throttle:10,1');
             
             Route::post('/expedientes/{expediente}/citas', [\App\Http\Controllers\CitaController::class, 'store'])->name('citas.store');
             Route::scopeBindings()->group(function () {
@@ -156,6 +162,12 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
             ->name('admin.pacientes.correcciones.show');
         Route::post('/pacientes/correcciones/{correccion}/revisar', [\App\Http\Controllers\Admin\PacienteController::class, 'marcarRevisado'])
             ->name('admin.pacientes.correcciones.revisar')
+            ->middleware('throttle:30,1');
+        Route::post('/pacientes/solicitudes/{solicitud}/aprobar', [\App\Http\Controllers\Admin\PacienteController::class, 'aprobarSolicitud'])
+            ->name('admin.pacientes.solicitudes.aprobar')
+            ->middleware('throttle:30,1');
+        Route::post('/pacientes/solicitudes/{solicitud}/rechazar', [\App\Http\Controllers\Admin\PacienteController::class, 'rechazarSolicitud'])
+            ->name('admin.pacientes.solicitudes.rechazar')
             ->middleware('throttle:30,1');
 
         // Organigrama
