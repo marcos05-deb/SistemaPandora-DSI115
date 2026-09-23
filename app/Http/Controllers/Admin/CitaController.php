@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\IndexCitasRequest;
 use App\Http\Requests\CitasPorDiaRequest;
+use App\Http\Resources\AdminCitaResource;
 use App\Http\Resources\CitaGridResource;
-use App\Http\Resources\CitaResource;
 use App\Models\Cita;
 use Carbon\CarbonImmutable;
 use Inertia\Inertia;
@@ -51,11 +51,11 @@ class CitaController extends Controller
             ->setTimezone('UTC');
 
         $citas = Cita::withoutGlobalScope(\App\Models\Scopes\AreaScope::class)
-            ->with(['expediente.paciente', 'profesional.especialista', 'area'])
+            ->with(['expediente.paciente.carrera.facultad', 'profesional.especialista', 'area'])
             ->whereBetween('fecha_hora', [$start, $end])
             ->orderBy('fecha_hora')
             ->get();
 
-        return CitaResource::collection($citas);
+        return AdminCitaResource::collection($citas);
     }
 }
