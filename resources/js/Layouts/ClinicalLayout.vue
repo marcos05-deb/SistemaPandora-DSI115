@@ -26,6 +26,11 @@ const flashExit = ref(false);
 const flashProgress = ref(100);
 let flashProgressInterval = null;
 
+watch(sidebarOpen, (open) => {
+    if (typeof document === 'undefined') return;
+    document.body.style.overflow = open ? 'hidden' : '';
+});
+
 watch(() => page.props.flash?.message, (newMsg) => {
     if (newMsg) {
         showFlash.value = true;
@@ -49,8 +54,22 @@ function onDocClick(e) {
     }
 }
 
-onMounted(() => document.addEventListener('click', onDocClick));
-onUnmounted(() => document.removeEventListener('click', onDocClick));
+function onKeydown(e) {
+    if (e.key === 'Escape') {
+        sidebarOpen.value = false;
+        profileOpen.value = false;
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('click', onDocClick);
+    document.addEventListener('keydown', onKeydown);
+});
+onUnmounted(() => {
+    document.removeEventListener('click', onDocClick);
+    document.removeEventListener('keydown', onKeydown);
+    document.body.style.overflow = '';
+});
 
 const allLinks = [
     {
@@ -88,9 +107,9 @@ const sidebarLinks = computed(() => allLinks.filter(link => !link.roles || link.
 </script>
 
 <template>
-    <div class="min-h-screen bg-[var(--nord6)] flex flex-col font-sans">
+    <div class="min-h-screen bg-[var(--nord6)] flex flex-col font-sans overflow-x-hidden">
         <!-- Toast Notification -->
-        <div v-if="page.props.flash?.message && showFlash" class="fixed top-4 right-4 z-[60] max-w-sm animate-slide-in-right pointer-events-none">
+        <div v-if="page.props.flash?.message && showFlash" class="fixed top-4 left-4 right-4 sm:left-auto z-[60] max-w-sm sm:ml-auto animate-slide-in-right pointer-events-none">
             <div :class="[
                 'relative rounded-xl shadow-xl border flex flex-col overflow-hidden pointer-events-auto transition-all duration-300',
                 flashExit ? 'opacity-0 translate-x-4' : 'opacity-100',
@@ -201,10 +220,10 @@ const sidebarLinks = computed(() => allLinks.filter(link => !link.roles || link.
             <!-- Sidebar -->
             <aside
                 id="clinical-sidebar"
-                class="w-[240px] bg-[var(--chrome-sidebar)] shadow-xl shrink-0 z-10 flex flex-col border-r border-[var(--chrome-border)] transition-transform duration-300 lg:translate-x-0 lg:z-10"
+                class="w-[min(240px,85vw)] bg-[var(--chrome-sidebar)] shadow-xl shrink-0 z-10 flex flex-col border-r border-[var(--chrome-border)] transition-transform duration-300 lg:w-[240px] lg:translate-x-0 lg:z-10 lg:relative"
                 :class="sidebarOpen
                     ? 'fixed inset-y-0 left-0 translate-x-0 z-[45] pt-[56px] lg:pt-0'
-                    : 'fixed inset-y-0 left-0 -translate-x-full lg:relative lg:translate-x-0'"
+                    : 'fixed inset-y-0 left-0 -translate-x-full lg:translate-x-0'"
             >
                 <nav class="flex-1 py-4 px-3 space-y-1 mt-0 overflow-y-auto">
                     <div class="px-3 pb-2 mb-2 text-[10px] font-semibold text-[var(--chrome-text-muted)] uppercase tracking-[0.12em] border-b border-[var(--chrome-border)]">
@@ -237,7 +256,7 @@ const sidebarLinks = computed(() => allLinks.filter(link => !link.roles || link.
                 </div>
             </aside>
 
-            <main class="flex-1 p-4 lg:p-8 overflow-y-auto relative">
+            <main class="flex-1 p-4 lg:p-8 overflow-y-auto overflow-x-hidden relative min-w-0">
                 <div class="max-w-6xl mx-auto animate-fade-in">
                     <slot />
                 </div>

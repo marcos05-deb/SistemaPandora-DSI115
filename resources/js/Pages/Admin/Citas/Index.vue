@@ -33,8 +33,16 @@ let currentAbortController = null;
 const gridStart = computed(() => currentDate.value.startOf('month').startOf('week'));
 const gridEnd = computed(() => currentDate.value.endOf('month').endOf('week'));
 
-// Días de la semana (L a D)
-const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+// Días de la semana (L a D) — abreviatura en móvil vía CSS
+const weekDays = [
+    { full: 'Lunes', short: 'L' },
+    { full: 'Martes', short: 'M' },
+    { full: 'Miércoles', short: 'X' },
+    { full: 'Jueves', short: 'J' },
+    { full: 'Viernes', short: 'V' },
+    { full: 'Sábado', short: 'S' },
+    { full: 'Domingo', short: 'D' },
+];
 
 // Arreglo de días para la cuadrícula
 const calendarDays = computed(() => {
@@ -168,23 +176,23 @@ const getCitasBreakdown = (dateObj) => {
 <template>
     <Head title="Calendario de Citas" />
     <AdminLayout>
-        <div class="px-6 py-8 h-full flex flex-col">
+        <div class="py-2 sm:py-4 h-full flex flex-col min-w-0">
             <!-- Header -->
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-4 sm:mb-6">
                 <div class="min-w-0">
-                    <h1 class="text-2xl font-bold tracking-tight text-[var(--nord0)]">Calendario de Citas</h1>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-[var(--nord0)]">Calendario de Citas</h1>
                     <p class="text-[13px] text-[var(--nord3)] mt-1">Supervisión general de atención clínica</p>
                 </div>
 
                 <div
-                    class="inline-flex items-stretch self-start sm:self-auto rounded-xl border border-[var(--nord4)] bg-white shadow-sm overflow-hidden"
+                    class="inline-flex items-stretch self-stretch sm:self-auto rounded-xl border border-[var(--nord4)] bg-white shadow-sm overflow-hidden"
                     role="group"
                     aria-label="Navegación del calendario"
                 >
                     <button
                         type="button"
                         @click="goToToday"
-                        class="px-3.5 py-2 text-[13px] font-semibold text-[var(--nord0)] border-r border-[var(--nord4)] hover:bg-[var(--nord6)] transition-colors"
+                        class="px-3 py-2 text-[13px] font-semibold text-[var(--nord0)] border-r border-[var(--nord4)] hover:bg-[var(--nord6)] transition-colors"
                     >
                         Hoy
                     </button>
@@ -196,7 +204,7 @@ const getCitasBreakdown = (dateObj) => {
                     >
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                     </button>
-                    <span class="px-3 py-2 text-[13px] font-semibold text-[var(--nord0)] min-w-[148px] text-center tabular-nums select-none">
+                    <span class="flex-1 px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-semibold text-[var(--nord0)] min-w-0 sm:min-w-[148px] text-center tabular-nums select-none truncate">
                         {{ currentDate.format('MMMM YYYY').replace(/^\w/, (c) => c.toUpperCase()) }}
                     </span>
                     <button
@@ -211,17 +219,18 @@ const getCitasBreakdown = (dateObj) => {
             </div>
 
             <!-- Calendario -->
-            <div class="flex-1 bg-white rounded-xl shadow-sm border border-[var(--nord4)] overflow-hidden flex flex-col relative">
+            <div class="flex-1 bg-white rounded-xl shadow-sm border border-[var(--nord4)] overflow-hidden flex flex-col relative min-w-0">
                 <div class="grid grid-cols-7 border-b border-[var(--nord4)] bg-[var(--nord6)]">
-                    <div v-for="day in weekDays" :key="day" class="py-2.5 text-center text-[12px] font-semibold text-[var(--nord3)] uppercase tracking-wider">
-                        {{ day }}
+                    <div v-for="day in weekDays" :key="day.full" class="py-2 sm:py-2.5 text-center text-[11px] sm:text-[12px] font-semibold text-[var(--nord3)] uppercase tracking-wider">
+                        <span class="sm:hidden">{{ day.short }}</span>
+                        <span class="hidden sm:inline">{{ day.full }}</span>
                     </div>
                 </div>
                 
-                <div class="flex-1 grid grid-cols-7 grid-rows-6 auto-rows-fr">
+                <div class="flex-1 grid grid-cols-7 auto-rows-fr">
                     <div v-for="date in calendarDays" :key="date.format('YYYY-MM-DD')"
                          @click="fetchCitasPorDia(date)"
-                         class="min-h-[100px] border-b border-r border-[var(--nord4)] p-2 transition-colors cursor-pointer hover:bg-[var(--nord6)]/50 relative group"
+                         class="min-h-[64px] sm:min-h-[100px] border-b border-r border-[var(--nord4)] p-1 sm:p-2 transition-colors cursor-pointer hover:bg-[var(--nord6)]/50 relative group"
                          :class="{
                              'bg-[var(--nord6)]/20': !date.isSame(currentDate, 'month'),
                              'bg-[var(--aurora-purple)]/5': date.isSame(dayjs(), 'day'),
@@ -230,20 +239,20 @@ const getCitasBreakdown = (dateObj) => {
                          }">
                         
                         <div class="flex items-center justify-between">
-                            <span class="text-[14px] font-medium w-7 h-7 flex items-center justify-center rounded-full"
+                            <span class="text-[12px] sm:text-[14px] font-medium w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full"
                                   :class="date.isSame(dayjs(), 'day') ? 'bg-[var(--aurora-purple)] text-white' : (date.isSame(currentDate, 'month') ? 'text-[var(--nord0)]' : 'text-[var(--nord4)]')">
                                 {{ date.format('D') }}
                             </span>
                         </div>
                         
                         <!-- Indicadores de citas -->
-                        <div class="mt-2 flex flex-col gap-1 w-full" v-if="getCitasCount(date) > 0">
+                        <div class="mt-1 sm:mt-2 flex flex-col gap-0.5 sm:gap-1 w-full" v-if="getCitasCount(date) > 0">
                             <div v-for="stat in getCitasBreakdown(date)" :key="stat.estado"
-                                 class="inline-flex items-center justify-between px-1.5 py-0.5 rounded text-[10px] font-bold"
+                                 class="inline-flex items-center justify-between px-1 sm:px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold"
                                  :class="stat.colorClass">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-1.5 h-1.5 rounded-full" :class="stat.dotClass"></span>
-                                    <span class="truncate max-w-[65px]" :title="stat.label">{{ stat.label }}</span>
+                                <div class="flex items-center gap-1 sm:gap-1.5 min-w-0">
+                                    <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="stat.dotClass"></span>
+                                    <span class="truncate hidden sm:inline max-w-[65px]" :title="stat.label">{{ stat.label }}</span>
                                 </div>
                                 <span>{{ stat.count }}</span>
                             </div>
@@ -253,7 +262,7 @@ const getCitasBreakdown = (dateObj) => {
                 
                 <!-- Slide-over (Panel lateral para el día seleccionado) -->
                 <transition enter-active-class="transform transition ease-in-out duration-300" enter-from-class="translate-x-full" enter-to-class="translate-x-0" leave-active-class="transform transition ease-in-out duration-300" leave-from-class="translate-x-0" leave-to-class="translate-x-full">
-                    <div v-if="selectedDay" class="absolute inset-y-0 right-0 w-96 bg-white shadow-2xl border-l border-[var(--nord4)] flex flex-col z-20">
+                    <div v-if="selectedDay" class="absolute inset-y-0 right-0 w-full max-w-full sm:w-96 bg-white shadow-2xl border-l border-[var(--nord4)] flex flex-col z-20">
                         <div class="px-5 py-4 border-b border-[var(--nord4)] flex items-center justify-between bg-[var(--nord6)]">
                             <div>
                                 <h3 class="text-[16px] font-bold text-[var(--nord0)]">{{ selectedDay.format('dddd D [de] MMMM') }}</h3>

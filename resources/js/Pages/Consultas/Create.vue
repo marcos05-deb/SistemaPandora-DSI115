@@ -316,15 +316,15 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
         ]" />
 
         <div class="bg-white rounded-xl shadow-sm border border-[var(--nord4)] overflow-hidden">
-            <div class="px-6 py-5 border-b border-[var(--nord4)] bg-[var(--surface-header)] flex items-center justify-between">
-                <div>
-                    <h1 class="text-[18px] font-semibold text-[var(--nord0)] tracking-tight flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[var(--nord8)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="px-4 sm:px-6 py-5 border-b border-[var(--nord4)] bg-[var(--surface-header)] flex items-start sm:items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <h1 class="text-[16px] sm:text-[18px] font-semibold text-[var(--nord0)] tracking-tight flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[var(--nord8)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        Registrar Nueva Consulta
+                        <span class="truncate">Registrar Nueva Consulta</span>
                     </h1>
-                    <p class="text-[13px] text-[var(--nord3)] mt-1 ml-7">
+                    <p class="text-[13px] text-[var(--nord3)] mt-1 sm:ml-7 truncate">
                         Completando atención para {{ expediente.paciente.nombre_completo }}
                     </p>
                 </div>
