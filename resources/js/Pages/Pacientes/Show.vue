@@ -24,7 +24,6 @@ const props = defineProps({
     consultaActivaId: { type: String, default: null },
     expedienteCerrado: { type: Object, default: null },
     alertaPreventiva: { type: Object, default: () => ({ activa: false, total: 0 }) },
-    historialCambios: { type: Array, default: () => [] },
     estadoCorreccionDatos: { type: Object, default: () => ({}) },
     estadoActualizacionClinica: { type: Object, default: null },
     can: { type: Object, default: () => ({}) }
@@ -631,38 +630,6 @@ onMounted(() => {
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div v-if="historialCambios.length > 0" class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
-            <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--surface-header)]">
-                <h2 class="text-[14px] font-medium text-[var(--nord0)]">Historial de cambios del expediente</h2>
-                <p class="text-[12px] text-[var(--nord3)] mt-0.5">
-                    Cada actualización conserva la versión anterior. Los valores clínicos aparecen como
-                    <span class="font-mono">[CIFRADO]</span> por seguridad; autor, fecha y motivo sí son visibles.
-                </p>
-            </div>
-            <div class="divide-y divide-[var(--nord4)]">
-                <div v-for="cambio in historialCambios" :key="cambio.id" class="px-6 py-4">
-                    <div class="flex flex-wrap items-center gap-2 text-[12px] text-[var(--nord3)] mb-2">
-                        <span class="font-semibold text-[var(--nord0)] uppercase">{{ cambio.event }}</span>
-                        <span>{{ cambio.created_at }}</span>
-                        <span v-if="cambio.autor" class="text-[var(--nord0)]">· Autor: {{ cambio.autor }}</span>
-                        <span v-if="cambio.motivo_cambio" class="text-[var(--nord0)]">· Motivo: {{ cambio.motivo_cambio }}</span>
-                    </div>
-                    <div v-if="cambio.campos?.length" class="space-y-2">
-                        <div v-for="campo in cambio.campos" :key="campo.campo" class="grid grid-cols-1 md:grid-cols-3 gap-2 text-[12px]">
-                            <p class="font-mono text-[var(--nord3)]">{{ campo.campo }}</p>
-                            <p class="text-[var(--aurora-orange)] whitespace-pre-wrap break-words">
-                                <span class="font-semibold">Antes:</span> {{ campo.anterior ?? '—' }}
-                            </p>
-                            <p class="text-[var(--aurora-green)] whitespace-pre-wrap break-words">
-                                <span class="font-semibold">Después:</span> {{ campo.nuevo ?? '—' }}
-                            </p>
-                        </div>
-                    </div>
-                    <p v-else class="text-[12px] text-[var(--nord3)]">Sin detalle de campos (evento de sistema).</p>
                 </div>
             </div>
         </div>

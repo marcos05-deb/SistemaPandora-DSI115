@@ -268,45 +268,6 @@ class PacienteController extends Controller
             $consultaActivaId = \App\Models\Consulta::activaParaExpediente($expedienteActivo)?->id;
         }
 
-        $historialCambios = [];
-        $expedienteParaHistorial = $expedienteActivo ?? $expedienteCerrado;
-        if ($expedienteParaHistorial) {
-            $historialCambios = $expedienteParaHistorial->audits()
-                ->with('user')
-                ->latest('id')
-                ->limit(12)
-                ->get()
-                ->map(function ($audit) {
-                    $old = is_array($audit->old_values) ? $audit->old_values : [];
-                    $new = is_array($audit->new_values) ? $audit->new_values : [];
-                    $autor = null;
-                    if ($audit->user) {
-                        $autor = $audit->user->name
-                            ?? $audit->user->email
-                            ?? null;
-                    }
-
-                    return [
-                        'id' => $audit->id,
-                        'event' => $audit->event,
-                        'created_at' => $audit->created_at?->timezone(config('app.timezone'))->format('Y-m-d H:i'),
-                        'autor' => $autor,
-                        'motivo_cambio' => $new['motivo_cambio'] ?? null,
-                        'campos' => collect(array_unique(array_merge(array_keys($old), array_keys($new))))
-                            ->reject(fn ($k) => $k === 'motivo_cambio')
-                            ->map(fn ($campo) => [
-                                'campo' => $campo,
-                                'anterior' => $old[$campo] ?? null,
-                                'nuevo' => $new[$campo] ?? null,
-                            ])
-                            ->values()
-                            ->all(),
-                    ];
-                })
-                ->values()
-                ->all();
-        }
-
         return Inertia::render('Pacientes/Show', [
             'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve(),
             'hasAnyExpediente' => $hasAnyExpediente,
@@ -322,7 +283,6 @@ class PacienteController extends Controller
             'consultaActivaId' => $consultaActivaId,
             'expedienteCerrado' => $expedienteCerrado,
             'alertaPreventiva' => $alertaPreventiva,
-            'historialCambios' => $historialCambios,
             'estadoCorreccionDatos' => $estadoCorreccionDatos,
             'estadoActualizacionClinica' => $estadoActualizacionClinica,
             'can' => [
