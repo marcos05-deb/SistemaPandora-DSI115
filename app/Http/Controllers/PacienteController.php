@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdatePacienteRequest;
 use App\Models\Carrera;
 use App\Models\Facultad;
 use App\Models\Paciente;
 use App\Models\ContactoPaciente;
+use App\Services\PacienteDatosCorreccionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -318,7 +320,74 @@ class PacienteController extends Controller
                 'updateCita' => $canUpdateCita,
                 'createConsulta' => $canCreateConsulta,
                 'derivar' => $user->can('derivar', [\App\Models\Expediente::class, $paciente]),
+                'updatePaciente' => $user->can('update', $paciente),
             ],
         ]);
+    }
+
+    /**
+     * Formulario de corrección de datos generales (solo referente creador).
+     */
+    public function edit(Paciente $paciente): Response
+    {
+        $this->authorize('update', $paciente);
+
+        $paciente->load(['contactos', 'carrera.facultad']);
+        $facultades = Facultad::with('carreras')->get();
+
+        $contactos = $paciente->contactos;
+        $padre = $contactos->firstWhere('parentesco', 'Padre');
+        $madre = $contactos->firstWhere('parentesco', 'Madre');
+        $otro = $contactos->firstWhere('parentesco', 'Otro');
+        $responsable = $contactos->firstWhere('es_responsable', true);
+
+        $parentescoResp = $responsable?->parentesco ?? 'Padre';
+
+        return Inertia::render('Pacientes/Edit', [
+            'paciente' => [
+                'codigo' => $paciente->codigo,
+                'carnet' => $paciente->carnet,
+                'nombre_completo' => $paciente->nombre_completo,
+                'direccion' => $paciente->direccion,
+                'carrera_id' => $paciente->carrera_id,
+                'sexo' => $paciente->sexo,
+                'estado_civil' => $paciente->estado_civil,
+                'fecha_nacimiento' => $paciente->fecha_nacimiento
+                    ? substr((string) $paciente->fecha_nacimiento, 0, 10)
+                    : null,
+                'profesion_ocupacion' => $paciente->profesion_ocupacion,
+                'referido_por' => $paciente->referido_por,
+                'llevado_por' => $paciente->llevado_por,
+                'padre_nombre' => $padre?->nombre_completo,
+                'padre_telefono' => $padre && ! $padre->es_responsable ? $padre->telefono_personal : ($padre?->telefono_personal),
+                'madre_nombre' => $madre?->nombre_completo,
+                'madre_telefono' => $madre && ! $madre->es_responsable ? $madre->telefono_personal : ($madre?->telefono_personal),
+                'responsable_parentesco' => $parentescoResp,
+                'responsable_nombre' => $parentescoResp === 'Otro' ? ($otro?->nombre_completo ?? $responsable?->nombre_completo) : null,
+                'responsable_telefono' => $responsable?->telefono_personal,
+                'responsable_direccion' => $responsable?->direccion,
+            ],
+            'facultades' => $facultades,
+        ]);
+    }
+
+    /**
+     * Persistir corrección de datos generales con auditoría.
+     */
+    public function update(UpdatePacienteRequest $request, Paciente $paciente, PacienteDatosCorreccionService $service)
+    {
+        $this->authorize('update', $paciente);
+
+        $actualizado = $service->corregir(
+            $paciente,
+            $request->user(),
+            $request->validated(),
+            $request->ip()
+        );
+
+        return redirect()
+            ->route('pacientes.show', $actualizado->carnet)
+            ->with('message', 'Datos del paciente corregidos correctamente. La operación quedó registrada en auditoría.')
+            ->with('variant', 'success');
     }
 }

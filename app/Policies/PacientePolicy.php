@@ -45,13 +45,21 @@ class PacientePolicy
 
     /**
      * Determine whether the user can update the model.
+     *
+     * Solo el referente psicosocial que registró al paciente puede corregir
+     * datos generales. Especialistas, coordinadores y administradores: denegado.
      */
     public function update(Especialista $especialista, Paciente $paciente): bool
     {
-        if ($especialista->hasRole('psychosocial_referent')) {
-            return $paciente->creado_por_profesional_id === $especialista->profesional->id;
+        if (! $especialista->hasRole('psychosocial_referent')) {
+            return false;
         }
-        return false;
+
+        if (! $especialista->profesional) {
+            return false;
+        }
+
+        return $paciente->creado_por_profesional_id === $especialista->profesional->id;
     }
 
     /**
@@ -59,6 +67,6 @@ class PacientePolicy
      */
     public function delete(Especialista $especialista, Paciente $paciente): bool
     {
-        return false; // Soft deletes / auditable actions will be phase 3
+        return false; // Eliminación de pacientes no está habilitada
     }
 }

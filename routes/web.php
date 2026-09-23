@@ -102,18 +102,24 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
     Route::middleware('role:psychosocial_referent')->group(function () {
         Route::get('/pacientes/create', [\App\Http\Controllers\PacienteController::class, 'create'])->name('pacientes.create');
         Route::post('/pacientes', [\App\Http\Controllers\PacienteController::class, 'store'])->name('pacientes.store');
-        
+
+        Route::get('/pacientes/{paciente}/editar', [\App\Http\Controllers\PacienteController::class, 'edit'])
+            ->name('pacientes.edit')
+            ->middleware('throttle:30,1');
+        Route::patch('/pacientes/{paciente}', [\App\Http\Controllers\PacienteController::class, 'update'])
+            ->name('pacientes.update')
+            ->middleware('throttle:20,1');
+
         Route::post('/pacientes/{paciente}/derivar', [\App\Http\Controllers\DerivacionController::class, 'store'])->name('pacientes.derivar.store');
     });
 
     Route::middleware('role:psychosocial_referent|specialist|area_coordinator|sysadmin')->group(function () {
         Route::get('/pacientes', [\App\Http\Controllers\PacienteController::class, 'index'])->name('pacientes.index')->middleware('throttle:30,1');
         Route::get('/pacientes/{carnet}', [\App\Http\Controllers\PacienteController::class, 'show'])->name('pacientes.show')->middleware('throttle:30,1');
-        
+
         Route::middleware('enforce_area_scope')->group(function () {
             Route::get('/citas', [\App\Http\Controllers\CitaController::class, 'index'])->name('citas.index');
-            Route::get('/pacientes/{paciente}/historial', [\App\Http\Controllers\HistorialController::class, 'show'])->name('pacientes.historial');
-            
+            Route::get('/pacientes/{paciente}/historial', [\App\Http\Controllers\HistorialController::class, 'show'])->name('pacientes.historial');            
             Route::get('/expedientes/{expediente}/consultas/create', [\App\Http\Controllers\ConsultaController::class, 'create'])->name('consultas.create');
             Route::post('/expedientes/{expediente}/consultas', [\App\Http\Controllers\ConsultaController::class, 'store'])->name('consultas.store');
             Route::post('/expedientes/{expediente}/cerrar', [\App\Http\Controllers\ExpedienteController::class, 'close'])->name('expedientes.cerrar');
@@ -144,8 +150,13 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         Route::put('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('admin.users.update');
         Route::delete('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('admin.users.destroy');
 
-        // Patients audit
+        // Patients audit (solo consulta; sin edición de datos clínicos/personales)
         Route::get('/pacientes', [\App\Http\Controllers\Admin\PacienteController::class, 'index'])->name('admin.pacientes.index');
+        Route::get('/pacientes/correcciones/{correccion}', [\App\Http\Controllers\Admin\PacienteController::class, 'showCorreccion'])
+            ->name('admin.pacientes.correcciones.show');
+        Route::post('/pacientes/correcciones/{correccion}/revisar', [\App\Http\Controllers\Admin\PacienteController::class, 'marcarRevisado'])
+            ->name('admin.pacientes.correcciones.revisar')
+            ->middleware('throttle:30,1');
 
         // Organigrama
         Route::get('/organigrama', [\App\Http\Controllers\Admin\OrganigramaController::class, 'index'])->name('admin.organigrama.index');

@@ -160,6 +160,18 @@ onMounted(() => {
                     <template v-else>{{ paciente.codigo.substring(0,8) }}...</template>
                 </span>
                 
+                <template v-if="can.updatePaciente">
+                    <Link
+                        :href="`/pacientes/${paciente.codigo}/editar`"
+                        class="px-3 py-1.5 bg-white hover:bg-[var(--surface-subtle)] text-[var(--nord0)] text-[11px] font-medium rounded-lg border border-[var(--nord4)] shadow-sm transition-colors inline-flex items-center gap-1.5"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[var(--nord10)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Corregir datos del paciente
+                    </Link>
+                </template>
+
                 <template v-if="can.derivar">
                     <template v-if="paciente.expedientes && paciente.expedientes.length > 0">
                         <span class="px-3 py-1.5 bg-[var(--surface-subtle)] text-[var(--nord3)] text-[11px] font-semibold rounded-lg border border-[var(--nord4)] inline-flex items-center gap-1.5 shadow-sm">
