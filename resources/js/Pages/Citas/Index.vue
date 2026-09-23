@@ -246,16 +246,16 @@ const statusLabels = {
                         <option v-for="esp in especialistas" :key="esp.id" :value="esp.id">{{ esp.nombre }}</option>
                     </select>
                     <template v-if="form.vista === 'lista'">
-                        <input v-model="form.fecha" type="date" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" />
-                        <input v-model="form.fecha_desde" type="date" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" title="Desde" />
-                        <input v-model="form.fecha_hasta" type="date" class="border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" title="Hasta" />
+                        <input v-model="form.fecha" type="date" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" />
+                        <input v-model="form.fecha_desde" type="date" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" title="Desde" />
+                        <input v-model="form.fecha_hasta" type="date" class="w-full md:w-auto border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2" title="Hasta" />
                     </template>
                     <button v-if="form.fecha || form.fecha_desde || form.fecha_hasta || (form.estado && form.estado !== 'todos') || form.especialista_id || form.paciente || form.resultado_asistencia" @click="clearFilters"
                         type="button" class="text-[12px] font-semibold text-[var(--aurora-red)] px-2 py-1">
                         Limpiar
                     </button>
                 </div>
-                <div v-if="form.vista === 'diaria' || form.vista === 'semanal'" class="flex items-center gap-2">
+                <div v-if="form.vista === 'diaria' || form.vista === 'semanal'" class="flex flex-wrap items-center gap-2">
                     <button type="button" @click="navegar(navegacion.anterior)" class="px-3 py-1.5 text-[12px] rounded-lg border border-[var(--nord4)]">Anterior</button>
                     <button type="button" @click="navegar(navegacion.hoy)" class="px-3 py-1.5 text-[12px] rounded-lg border border-[var(--nord4)] font-semibold">Hoy</button>
                     <button type="button" @click="navegar(navegacion.siguiente)" class="px-3 py-1.5 text-[12px] rounded-lg border border-[var(--nord4)]">Siguiente</button>

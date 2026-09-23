@@ -65,15 +65,15 @@ function rechazar(id) {
     <Head title="Auditoría de Pacientes" />
 
     <div class="space-y-[14px]">
-        <div class="flex justify-between items-center bg-white py-[14px] px-[18px] shadow-sm border border-[var(--nord4)] rounded-[10px]">
-            <div>
+        <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center bg-white py-[14px] px-[18px] shadow-sm border border-[var(--nord4)] rounded-[10px]">
+            <div class="min-w-0">
                 <h2 class="text-[16px] font-medium text-[var(--nord0)] tracking-tight">Auditoría de Pacientes</h2>
                 <p class="text-[12px] text-[var(--nord3)] mt-0.5">
                     Solo UUID, campos tocados, autor y motivo. Sin carnet, nombre ni valores clínicos.
                     También autoriza nuevas correcciones tras la primera (permiso de un solo uso).
                 </p>
             </div>
-            <div class="text-[11px] text-[var(--nord3)] bg-[var(--surface-subtle)] px-3 py-1.5 rounded-full font-medium border border-[var(--nord4)]">
+            <div class="text-[11px] text-[var(--nord3)] bg-[var(--surface-subtle)] px-3 py-1.5 rounded-full font-medium border border-[var(--nord4)] shrink-0 self-start">
                 {{ correcciones.total || 0 }} correcciones
             </div>
         </div>

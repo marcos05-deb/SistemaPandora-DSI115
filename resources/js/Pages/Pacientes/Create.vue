@@ -508,16 +508,16 @@ function submit() {
                 </div>
 
                 <!-- Navigation -->
-                <div class="flex justify-between items-center pt-6 mt-6 border-t border-[var(--nord4)]">
+                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between sm:items-center pt-6 mt-6 border-t border-[var(--nord4)]">
                     <button v-if="currentStep > 1" type="button" @click="prevStep"
-                        class="flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-medium text-[var(--nord3)] hover:text-[var(--nord0)] border border-[var(--nord4)] hover:border-[var(--nord3)] rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-sm bg-[var(--surface)]">
+                        class="flex items-center justify-center gap-1.5 px-4 py-2.5 text-[13px] font-medium text-[var(--nord3)] hover:text-[var(--nord0)] border border-[var(--nord4)] hover:border-[var(--nord3)] rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-sm bg-[var(--surface)]">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                         Anterior
                     </button>
-                    <div v-else />
+                    <div v-else class="hidden sm:block" />
 
                     <!-- Indicador de campos faltantes al lado del botón -->
-                    <div class="flex items-center gap-3">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                         <Transition enter-active-class="transition duration-150" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100">
                             <span v-if="(step1Touched && !step1Valid && currentStep === 1) || (step2Touched && !step2Valid && currentStep === 2)"
                                 class="text-[11px] font-medium text-[var(--aurora-orange)] flex items-center gap-1">

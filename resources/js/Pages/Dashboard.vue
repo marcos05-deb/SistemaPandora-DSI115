@@ -61,13 +61,13 @@ const isExpedienteClosed = (paciente) => {
 
     <div class="space-y-6">
         <!-- Header Section -->
-        <div class="flex justify-between items-start">
-            <div>
-                <h1 class="text-2xl font-bold text-[var(--nord0)] tracking-tight">Panel Principal</h1>
+        <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
+            <div class="min-w-0">
+                <h1 class="text-xl sm:text-2xl font-bold text-[var(--nord0)] tracking-tight">Panel Principal</h1>
                 <p class="text-sm text-[var(--nord3)] mt-1">Gestión de expedientes y pacientes clínicos.</p>
             </div>
 
-            <div v-if="canCreatePatient">
+            <div v-if="canCreatePatient" class="shrink-0">
                 <Link
                     href="/pacientes/create"
                     class="group relative inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 overflow-hidden"

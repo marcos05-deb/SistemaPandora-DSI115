@@ -57,17 +57,17 @@ const limpiarFiltros = () => {
         ]" />
 
         <!-- Header -->
-        <div class="bg-white rounded-[12px] p-6 shadow-sm border border-[var(--nord4)] flex items-center justify-between">
-            <div>
-                <h1 class="text-[18px] font-bold text-[var(--nord0)] flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[var(--nord10)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="bg-white rounded-[12px] p-4 sm:p-6 shadow-sm border border-[var(--nord4)] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0">
+                <h1 class="text-[16px] sm:text-[18px] font-bold text-[var(--nord0)] flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[var(--nord10)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                     Historial Clínico Multidisciplinario
                 </h1>
-                <p class="text-[13px] text-[var(--nord3)] mt-1 ml-8">Registros de atención consolidados de todas las áreas clínicas autorizadas.</p>
+                <p class="text-[13px] text-[var(--nord3)] mt-1 sm:ml-8">Registros de atención consolidados de todas las áreas clínicas autorizadas.</p>
             </div>
-            <div class="text-right">
+            <div class="text-left sm:text-right shrink-0">
                 <p class="text-[12px] font-semibold text-[var(--nord3)] uppercase tracking-wider mb-1">Paciente</p>
                 <p class="text-[15px] font-bold text-[var(--nord0)]">{{ paciente.nombre_completo }}</p>
                 <p class="text-[13px] text-[var(--nord3)] font-mono mt-0.5">{{ paciente.carnet }}</p>
@@ -124,8 +124,8 @@ const limpiarFiltros = () => {
                     <!-- Content Card -->
                     <div class="bg-white rounded-[12px] shadow-sm border border-[var(--nord4)] overflow-hidden hover:border-[var(--nord9)] transition-colors">
                         <!-- Card Header -->
-                        <div class="px-5 py-3 border-b border-[var(--nord4)] flex justify-between items-center bg-[var(--surface-header)]">
-                            <div class="flex items-center gap-3">
+                        <div class="px-5 py-3 border-b border-[var(--nord4)] flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center bg-[var(--surface-header)]">
+                            <div class="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
                                 <span class="px-2.5 py-1 rounded-md text-[11px] font-bold text-white uppercase tracking-wider" :class="consulta.area.color">
                                     {{ consulta.area.nombre }}
                                 </span>
