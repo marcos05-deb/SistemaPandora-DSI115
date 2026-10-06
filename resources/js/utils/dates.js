@@ -13,6 +13,17 @@ export function todayLocalYmd() {
 }
 
 /**
+ * Convierte YYYY-MM-DD a Date local (medianoche), sin el desfase de UTC.
+ * @param {string|null|undefined} value
+ * @returns {Date|null}
+ */
+export function parseLocalYmd(value) {
+    if (!isDateOnly(value)) return null;
+    const [y, m, d] = String(value).trim().split('-').map(Number);
+    return new Date(y, m - 1, d);
+}
+
+/**
  * ¿Es una fecha calendario sin hora? (YYYY-MM-DD o prefijo de timestamp sin T usable)
  * @param {unknown} value
  */

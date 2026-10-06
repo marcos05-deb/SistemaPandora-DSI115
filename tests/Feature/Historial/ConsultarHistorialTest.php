@@ -200,6 +200,18 @@ it('filtra historial por período y área autorizada', function () {
         );
 });
 
+it('rechaza filtros de historial con fechas futuras', function () {
+    $this->actingAs($this->userCoordinator);
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->get(route('pacientes.historial', [
+            'paciente' => $this->paciente->codigo,
+            'fecha_desde' => now()->toDateString(),
+            'fecha_hasta' => now()->addDay()->toDateString(),
+        ]))
+        ->assertSessionHasErrors('fecha_hasta');
+});
+
 it('rechaza filtro por área no autorizada', function () {
     $this->actingAs($this->userSpecialist);
 

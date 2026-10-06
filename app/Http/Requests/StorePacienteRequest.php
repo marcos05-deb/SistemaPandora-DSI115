@@ -26,6 +26,8 @@ class StorePacienteRequest extends FormRequest
         'Conflictos Interpersonales',
     ];
 
+    public const FECHA_NACIMIENTO_MINIMA = '1900-01-01';
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -41,9 +43,9 @@ class StorePacienteRequest extends FormRequest
             'carrera_id' => 'required|exists:carreras,id',
             'sexo' => 'required|in:M,F,Otro',
             'estado_civil' => 'required|in:Soltero,Casado,Divorciado,Viudo,Unión Libre',
-            'fecha_nacimiento' => 'required|date|before_or_equal:today',
+            'fecha_nacimiento' => 'required|date|before_or_equal:today|after_or_equal:'.self::FECHA_NACIMIENTO_MINIMA,
             'profesion_ocupacion' => 'nullable|string|max:255',
-            'fecha_primera_consulta' => 'nullable|date|before_or_equal:today',
+            'fecha_primera_consulta' => 'nullable|date|before_or_equal:today|after_or_equal:fecha_nacimiento',
             'referido_por' => 'nullable|string|max:255',
             'llevado_por' => 'nullable|string|max:255',
             'motivo_consulta' => 'required|string',
@@ -70,6 +72,9 @@ class StorePacienteRequest extends FormRequest
             'carnet.regex' => 'El carnet debe contener exactamente 2 letras seguidas de 5 números.',
             'carnet.unique' => 'Este carnet ya ha sido registrado.',
             'fecha_nacimiento.before_or_equal' => 'La fecha no puede estar en el futuro.',
+            'fecha_nacimiento.after_or_equal' => 'La fecha de nacimiento no es válida (anterior a 1900).',
+            'fecha_primera_consulta.before_or_equal' => 'La fecha de la primera consulta no puede estar en el futuro.',
+            'fecha_primera_consulta.after_or_equal' => 'La primera consulta no puede ser anterior a la fecha de nacimiento.',
             'padre_telefono.regex' => 'Debe tener exactamente 8 dígitos.',
             'madre_telefono.regex' => 'Debe tener exactamente 8 dígitos.',
             'responsable_telefono.regex' => 'Debe tener exactamente 8 dígitos numéricos.',

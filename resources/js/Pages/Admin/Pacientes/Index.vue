@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { todayLocalYmd } from '@/utils/dates';
 
 defineOptions({ layout: AdminLayout });
 
@@ -22,6 +23,7 @@ const pacienteFiltro = ref(props.filters.paciente || '');
 const fechaDesde = ref(props.filters.fecha_desde || '');
 const fechaHasta = ref(props.filters.fecha_hasta || '');
 const solicitudEstado = ref(props.filters.solicitud_estado || '');
+const hoy = todayLocalYmd();
 
 function applyFilters() {
     router.get('/admin/pacientes', {
@@ -151,7 +153,7 @@ function rechazar(id) {
                     <option value="rechazada">Rechazadas</option>
                     <option value="consumida">Consumidas</option>
                 </select>
-                <input v-model="fechaDesde" type="date" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" @change="applyFilters" />
+                <input v-model="fechaDesde" type="date" :max="hoy" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" @change="applyFilters" />
                 <input v-model="search" type="text" placeholder="Buscar UUID pacientes…" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" />
             </div>
         </div>

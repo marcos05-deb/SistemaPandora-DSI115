@@ -42,7 +42,15 @@ class UpdatePacienteRequest extends FormRequest
             'carrera_id' => 'required|exists:carreras,id',
             'sexo' => 'required|in:M,F,Otro',
             'estado_civil' => 'required|in:Soltero,Casado,Divorciado,Viudo,Unión Libre',
-            'fecha_nacimiento' => 'required|date|before_or_equal:today',
+            'fecha_nacimiento' => array_filter([
+                'required',
+                'date',
+                'before_or_equal:today',
+                'after_or_equal:'.StorePacienteRequest::FECHA_NACIMIENTO_MINIMA,
+                $paciente?->fecha_primera_consulta
+                    ? 'before_or_equal:'.\Illuminate\Support\Carbon::parse($paciente->fecha_primera_consulta)->toDateString()
+                    : null,
+            ]),
             'profesion_ocupacion' => 'nullable|string|max:255',
             'referido_por' => 'nullable|string|max:255',
             'llevado_por' => 'nullable|string|max:255',
@@ -71,7 +79,8 @@ class UpdatePacienteRequest extends FormRequest
             'motivo_correccion.required' => 'El motivo de la corrección es obligatorio.',
             'motivo_correccion.min' => 'El motivo de la corrección debe tener al menos 10 caracteres.',
             'motivo_correccion.max' => 'El motivo de la corrección no puede superar 500 caracteres.',
-            'fecha_nacimiento.before_or_equal' => 'La fecha no puede estar en el futuro.',
+            'fecha_nacimiento.before_or_equal' => 'La fecha no puede estar en el futuro ni ser posterior a la primera consulta.',
+            'fecha_nacimiento.after_or_equal' => 'La fecha de nacimiento no es válida (anterior a 1900).',
             'padre_telefono.regex' => 'Debe tener exactamente 8 dígitos.',
             'madre_telefono.regex' => 'Debe tener exactamente 8 dígitos.',
             'responsable_telefono.regex' => 'Debe tener exactamente 8 dígitos numéricos.',

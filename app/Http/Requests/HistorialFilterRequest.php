@@ -26,8 +26,8 @@ class HistorialFilterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'fecha_desde' => ['nullable', 'date'],
-            'fecha_hasta' => ['nullable', 'date', 'after_or_equal:fecha_desde'],
+            'fecha_desde' => ['nullable', 'date', 'before_or_equal:today'],
+            'fecha_hasta' => ['nullable', 'date', 'before_or_equal:today', 'after_or_equal:fecha_desde'],
             'area_id' => ['nullable', 'integer', 'exists:areas,id'],
             'tipo_atencion' => ['nullable', 'string', Rule::in(self::TIPOS_ATENCION)],
         ];
@@ -39,6 +39,8 @@ class HistorialFilterRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'fecha_desde.before_or_equal' => 'La fecha inicial no puede ser futura.',
+            'fecha_hasta.before_or_equal' => 'La fecha final no puede ser futura.',
             'fecha_hasta.after_or_equal' => 'La fecha final debe ser posterior o igual a la fecha inicial.',
             'tipo_atencion.in' => 'El tipo de atención seleccionado no es válido.',
         ];
