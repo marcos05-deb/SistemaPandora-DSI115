@@ -3,6 +3,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
+import { todayLocalYmd } from '@/utils/dates';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -23,6 +24,8 @@ const form = useForm({
     area_id: props.filtros.area_id || '',
     tipo_atencion: props.filtros.tipo_atencion || '',
 });
+
+const hoy = todayLocalYmd();
 
 const tieneFiltros = computed(() =>
     !!(form.fecha_desde || form.fecha_hasta || form.area_id || form.tipo_atencion)
@@ -79,11 +82,11 @@ const limpiarFiltros = () => {
             <div class="flex flex-wrap items-end gap-3">
                 <div>
                     <label class="block text-[11px] font-semibold text-[var(--nord3)] uppercase mb-1">Desde</label>
-                    <input type="date" v-model="form.fecha_desde" class="rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[13px] text-[var(--nord0)]" />
+                    <input type="date" v-model="form.fecha_desde" :max="form.fecha_hasta || hoy" class="rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[13px] text-[var(--nord0)]" />
                 </div>
                 <div>
                     <label class="block text-[11px] font-semibold text-[var(--nord3)] uppercase mb-1">Hasta</label>
-                    <input type="date" v-model="form.fecha_hasta" class="rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[13px] text-[var(--nord0)]" />
+                    <input type="date" v-model="form.fecha_hasta" :min="form.fecha_desde || undefined" :max="hoy" class="rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2 text-[13px] text-[var(--nord0)]" />
                 </div>
                 <div>
                     <label class="block text-[11px] font-semibold text-[var(--nord3)] uppercase mb-1">Área</label>

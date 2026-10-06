@@ -5,6 +5,7 @@ import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 import FieldTooltip from '@/Components/UI/FieldTooltip.vue';
 import VueDatePicker from '@vuepic/vue-datepicker';
+import { parseLocalYmd } from '@/utils/dates';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -29,6 +30,16 @@ const form = useForm({
     madre_nombre: '', madre_telefono: '',
     responsable_parentesco: '', responsable_nombre: '',
     responsable_telefono: '', responsable_direccion: '',
+});
+
+const FECHA_NACIMIENTO_MINIMA = new Date(1900, 0, 1);
+const hoyDate = new Date();
+const minPrimeraConsulta = computed(() => parseLocalYmd(form.fecha_nacimiento) || FECHA_NACIMIENTO_MINIMA);
+
+watch(() => form.fecha_nacimiento, (nacimiento) => {
+    if (nacimiento && form.fecha_primera_consulta && form.fecha_primera_consulta < nacimiento) {
+        form.fecha_primera_consulta = '';
+    }
 });
 
 const stepTitles = ['Datos del Estudiante', 'Familiares y Responsable', 'Revisar y Guardar'];
@@ -310,7 +321,7 @@ function submit() {
 
                         <div>
                             <label for="field-fecha_nacimiento" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha Nacimiento <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Fecha real de nacimiento. No puede ser una fecha futura" /></label>
-                            <VueDatePicker v-model="form.fecha_nacimiento" :format="'dd/MM/yyyy'" model-type="yyyy-MM-dd" :enable-time-picker="false" auto-apply :max-date="new Date()" required>
+                            <VueDatePicker v-model="form.fecha_nacimiento" :format="'dd/MM/yyyy'" model-type="yyyy-MM-dd" :enable-time-picker="false" auto-apply :min-date="FECHA_NACIMIENTO_MINIMA" :max-date="hoyDate" required>
                                 <template #dp-input="{ value }">
                                     <input id="field-fecha_nacimiento" type="text" :value="value" readonly class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all cursor-pointer" :class="form.errors.fecha_nacimiento ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" placeholder="Seleccionar fecha" />
                                 </template>
@@ -348,12 +359,13 @@ function submit() {
                         </div>
 
                         <div>
-                            <label for="field-fecha_primera_consulta" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha Primera Consulta <FieldTooltip text="Fecha en la que el estudiante acudió a consulta por primera vez. No puede ser futura" /></label>
-                            <VueDatePicker v-model="form.fecha_primera_consulta" :format="'dd/MM/yyyy'" model-type="yyyy-MM-dd" :enable-time-picker="false" auto-apply :max-date="new Date()">
+                            <label for="field-fecha_primera_consulta" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha Primera Consulta <FieldTooltip text="Fecha en la que el estudiante acudió a consulta por primera vez. No puede ser futura ni anterior al nacimiento" /></label>
+                            <VueDatePicker v-model="form.fecha_primera_consulta" :format="'dd/MM/yyyy'" model-type="yyyy-MM-dd" :enable-time-picker="false" auto-apply :min-date="minPrimeraConsulta" :max-date="hoyDate">
                                 <template #dp-input="{ value }">
-                                    <input id="field-fecha_primera_consulta" type="text" :value="value" readonly class="w-full bg-[var(--surface)] border border-[var(--nord4)] rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[var(--frost3)]/20 outline-none transition-all cursor-pointer" placeholder="Seleccionar fecha" />
+                                    <input id="field-fecha_primera_consulta" type="text" :value="value" readonly class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all cursor-pointer" :class="form.errors.fecha_primera_consulta ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" placeholder="Seleccionar fecha" />
                                 </template>
                             </VueDatePicker>
+                            <p v-if="form.errors.fecha_primera_consulta" class="form-field-error text-[11px] text-[var(--aurora-red)] mt-1 flex items-center gap-1"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{{ form.errors.fecha_primera_consulta }}</p>
                         </div>
 
                         <div>

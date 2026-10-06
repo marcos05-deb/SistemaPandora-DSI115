@@ -5,6 +5,7 @@ import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 import FieldTooltip from '@/Components/UI/FieldTooltip.vue';
 import VueDatePicker from '@vuepic/vue-datepicker';
+import { parseLocalYmd } from '@/utils/dates';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -15,6 +16,9 @@ const props = defineProps({
 });
 
 const showConfirm = ref(false);
+
+const FECHA_NACIMIENTO_MINIMA = new Date(1900, 0, 1);
+const maxFechaNacimiento = parseLocalYmd(props.paciente.fecha_primera_consulta) || new Date();
 
 const form = useForm({
     carnet: props.paciente.carnet || '',
@@ -139,7 +143,7 @@ function confirmAndSave() {
 
                     <div>
                         <label for="field-fecha_nacimiento" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha de nacimiento <span class="text-[var(--aurora-red)]">*</span></label>
-                        <VueDatePicker v-model="form.fecha_nacimiento" :format="'dd/MM/yyyy'" model-type="yyyy-MM-dd" :enable-time-picker="false" auto-apply :max-date="new Date()">
+                        <VueDatePicker v-model="form.fecha_nacimiento" :format="'dd/MM/yyyy'" model-type="yyyy-MM-dd" :enable-time-picker="false" auto-apply :min-date="FECHA_NACIMIENTO_MINIMA" :max-date="maxFechaNacimiento">
                             <template #dp-input="{ value }">
                                 <input id="field-fecha_nacimiento" type="text" :value="value" readonly class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] outline-none border-[var(--nord4)] cursor-pointer" placeholder="Seleccionar fecha" />
                             </template>

@@ -21,6 +21,15 @@ class PacienteController extends Controller
      */
     public function index(Request $request): Response
     {
+        $request->validate([
+            'fecha_desde' => ['nullable', 'date', 'before_or_equal:today'],
+            'fecha_hasta' => ['nullable', 'date', 'before_or_equal:today', 'after_or_equal:fecha_desde'],
+        ], [
+            'fecha_desde.before_or_equal' => 'La fecha inicial no puede ser futura.',
+            'fecha_hasta.before_or_equal' => 'La fecha final no puede ser futura.',
+            'fecha_hasta.after_or_equal' => 'La fecha final debe ser posterior o igual a la fecha inicial.',
+        ]);
+
         $pacientes = Paciente::select('codigo', 'created_at', 'updated_at', 'ultima_accion', 'datos_corregidos_en')
             ->when($request->search, function ($query, $search) {
                 $query->whereRaw('codigo::text ILIKE ?', ["%{$search}%"]);
