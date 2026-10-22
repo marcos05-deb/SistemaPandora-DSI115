@@ -84,6 +84,50 @@ export function formatLocalDateTime(
 }
 
 /**
+ * @param {string|Date|null|undefined} value
+ * @returns {string} YYYY-MM-DDTHH:mm in America/El_Salvador
+ */
+export function formatElSalvadorDateTimeInput(value) {
+    if (value == null || value === '') return '';
+    const date = value instanceof Date ? value : new Date(String(value));
+    if (Number.isNaN(date.getTime())) return '';
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/El_Salvador',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+    }).formatToParts(date);
+    const part = type => parts.find(item => item.type === type)?.value ?? '';
+    return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}`;
+}
+
+/**
+ * @param {string|null|undefined} value
+ * @param {string} locale
+ * @param {string} emptyLabel
+ */
+export function formatElSalvadorDateTime(
+    value,
+    locale = 'es-ES',
+    emptyLabel = 'No registrada'
+) {
+    if (value == null || value === '') return emptyLabel;
+    const date = new Date(String(value));
+    if (Number.isNaN(date.getTime())) return emptyLabel;
+    return new Intl.DateTimeFormat(locale, {
+        timeZone: 'America/El_Salvador',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date);
+}
+
+/**
  * Hora local a partir de un instante ISO.
  * @param {string|null|undefined} value
  */

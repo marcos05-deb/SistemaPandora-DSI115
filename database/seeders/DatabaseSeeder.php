@@ -85,6 +85,8 @@ class DatabaseSeeder extends Seeder
             ExpedienteSeeder::class,
             CitaSeeder::class,
         ]);
+
+        $this->call(RubricaDemoSeeder::class);
     }
 
     private function createProfessional(

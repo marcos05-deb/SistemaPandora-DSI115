@@ -140,6 +140,20 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         });
     });
 
+    Route::get('/rubricas', [\App\Http\Controllers\RubricaController::class, 'index'])
+        ->middleware('throttle:30,1')
+        ->name('rubricas.index');
+    Route::get('/rubricas/versiones/crear', [\App\Http\Controllers\RubricaController::class, 'create'])
+        ->middleware('throttle:30,1')
+        ->name('rubricas.create');
+    Route::post('/rubricas/versiones', [\App\Http\Controllers\RubricaController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('rubricas.store');
+    Route::get('/rubricas/versiones/{version}', [\App\Http\Controllers\RubricaController::class, 'show'])
+        ->whereUuid('version')
+        ->middleware('throttle:30,1')
+        ->name('rubricas.show');
+
     // Secure Search Routes (HU-06)
     Route::get('/busqueda-segura', [\App\Http\Controllers\SecureSearchController::class, 'index'])->name('busqueda-segura');
     Route::post('/busqueda-segura', [\App\Http\Controllers\SecureSearchController::class, 'search'])->name('busqueda-segura.search');

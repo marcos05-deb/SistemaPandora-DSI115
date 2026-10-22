@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Rubrica;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -17,6 +18,10 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $clinicalPermissions = [
+            'rubricas' => $user?->can('viewAny', Rubrica::class) ?? false,
+            'crear' => $user?->can('create', Rubrica::class) ?? false,
+        ];
 
         return [
             ...parent::share($request),
@@ -25,6 +30,8 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $user ? $this->sharedUser($user) : null,
             ],
+            'clinicalPermissions' => $clinicalPermissions,
+            'can' => $clinicalPermissions,
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),
                 'variant' => fn () => $request->session()->get('variant', 'success'),
