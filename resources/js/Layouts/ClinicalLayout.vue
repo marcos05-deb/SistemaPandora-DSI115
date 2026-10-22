@@ -140,6 +140,13 @@ const allLinks = [
         match: (url) => url.startsWith('/citas'),
         roles: ['area_coordinator', 'specialist'],
     },
+    {
+        label: 'Indicadores',
+        href: '/indicadores',
+        icon: 'M4 19V5m0 14h16M8 15v-4m4 4V7m4 8V9',
+        match: (url) => url.startsWith('/indicadores'),
+        permission: 'indicadores',
+    },
 ];
 
 const userRoles = computed(() => page.props.auth?.user?.roles || []);

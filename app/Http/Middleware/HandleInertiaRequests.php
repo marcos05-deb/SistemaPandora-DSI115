@@ -7,6 +7,7 @@ use App\Models\AlertaPreventiva;
 use App\Models\Especialista;
 use App\Notifications\AlertaPreventivaCreada;
 use App\Services\ClinicalAccessAuditor;
+use App\Policies\IndicadorPolicy;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -26,6 +27,9 @@ class HandleInertiaRequests extends Middleware
             'rubricas' => $user?->can('viewAny', Rubrica::class) ?? false,
             'crear' => $user?->can('create', Rubrica::class) ?? false,
             'alertas' => $user?->can('viewAny', AlertaPreventiva::class) ?? false,
+            'indicadores' => $user instanceof Especialista
+                ? app(IndicadorPolicy::class)->ver($user)
+                : false,
         ];
 
         return [

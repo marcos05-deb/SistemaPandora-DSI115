@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\AlertaPreventiva;
+use App\Models\Area;
 use App\Models\Cita;
+use App\Models\Carrera;
 use App\Models\Consulta;
 use App\Models\EstadisticaPreventivaAusencia;
 use App\Models\EvaluacionRiesgo;
 use App\Models\Especialista;
 use App\Models\Expediente;
 use App\Models\Profesional;
+use App\Models\Paciente;
 use App\Models\Rubrica;
 use App\Models\RubricaVersion;
 use App\Models\SeguimientoPreventivo;
@@ -157,6 +160,161 @@ class RubricaDemoSeeder extends Seeder
 
         $this->crearEscenariosDemoHu16($currentVersion, $absence);
         $this->crearEscenariosDemoHu17($historicalVersion, $currentVersion, $absence);
+        $this->crearEscenariosDemoHu18();
+    }
+
+    private function crearEscenariosDemoHu18(): void
+    {
+        $psychology = Area::query()->where('nombre', 'Psicología')->firstOrFail();
+        $socialWork = Area::query()->where('nombre', 'Trabajo Social')->firstOrFail();
+        $psychologyProfessional = Profesional::query()
+            ->whereHas('especialista', fn ($query) => $query->where('email', 'especialista-psi@pandora.com'))
+            ->where('area_id', $psychology->id)
+            ->firstOrFail();
+        $socialProfessional = Profesional::query()
+            ->whereHas('especialista', fn ($query) => $query->where('email', 'psicosocial@pandora.com'))
+            ->where('area_id', $socialWork->id)
+            ->firstOrFail();
+        $career = Carrera::query()->firstOrFail();
+
+        $manyPatient = $this->patientIndicatorDemo('HU18M001', $psychologyProfessional, $career->id);
+        $manyFile = $this->activeIndicatorDemoFile($manyPatient, $psychology, $psychologyProfessional);
+        $fewPatient = $this->patientIndicatorDemo('HU18L001', $socialProfessional, $career->id);
+        $fewFile = $this->activeIndicatorDemoFile($fewPatient, $socialWork, $socialProfessional);
+        $closedPatient = $this->patientIndicatorDemo('HU18C001', $socialProfessional, $career->id);
+        $this->closedIndicatorDemoFile($closedPatient, $socialWork, $socialProfessional);
+
+        for ($index = 1; $index <= 30; $index++) {
+            $this->consultationIndicatorDemo($manyFile, $psychologyProfessional, $index, true);
+            $this->appointmentIndicatorDemo($manyFile, $psychologyProfessional, $index, true);
+        }
+
+        $this->consultationIndicatorDemo($fewFile, $socialProfessional, 31, false);
+        $this->appointmentIndicatorDemo($fewFile, $socialProfessional, 31, false);
+        $this->appointmentIndicatorDemo($fewFile, $socialProfessional, 32, false);
+    }
+
+    private function patientIndicatorDemo(string $carnet, Profesional $professional, int $careerId): Paciente
+    {
+        return Paciente::query()->firstOrCreate(
+            ['carnet' => $carnet],
+            [
+                'carrera_id' => $careerId,
+                'creado_por_profesional_id' => $professional->id,
+                'sexo' => 'F',
+                'estado_civil' => 'Soltero',
+                'nombre_completo' => 'Paciente DEMO '.$carnet,
+                'direccion' => 'Dirección DEMO '.$carnet,
+                'fecha_nacimiento' => '2000-01-01',
+                'profesion_ocupacion' => 'Estudiante',
+                'fecha_primera_consulta' => now()->subDays(30)->toDateString(),
+                'motivo_consulta' => 'Motivo clínico sintético para pruebas agregadas.',
+            ],
+        );
+    }
+
+    private function activeIndicatorDemoFile(Paciente $patient, Area $area, Profesional $professional): Expediente
+    {
+        $expediente = Expediente::query()
+            ->where('paciente_id', $patient->codigo)
+            ->where('area_id', $area->id)
+            ->first();
+
+        if ($expediente !== null) {
+            return $expediente;
+        }
+
+        return Expediente::query()->create([
+            'paciente_id' => $patient->codigo,
+            'area_id' => $area->id,
+            'motivo_consulta' => 'Motivo sintético de expediente DEMO.',
+            'notas_clinicas' => 'Nota sintética de expediente DEMO.',
+            'diagnostico' => 'Diagnóstico sintético DEMO.',
+            'estado' => Expediente::ESTADO_ABIERTO,
+            'derivado_por_profesional_id' => $professional->id,
+            'fecha_derivacion' => now()->subDays(20),
+        ]);
+    }
+
+    private function closedIndicatorDemoFile(Paciente $patient, Area $area, Profesional $professional): void
+    {
+        if (Expediente::withTrashed()->where('paciente_id', $patient->codigo)->where('area_id', $area->id)->exists()) {
+            return;
+        }
+
+        Expediente::query()->create([
+            'paciente_id' => $patient->codigo,
+            'area_id' => $area->id,
+            'motivo_consulta' => 'Motivo sintético de expediente DEMO cerrado.',
+            'notas_clinicas' => 'Nota sintética de expediente DEMO cerrado.',
+            'diagnostico' => 'Diagnóstico sintético DEMO cerrado.',
+            'estado' => Expediente::ESTADO_CERRADO,
+            'derivado_por_profesional_id' => $professional->id,
+            'fecha_derivacion' => now()->subDays(40),
+            'motivo_cierre' => 'Cierre sintético para pruebas agregadas.',
+            'resultado_final' => 'Caso DEMO completado.',
+            'fecha_cierre' => now()->subDays(10),
+            'cerrado_por_profesional_id' => $professional->id,
+        ]);
+    }
+
+    private function consultationIndicatorDemo(Expediente $expediente, Profesional $professional, int $index, bool $many): void
+    {
+        $id = sprintf('00000000-0000-4000-8000-%012d', 100 + $index);
+        if (Consulta::withTrashed()->whereKey($id)->exists()) {
+            return;
+        }
+
+        $consulta = new Consulta;
+        $consulta->id = $id;
+        $consulta->expediente_id = $expediente->id;
+        $consulta->setRelation('expediente', $expediente);
+        $consulta->fill([
+            'profesional_id' => $professional->id,
+            'motivo_consulta' => 'Motivo de consulta sintético para indicadores.',
+            'notas_clinicas' => 'Nota clínica sintética para indicadores.',
+            'diagnostico' => 'Diagnóstico sintético para indicadores.',
+            'plan_atencion' => 'Plan sintético de atención para datos DEMO.',
+            'tecnica_utilizada' => 'Entrevista DEMO',
+            'fecha_consulta' => now()->subDays($many ? ($index - 1) % 30 : 3)->setTime(9, $index % 60),
+            'evaluacion_inicial' => [],
+            'crisis_psicologica' => 'No',
+            'indicadores_tendencia_suicida' => [],
+        ]);
+        $consulta->save();
+    }
+
+    private function appointmentIndicatorDemo(Expediente $expediente, Profesional $professional, int $index, bool $many): void
+    {
+        $id = sprintf('00000000-0000-4000-8000-%012d', 200 + $index);
+        if (Cita::withTrashed()->whereKey($id)->exists()) {
+            return;
+        }
+
+        $states = ['programada', 'asistida', 'ausente', 'cancelada', 'reprogramada'];
+        $cita = new Cita;
+        $cita->id = $id;
+        $cita->expediente_id = $expediente->id;
+        $cita->profesional_id = $professional->id;
+        $cita->area_id = $expediente->area_id;
+        $cita->fecha_hora = now()->subDays($many ? ($index - 1) % 30 : 3)->setTime(14, $index % 60);
+        $cita->motivo = 'Cita sintética para indicadores DEMO.';
+        $cita->estado = $many ? $states[($index - 1) % count($states)] : ($index === 31 ? 'asistida' : 'programada');
+
+        if (in_array($cita->estado, ['asistida', 'ausente'], true)) {
+            $cita->fecha_registro_asistencia = $cita->fecha_hora->copy()->addMinutes(30);
+            $cita->registrado_por_profesional_id = $professional->id;
+        } elseif ($cita->estado === 'cancelada') {
+            $cita->motivo_cancelacion = 'Cancelación sintética para indicadores DEMO.';
+            $cita->fecha_cancelacion = $cita->fecha_hora->copy()->addMinutes(30);
+            $cita->cancelado_por_profesional_id = $professional->id;
+        } elseif ($cita->estado === 'reprogramada') {
+            $cita->motivo_reprogramacion = 'Reprogramación sintética para indicadores DEMO.';
+            $cita->fecha_reprogramacion = $cita->fecha_hora->copy()->addMinutes(30);
+            $cita->reprogramado_por_profesional_id = $professional->id;
+        }
+
+        $cita->save();
     }
 
     private function crearVersionDemo(
