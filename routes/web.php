@@ -144,6 +144,13 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         ->middleware('throttle:30,1')
         ->name('indicadores.index');
 
+    Route::get('/reportes', [\App\Http\Controllers\ReportesController::class, 'index'])
+        ->middleware('throttle:30,1')
+        ->name('reportes.index');
+    Route::get('/reportes/generar', [\App\Http\Controllers\ReportesController::class, 'generate'])
+        ->middleware('throttle:10,1')
+        ->name('reportes.generate');
+
     Route::get('/rubricas', [\App\Http\Controllers\RubricaController::class, 'index'])
         ->middleware('throttle:30,1')
         ->name('rubricas.index');

@@ -147,6 +147,13 @@ const allLinks = [
         match: (url) => url.startsWith('/indicadores'),
         permission: 'indicadores',
     },
+    {
+        label: 'Reportes',
+        href: '/reportes',
+        icon: 'M4 5h16M4 10h16M4 15h10m-10 4h16',
+        match: (url) => url.startsWith('/reportes'),
+        permission: 'reportes',
+    },
 ];
 
 const userRoles = computed(() => page.props.auth?.user?.roles || []);

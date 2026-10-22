@@ -11,7 +11,7 @@ final class IndicadorPolicy
 {
     public function ver(Especialista $user, ?int $areaId = null): bool
     {
-        if ($user->hasRole('sysadmin')) {
+        if ($this->verTodasAreas($user)) {
             return true;
         }
 
@@ -38,6 +38,11 @@ final class IndicadorPolicy
 
     public function layoutFor(Especialista $user): string
     {
-        return $user->hasRole('sysadmin') ? 'admin' : 'clinical';
+        return $this->verTodasAreas($user) ? 'admin' : 'clinical';
+    }
+
+    public function verTodasAreas(Especialista $user): bool
+    {
+        return $user->hasRole('sysadmin');
     }
 }

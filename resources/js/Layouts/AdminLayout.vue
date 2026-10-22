@@ -112,6 +112,14 @@ if (page.props.can?.indicadores) {
         match: (url) => url.startsWith('/indicadores'),
     });
 }
+if (page.props.can?.reportes) {
+    sidebarLinks.push({
+        label: 'Reportes',
+        href: '/reportes',
+        icon: 'M4 5h16M4 10h16M4 15h10m-10 4h16',
+        match: (url) => url.startsWith('/reportes'),
+    });
+}
 </script>
 
 <template>

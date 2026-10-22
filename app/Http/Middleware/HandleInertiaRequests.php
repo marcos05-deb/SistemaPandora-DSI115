@@ -2,12 +2,12 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Rubrica;
 use App\Models\AlertaPreventiva;
 use App\Models\Especialista;
+use App\Models\Rubrica;
 use App\Notifications\AlertaPreventivaCreada;
-use App\Services\ClinicalAccessAuditor;
 use App\Policies\IndicadorPolicy;
+use App\Services\ClinicalAccessAuditor;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -30,11 +30,14 @@ class HandleInertiaRequests extends Middleware
             'indicadores' => $user instanceof Especialista
                 ? app(IndicadorPolicy::class)->ver($user)
                 : false,
+            'reportes' => $user instanceof Especialista
+                ? app(IndicadorPolicy::class)->ver($user)
+                : false,
         ];
 
         return [
             ...parent::share($request),
-            'appName'     => 'PANDORA',
+            'appName' => 'PANDORA',
             'appSubtitle' => 'Sistema de Gestión Clínica',
             'auth' => [
                 'user' => $user ? $this->sharedUser($user) : null,
@@ -105,7 +108,7 @@ class HandleInertiaRequests extends Middleware
      *
      * @return array{id: mixed, email: string, name: string, roles: list<string>, role_label: string, area: string|null, areas: list<string>}
      */
-    private function sharedUser(\App\Models\Especialista $user): array
+    private function sharedUser(Especialista $user): array
     {
         $roles = $user->roles()->orderByDesc('roles.nivel')->get(['roles.slug', 'roles.nombre', 'roles.nivel']);
         $slugs = $roles->pluck('slug')->values()->all();
