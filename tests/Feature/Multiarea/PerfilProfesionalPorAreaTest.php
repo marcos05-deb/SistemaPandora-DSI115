@@ -74,6 +74,8 @@ it('asocia consultas al perfil profesional del área correspondiente', function 
         'plan_atencion' => 'Plan de seguimiento clínico',
         'tecnica_utilizada' => 'Entrevista',
         'fecha_consulta' => now()->toDateString(),
+        'crisis_psicologica' => false,
+        'indicadores_tendencia_suicida' => [],
         'evaluacion_inicial' => [
             'apariencia_externa' => 'Normal',
             'voz' => 'Normal',

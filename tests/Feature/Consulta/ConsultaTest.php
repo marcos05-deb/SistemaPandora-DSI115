@@ -31,12 +31,15 @@ function evaluacionInicialValida(): array
 function payloadConsulta(array $overrides = []): array
 {
     return array_merge([
+        // HU-16: keep legacy consultation scenarios explicit and neutral for risk signals.
         'motivo_consulta' => 'Dolor de cabeza crónico',
         'notas_clinicas' => 'El paciente reporta molestias continuas por 3 meses.',
         'diagnostico' => 'Cefalea tensional',
         'plan_atencion' => 'Seguimiento quincenal con higiene del sueño.',
         'tecnica_utilizada' => 'Entrevista clínica',
         'fecha_consulta' => now()->toDateString(),
+        'crisis_psicologica' => false,
+        'indicadores_tendencia_suicida' => [],
         'evaluacion_inicial' => evaluacionInicialValida(),
     ], $overrides);
 }

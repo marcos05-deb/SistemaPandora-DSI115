@@ -10,7 +10,10 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use App\Events\CitaAusenciaRegistrada;
+use App\Events\ConsultaSenalesRiesgoRegistradas;
 use App\Listeners\RegistrarAusenciaEnEstadisticasPreventivas;
+use App\Listeners\EvaluarRiesgoTrasAusencia;
+use App\Listeners\EvaluarRiesgoTrasConsulta;
 use OwenIt\Auditing\Models\Audit;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,6 +39,8 @@ class AppServiceProvider extends ServiceProvider
             CitaAusenciaRegistrada::class,
             RegistrarAusenciaEnEstadisticasPreventivas::class
         );
+        Event::listen(CitaAusenciaRegistrada::class, EvaluarRiesgoTrasAusencia::class);
+        Event::listen(ConsultaSenalesRiesgoRegistradas::class, EvaluarRiesgoTrasConsulta::class);
     }
 
     /**

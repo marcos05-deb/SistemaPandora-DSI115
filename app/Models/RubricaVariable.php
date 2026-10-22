@@ -8,6 +8,7 @@ use App\Models\Concerns\AppendOnly;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
@@ -30,6 +31,17 @@ class RubricaVariable extends Model implements AuditableContract
         'acumulacion',
         'puntaje',
     ];
+
+    public static function ordenarParaEvaluacion(Collection $variables): Collection
+    {
+        $prioridades = array_flip(self::MODOS_CALCULO);
+
+        return $variables->sortBy(static function (self $variable) use ($prioridades): string {
+            $prioridadModo = $prioridades[$variable->modo_calculo] ?? PHP_INT_MAX;
+
+            return sprintf('%010d|%s|%s', $prioridadModo, $variable->clave_indicador ?? '', $variable->getKey());
+        })->values();
+    }
 
     protected $table = 'rubrica_variables';
 

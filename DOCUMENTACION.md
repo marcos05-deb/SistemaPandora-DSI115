@@ -451,3 +451,85 @@
   - Servicios `SolicitudCorreccionExpedienteService`, `ExpedienteActualizacionService`; endurecimiento de `PacienteDatosCorreccionService` (bloqueo 2ª corrección, auditoría siempre `[CIFRADO]`).
   - UI: botones “Solicitar permiso”, cola admin en `/admin/pacientes`, detalle de corrección sin valores.
   - Documentación de reglas en `README.md`.
+
+### [2026-10-21] Implementación en curso de HU-16: Alertas preventivas
+- **Agente:** OpenCode
+- **Contexto:** Generar alertas estadísticas versionadas, capturar señales explícitas por consulta y notificar únicamente al personal clínico autorizado de la misma área, reutilizando la rúbrica de HU-15.
+- **Decisiones aplicadas:**
+  - La crisis psicológica se registra explícitamente Sí/No en cada consulta; la tendencia suicida registra las claves seleccionadas en esa consulta. Ninguna señal se infiere desde texto libre o etiquetas del paciente.
+  - La evaluación es por paciente y área. Los umbrales son inclusivos; frecuencia usa la ventana configurada, acumulación inicia en `fecha_derivacion` y puntaje aplica ponderación por ocurrencia.
+  - El puntaje global permanece desactivado. Las notificaciones internas no incluyen nombre, carnet ni valor clínico.
+  - Una falla de evaluación no revierte la consulta o cita; se registra sin PHI y se puede reintentar con `alertas:reevaluar`.
+- **Cambios realizados:**
+  - Se agregaron campos cifrados de señales en `consultas` y soporte para evaluaciones omitidas mediante una migración incremental; no se editaron migraciones anteriores.
+  - Se creó `alertas_preventivas`, con `AreaScope`, auditoría y unicidad parcial de alertas abiertas; se añadió la tabla `notifications` con privilegios DML restringidos para la aplicación.
+  - Se implementaron eventos posteriores al commit, listeners, evaluación, deduplicación, notificaciones internas, bandeja `/alertas` y el comando `alertas:reevaluar`.
+  - Se agregaron señales explícitas al formulario de consulta y la bandeja/campana de notificaciones al layout clínico.
+  - Los tests HU16 E01–E14 están en `tests/Feature/HU16/AlertaEstadisticaTest.php`.
+- **Evidencia automatizada actual (Docker/WSL):** 31 tests pasan con 166 aserciones al ejecutar conjuntamente HU-15, HU-16 y `AlertasPreventivasTest.php`; el build de Vite y PHP lint pasan. `git diff --check` no reporta errores; solo advertencias LF/CRLF.
+- **Actualización justificada de test existente (C.4):** `tests/Feature/Cita/AlertasPreventivasTest.php` mantiene sus expectativas originales. Se añadió una versión DEMO activa con el umbral acordado 2/30 al fixture, porque HU-16 reemplaza el cálculo fijo por la rúbrica vigente.
+- **Pendiente; HU-16 no se declara terminada:** completar y verificar el seed acumulativo B.7, revisión final, dos corridas de suite completa, `migrate:fresh --database=pgsql_admin --seed` como último paso, evidencia manual y validación documental de Bienestar antes de uso productivo. El baseline completo conserva cuatro fallas conocidas ajenas a HU-16 y no se modificaron.
+
+### [2026-10-21] Implementación en curso de HU-16: Alertas preventivas
+- **Agente:** OpenCode
+- **Contexto:** Generar alertas estadísticas versionadas, capturar señales explícitas por consulta y notificar únicamente al personal clínico autorizado de la misma área, reutilizando la rúbrica de HU-15.
+- **Decisiones aplicadas:**
+  - La crisis psicológica se registra explícitamente Sí/No en cada consulta; la tendencia suicida registra las claves seleccionadas en esa consulta. Ninguna señal se infiere desde texto libre o etiquetas del paciente.
+  - La evaluación es por paciente y área. Los umbrales son inclusivos; frecuencia usa la ventana configurada, acumulación inicia en `fecha_derivacion` y puntaje aplica ponderación por ocurrencia.
+  - El puntaje global permanece desactivado. Las notificaciones internas no incluyen nombre, carnet ni valor clínico.
+  - Una falla de evaluación no revierte la consulta o cita; se registra sin PHI y se puede reintentar con `alertas:reevaluar`.
+- **Cambios realizados:**
+  - Se agregaron campos cifrados de señales en `consultas` y soporte para evaluaciones omitidas mediante una migración incremental; no se editaron migraciones anteriores.
+  - Se creó `alertas_preventivas`, con `AreaScope`, auditoría y unicidad parcial de alertas abiertas; se añadió la tabla `notifications` con privilegios DML restringidos para la aplicación.
+  - Se implementaron eventos posteriores al commit, listeners, evaluación, deduplicación, notificaciones internas, bandeja `/alertas` y el comando `alertas:reevaluar`.
+  - Se agregaron señales explícitas al formulario de consulta y la bandeja/campana de notificaciones al layout clínico.
+  - Los tests HU16 E01–E14 están en `tests/Feature/HU16/AlertaEstadisticaTest.php`.
+- **Evidencia automatizada actual (Docker/WSL):** 31 tests pasan con 166 aserciones al ejecutar conjuntamente HU-15, HU-16 y `AlertasPreventivasTest.php`; el build de Vite y el PHP lint pasan. `git diff --check` no reporta errores; solo advertencias LF/CRLF.
+- **Actualización justificada de test existente (C.4):** `tests/Feature/Cita/AlertasPreventivasTest.php` mantiene sus expectativas originales. Se añadió una versión DEMO activa con el umbral acordado 2/30 al fixture, ya que el cálculo ahora depende de la rúbrica y no de una constante fija.
+- **Pendiente; HU-16 no se declara terminada:** completar y verificar el seed acumulativo B.7, revisión final, dos corridas de suite completa, `migrate:fresh --database=pgsql_admin --seed` como último paso, evidencia manual y validación documental de Bienestar antes de uso productivo. El baseline completo conserva cuatro fallas conocidas ajenas a HU-16 y no se modificaron.
+
+### [2026-10-21] Aclaración de compatibilidad HU-16
+- **Contexto:** La migración de HU-16 añade columnas cifradas obligatorias a `consultas`. Los usos internos antiguos que crean consultas directamente con Eloquent no pasan por el FormRequest y omiten esas señales.
+- **Cambios realizados:** `Consulta::creating` asigna crisis `No` y lista vacía cuando un creador interno omite ambos atributos. El endpoint HTTP conserva la obligación de elegir explícitamente Sí/No. Los fixtures de Consulta, cifrado, flujo integral y multiarea agregan valores neutrales sin cambiar sus aserciones.
+- **C.4 — actualización de tests:** En `tests/Feature/Cita/AlertasPreventivasTest.php`, el fixture ahora crea la versión DEMO activa con 2/30; en `tests/Feature/Consulta/ConsultaTest.php`, `ConsultaCryptoTest.php`, `FlujoClinicoIntegralTest.php` y `Multiarea/PerfilProfesionalPorAreaTest.php` se añadieron los dos campos requeridos. La cobertura original se mantiene.
+- **Resultado de regresión:** 25 tests / 146 aserciones de Consulta, cifrado, flujo integral y multiarea pasan. `CitaTest.php` pasa sus dos escenarios de creación directa; permanece la falla basal de 403 vs. redirect en el escenario de expediente cerrado y no se modificó.
+
+### [2026-10-21] Verificación combinada HU-15/HU-16 y compatibilidad de consultas
+- **Resultado automatizado:** La ejecución conjunta de HU-15, HU-16, alertas de ausencia y regresiones de consulta pasó 56 tests con 312 aserciones en Docker/WSL.
+- **CitaTest:** Los dos casos de inserción directa de consulta pasan con valores cifrados por defecto del modelo; el caso de expediente cerrado conserva su falla basal 403/redirect, sin alterar el test.
+- **Pendiente:** Repetir el seed final después de este cambio de compatibilidad, verificar conteos B.7 y recibir la revisión independiente. La suite completa no se volvió a ejecutar; las cuatro fallas basales continúan pendientes.
+
+### [2026-10-21] Verificación combinada HU-15/HU-16
+- **Resultado:** La última ejecución enfocada de HU-15, HU-16, alertas de ausencia y regresiones de consultas pasó **56 tests con 312 aserciones** en Docker/WSL.
+- **Compatibilidad directa:** La creación directa de `Consulta` por Eloquent ahora cifra las señales neutrales por defecto (`No` y `[]`); el FormRequest continúa exigiendo la elección explícita para el flujo web.
+- **Pendiente:** El seed HU-16 B.7 todavía no se ejecutó; la revisión independiente y la suite completa permanecen pendientes. `CitaTest.php` conserva el caso basal 403/redirect sin modificar.
+
+### [2026-10-21] Actualización final de evidencia HU-16
+- **Seed B.7:** `migrate:fresh --database=pgsql_admin --seed --force` pasó en la base aislada Docker/WSL después de agregar señales cifradas y escenarios de alerta. Conteos SQL: cohortes con 0/1/2 ausencias = 4/1/1; alertas = 3 total, 2 activas en 2 áreas y 1 cerrada; notificaciones sin leer = 3.
+- **Regresión combinada:** HU15 + HU16 + alertas previas + consultas relacionadas: 56 tests / 312 aserciones pasan. El build de Vite y PHP lint también pasaron.
+- **Pendiente:** revisión independiente, evidencia manual/capturas y dos corridas de la suite completa. El baseline conserva cuatro fallas conocidas; no se modificaron. HU-16 no se declara terminada mientras falten esos controles.
+
+### [2026-10-21] Resolución de hallazgos y evidencia final enfocada HU-16
+- **Hallazgos corregidos:** `alertas:reevaluar` ahora recorre todas las consultas con señales positivas y las ausencias persistidas; el resumen legacy calcula por modo/ponderación/área y selecciona la misma regla que activa el evaluador, con etiqueta de UI coherente; la captura consulta las claves de tendencia de la última versión configurada; la bandeja audita las alertas leídas aunque no existan notificaciones sin leer.
+- **Integridad de rollback:** las guardas corren antes de DDL; HU-16 impide descartar cualquier fila de `notifications` (tabla compartida), alertas, evaluaciones HU-16 o señales no neutrales. Se añadió protección al `down()` de la migración HU-15 para que no destruya rúbricas/evaluaciones con datos. Es una corrección de reversión solamente: no se cambió el `up()` ni el esquema HU-15.
+- **Evidencia Docker/WSL:** regresiones enfocadas HU15/HU16, rollback, indicadores dinámicos, asistencia y consultas: **82 tests / 436 assertions PASS**; build Vite PASS; PHP lint de `app`, migraciones, seeders, rutas y tests PASS; Pint `--test` PASS en 18 archivos PHP centrales/nuevos; `git diff --check` PASS con solo avisos LF/CRLF.
+- **Seed final B.7:** `migrate:fresh --database=pgsql_admin --seed --force` PASS; pacientes/área con 0/1/2 ausencias = **4/1/1**; **3 alertas**, **2 activas en 2 áreas**, **1 cerrada**, **3 notificaciones sin leer**; 3 versiones DEMO, 3 reglas de tendencia, 3 registros de ausencia y 5 consultas.
+- **Suite completa:** una corrida terminó en **260 passed, 5 failed, 1 skipped**. Se mantienen los cuatro fallos basales conocidos sin cambios y apareció además `ConsultarCitasTest.php:141` (vista diaria); se registra sin tocar ese test ni su lógica, pendiente de investigar por separado. `CitaTest.php` conserva 2 escenarios aprobados y el fallo basal 403/redirect.
+- **C.4:** `AsistenciaTest.php` añadió al fixture la rúbrica DEMO activa 2/30 para que su alerta dependa de la configuración versionada; no se modificaron expectativas. También se actualizaron fixtures con señales neutrales requeridas y la referencia importada en HU15, sin reducir cobertura.
+- **Estado:** HU-16 está implementada y la verificación focalizada pasa; sigue **INCOMPLETA** frente a C.3 hasta completar segunda corrida de suite, QA manual/evidencia y validación humana/documental de Bienestar. No se realizó push.
+
+### [2026-10-21] Correcciones finales de revisión HU-16
+- **Reglas múltiples de ausencia:** se ordenan con una prioridad determinista compartida entre evaluador y resumen (`frecuencia`, `acumulacion`, `puntaje`, luego indicador e ID); la prueba HU16 activa dos reglas y comprueba que ambos resultados seleccionen la misma.
+- **Versión efectiva de señales:** `Consultas/Create` muestra las claves de la versión actualmente efectiva, no las de una versión futura; evita ofrecer una señal que el evaluador aún no admite.
+- **Auditoría de inbox:** el controlador registra la lectura de cada alerta visible mediante `ClinicalAccessAuditor`, incluso cuando el usuario no tiene notificaciones sin leer. HU16-E14 pasó después del cambio.
+- **Regresión adicional cerrada:** `AsistenciaTest.php` fallaba porque su escenario esperaba la alerta con el umbral fijo, sin rúbrica activa; su fixture ahora crea la DEMO 2/30 aprobada, manteniendo las mismas aserciones.
+- **Última regresión enfocada:** **82 tests / 436 aserciones PASS**; E14 después de auditoría también PASS. Build Vite y PHP lint completo PASS. Pint `--test` pasó en 18 archivos centrales/nuevos HU16; el chequeo de archivos legacy modificados aún reporta formato previo/CRLF, por lo que no se normalizó el resto del archivo para evitar ruido.
+- **Suite completa actual:** **260 passed, 5 failed, 1 skipped**. Permanecen los cuatro fallos basales conocidos sin tocar; se observó además `ConsultarCitasTest.php:141` al probar vista diaria. `CitaTest.php` mantiene 2 escenarios PASS y su fallo 403/redirect.
+- **Seed final repetido tras la última ejecución de tests:** `migrate:fresh --database=pgsql_admin --seed --force` PASS; conteos 0/1/2 ausencias = 4/1/1; alertas 3 (2 activas en dos áreas, 1 cerrada); 3 notificaciones sin leer; 3 versiones DEMO, 3 reglas de tendencia, 3 estadísticas de ausencia y 5 consultas.
+- **Corrección histórica append-only:** una entrada anterior indicaba que no se había editado una migración HU15. La revisión de rollback añadió una guarda solo en el método `down()` de esa migración; `up()` y el esquema HU15 no cambiaron. La guarda impide borrar rúbricas/evaluaciones con datos.
+- **Estado de cierre:** HU-16 se va a commitear en esta rama, pero permanece **INCOMPLETA** respecto a C.3: suite completa con fallos, falta segunda corrida y QA manual/validación humana de Bienestar. No se hará push.
+
+### [2026-10-21] Aclaraciones append-only del cierre HU-16
+- **Corrección de versión en captura:** La descripción previa que decía “última versión configurada” quedó obsoleta tras la revisión. El formulario usa la versión vigente de `RubricaResolver`, igual que el evaluador; las claves de una versión futura solo aparecen al entrar en vigencia.
+- **C.4 — HU15 test:** El cambio real en `RubricaVersionadaTest.php` añade el encabezado de versión Inertia y permite la nueva prop aditiva `clinicalPermissions.alertas`; mantiene las comprobaciones existentes de rúbricas/creación y no reduce cobertura. La referencia de `RubricaVersionService` es plenamente calificada, sin cambio de comportamiento.
+- **Revisión final:** Se solicitaron dos revisiones independientes; la segunda reportó dos bloqueos que fueron corregidos con la prioridad compartida y la versión vigente. La verificación de 82/436, E14 y seed fue posterior a esos cambios. Queda pendiente recibir el último follow-up de revisión antes del commit.

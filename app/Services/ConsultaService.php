@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Consulta;
 use App\Models\Expediente;
+use App\Events\ConsultaSenalesRiesgoRegistradas;
 use Illuminate\Support\Facades\DB;
 
 class ConsultaService
@@ -31,6 +32,8 @@ class ConsultaService
                 'antecedentes_problema' => $data['antecedentes_problema'] ?? null,
                 'etiquetas_motivo' => $data['etiquetas_motivo'] ?? [],
                 'evaluacion_inicial' => $data['evaluacion_inicial'] ?? null,
+                'crisis_psicologica' => filter_var($data['crisis_psicologica'], FILTER_VALIDATE_BOOLEAN) ? 'Sí' : 'No',
+                'indicadores_tendencia_suicida' => $data['indicadores_tendencia_suicida'],
                 'fecha_consulta'  => $fechaConsulta,
             ]);
             $consulta->save();
@@ -46,6 +49,8 @@ class ConsultaService
                 $paciente->fecha_primera_consulta = $fechaConsulta->toDateString();
                 $paciente->save();
             }
+
+            ConsultaSenalesRiesgoRegistradas::dispatch($consulta);
 
             return $consulta;
         });

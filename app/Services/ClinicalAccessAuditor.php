@@ -26,7 +26,9 @@ final class ClinicalAccessAuditor
                 'action' => $action,
                 'resource' => class_basename($resource),
             ],
-            'url' => request()->fullUrl(),
+            'url' => $action === 'read_notification_inbox'
+                ? request()->route()?->getName()
+                : request()->fullUrl(),
             'ip_address' => request()->ip(),
             'user_agent' => substr((string) request()->userAgent(), 0, 1023),
             'tags' => 'clinical_access',

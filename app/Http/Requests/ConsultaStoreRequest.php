@@ -57,6 +57,9 @@ class ConsultaStoreRequest extends FormRequest
             // Fecha clínica explícita (independiente de created_at).
             'fecha_consulta' => ['required', 'date', 'before_or_equal:today', 'after_or_equal:'.now()->subYear()->toDateString()],
             'evaluacion_inicial' => [$isFirstConsulta ? 'required' : 'nullable', 'array'],
+            'crisis_psicologica' => ['required', 'boolean'],
+            'indicadores_tendencia_suicida' => ['present', 'array', 'max:50'],
+            'indicadores_tendencia_suicida.*' => ['required', 'string', 'max:120', 'distinct'],
         ];
 
         if ($isFirstConsulta) {
@@ -83,6 +86,8 @@ class ConsultaStoreRequest extends FormRequest
             'fecha_consulta.before_or_equal' => 'La fecha de la consulta no puede ser futura.',
             'fecha_consulta.after_or_equal' => 'La fecha de la consulta no puede ser anterior a un año.',
             'evaluacion_inicial.required' => 'La evaluación inicial es obligatoria en la primera consulta.',
+            'crisis_psicologica.required' => 'Indique si se registró una crisis psicológica.',
+            'indicadores_tendencia_suicida.present' => 'Registre los indicadores de tendencia suicida o indique que no hay ninguno.',
         ];
 
         foreach (self::EVALUACION_CAMPOS as $campo) {

@@ -4,18 +4,30 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Models\AlertaPreventiva;
 use App\Models\Cita;
 use App\Models\Consulta;
+use App\Models\EstadisticaPreventivaAusencia;
 use App\Models\EvaluacionRiesgo;
+use App\Models\Especialista;
+use App\Models\Expediente;
 use App\Models\Profesional;
 use App\Models\Rubrica;
 use App\Models\RubricaVersion;
+use App\Notifications\AlertaPreventivaCreada;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class RubricaDemoSeeder extends Seeder
 {
+    private const DEMO_AUSENCIA_1_ID = '00000000-0000-4000-8000-000000000016';
+
+    private const DEMO_AUSENCIA_2_ID = '00000000-0000-4000-8000-000000000017';
+
+    private const DEMO_CONSULTA_SENALES_ID = '00000000-0000-4000-8000-000000000018';
+
     public function run(): void
     {
         if (! app()->environment(['local', 'testing'])) {
@@ -88,6 +100,7 @@ class RubricaDemoSeeder extends Seeder
 
         $absence = Cita::query()
             ->where('estado', 'ausente')
+            ->whereNotIn('id', [self::DEMO_AUSENCIA_1_ID, self::DEMO_AUSENCIA_2_ID])
             ->with('expediente')
             ->oldest('fecha_hora')
             ->firstOrFail();
@@ -101,6 +114,13 @@ class RubricaDemoSeeder extends Seeder
             ->with('expediente')
             ->whereHas('expediente', fn ($query) => $query
                 ->where('area_id', $absence->area_id)
+                ->where('paciente_id', '!=', $absenceExpediente->paciente_id))
+            ->oldest('fecha_consulta')
+            ->first();
+
+        $crisisConsulta ??= Consulta::query()
+            ->with('expediente')
+            ->whereHas('expediente', fn ($query) => $query
                 ->where('paciente_id', '!=', $absenceExpediente->paciente_id))
             ->oldest('fecha_consulta')
             ->firstOrFail();
@@ -133,6 +153,8 @@ class RubricaDemoSeeder extends Seeder
             $crisisConsulta->id,
             now()
         );
+
+        $this->crearEscenariosDemoHu16($currentVersion, $absence);
     }
 
     private function crearVersionDemo(
@@ -185,7 +207,7 @@ class RubricaDemoSeeder extends Seeder
         return $version;
     }
 
-    /** @param array{total: int, ventana_dias: int} $detalle */
+    /** @param array<string, mixed> $detalle */
     private function crearEvaluacionDemo(
         RubricaVersion $version,
         string $pacienteId,
@@ -196,15 +218,15 @@ class RubricaDemoSeeder extends Seeder
         string $eventoOrigenTipo,
         string $eventoOrigenId,
         Carbon $evaluadaEn
-    ): void {
-        $exists = EvaluacionRiesgo::query()
+    ): EvaluacionRiesgo {
+        $existingEvaluation = EvaluacionRiesgo::query()
             ->where('evento_origen_tipo', $eventoOrigenTipo)
             ->where('evento_origen_id', $eventoOrigenId)
             ->where('rubrica_version_id', $version->id)
-            ->exists();
+            ->first();
 
-        if ($exists) {
-            return;
+        if ($existingEvaluation !== null) {
+            return $existingEvaluation;
         }
 
         $evaluacion = new EvaluacionRiesgo();
@@ -218,5 +240,277 @@ class RubricaDemoSeeder extends Seeder
         $evaluacion->evento_origen_id = $eventoOrigenId;
         $evaluacion->evaluada_en = $evaluadaEn;
         $evaluacion->save();
+
+        return $evaluacion;
+    }
+
+    private function crearEscenariosDemoHu16(RubricaVersion $version, Cita $absence): void
+    {
+        $absenceExpediente = $absence->expediente;
+        if ($absenceExpediente === null) {
+            throw new RuntimeException('La cita DEMO de ausencia no tiene expediente.');
+        }
+
+        $coordinator = Profesional::query()
+            ->whereHas('especialista', fn ($query) => $query->where('email', 'coordinador@pandora.com'))
+            ->firstOrFail();
+        $psychologySpecialist = Profesional::query()
+            ->whereHas('especialista', fn ($query) => $query->where('email', 'especialista-psi@pandora.com'))
+            ->firstOrFail();
+        $medicineSpecialist = Profesional::query()
+            ->whereHas('especialista', fn ($query) => $query->where('email', 'especialista@pandora.com'))
+            ->firstOrFail();
+
+        $this->registrarAusenciaDemo($absence);
+
+        $expedienteDosAusencias = $this->expedienteDosAusenciasDemo($absenceExpediente);
+        $primeraAusencia = $this->crearCitaAusenciaDemo(
+            $expedienteDosAusencias,
+            $psychologySpecialist,
+            self::DEMO_AUSENCIA_1_ID,
+            now()->subDays(3)->setTime(21, 0)
+        );
+        $segundaAusencia = $this->crearCitaAusenciaDemo(
+            $expedienteDosAusencias,
+            $psychologySpecialist,
+            self::DEMO_AUSENCIA_2_ID,
+            now()->subDays(2)->setTime(21, 0)
+        );
+        $this->registrarAusenciaDemo($primeraAusencia);
+        $this->registrarAusenciaDemo($segundaAusencia);
+
+        $ausenciaEvaluation = $this->crearEvaluacionDemo(
+            $version,
+            $expedienteDosAusencias->paciente_id,
+            (int) $expedienteDosAusencias->area_id,
+            'ausencia_cita',
+            2.00,
+            ['ausencia_cita' => [[
+                'clave_indicador' => null,
+                'valor' => 2.00,
+                'umbral' => 2.00,
+                'modo_calculo' => 'frecuencia',
+                'ventana_dias' => 30,
+                'ponderacion' => 1.00,
+            ]]],
+            Cita::class,
+            $segundaAusencia->id,
+            now()
+        );
+        $this->crearAlertaDemo($ausenciaEvaluation, 'ausencia_cita', '2', 2.00, 'activa', $psychologySpecialist);
+
+        $demoConsulta = Consulta::query()->with('expediente')->find(self::DEMO_CONSULTA_SENALES_ID);
+        $expedienteSinAusencias = $demoConsulta?->expediente
+            ?? $this->expedienteSinAusenciasDemo((int) $medicineSpecialist->area_id);
+        $demoConsulta = $this->crearConsultaSenalesDemo($demoConsulta, $expedienteSinAusencias, $medicineSpecialist);
+        $consultaEvaluation = $this->crearEvaluacionDemo(
+            $version,
+            $expedienteSinAusencias->paciente_id,
+            (int) $expedienteSinAusencias->area_id,
+            'consulta_senales',
+            1.00,
+            [
+                'crisis_psicologica' => [[
+                    'clave_indicador' => null,
+                    'valor' => 1.00,
+                    'umbral' => 1.00,
+                    'modo_calculo' => 'frecuencia',
+                    'ventana_dias' => 90,
+                    'ponderacion' => 1.00,
+                ]],
+                'tendencia_suicida' => [[
+                    'clave_indicador' => 'ideas_suicidas',
+                    'valor' => 1.00,
+                    'umbral' => 1.00,
+                    'modo_calculo' => 'puntaje',
+                    'ventana_dias' => null,
+                    'ponderacion' => 1.00,
+                ]],
+            ],
+            Consulta::class,
+            $demoConsulta->id,
+            now()
+        );
+        $this->crearAlertaDemo($consultaEvaluation, 'crisis_psicologica', '1', 1.00, 'activa', $medicineSpecialist);
+        $this->crearAlertaDemo($consultaEvaluation, 'tendencia_suicida', '1', 1.00, 'cerrada', $medicineSpecialist);
+
+        if ((int) $coordinator->area_id !== (int) $absenceExpediente->area_id
+            || (int) $medicineSpecialist->area_id === (int) $absenceExpediente->area_id) {
+            throw new RuntimeException('Los escenarios DEMO HU-16 requieren profesionales en dos áreas distintas.');
+        }
+    }
+
+    private function expedienteDosAusenciasDemo(Expediente $absenceExpediente): Expediente
+    {
+        $existingCita = Cita::query()
+            ->whereIn('id', [self::DEMO_AUSENCIA_1_ID, self::DEMO_AUSENCIA_2_ID])
+            ->with('expediente')
+            ->first();
+
+        if ($existingCita?->expediente !== null) {
+            return $existingCita->expediente;
+        }
+
+        $desde = now()->subDays(30);
+
+        return Expediente::query()
+            ->where('area_id', $absenceExpediente->area_id)
+            ->where('paciente_id', '!=', $absenceExpediente->paciente_id)
+            ->whereDoesntHave('citas', fn ($query) => $query
+                ->where('estado', 'ausente')
+                ->where('fecha_hora', '>=', $desde))
+            ->whereNotIn('paciente_id', EstadisticaPreventivaAusencia::query()
+                ->select('paciente_id')
+                ->where('area_id', $absenceExpediente->area_id)
+                ->where('fecha_registro', '>=', $desde))
+            ->orderBy('paciente_id')
+            ->firstOrFail();
+    }
+
+    private function expedienteSinAusenciasDemo(int $areaId): Expediente
+    {
+        $desde = now()->subDays(30);
+
+        return Expediente::query()
+            ->where('area_id', $areaId)
+            ->whereDoesntHave('citas', fn ($query) => $query
+                ->where('estado', 'ausente')
+                ->where('fecha_hora', '>=', $desde))
+            ->whereNotIn('paciente_id', EstadisticaPreventivaAusencia::query()
+                ->select('paciente_id')
+                ->where('area_id', $areaId)
+                ->where('fecha_registro', '>=', $desde))
+            ->orderBy('paciente_id')
+            ->firstOrFail();
+    }
+
+    private function crearCitaAusenciaDemo(
+        Expediente $expediente,
+        Profesional $profesional,
+        string $citaId,
+        Carbon $fecha
+    ): Cita {
+        $cita = Cita::query()->find($citaId);
+        if ($cita !== null) {
+            return $cita;
+        }
+
+        $cita = new Cita();
+        $cita->id = $citaId;
+        $cita->expediente_id = $expediente->id;
+        $cita->profesional_id = $profesional->id;
+        $cita->area_id = $expediente->area_id;
+        $cita->fecha_hora = $fecha;
+        $cita->motivo = 'DEMO: ausencia para evaluación preventiva';
+        $cita->estado = 'ausente';
+        $cita->fecha_registro_asistencia = $fecha->copy()->addMinutes(30);
+        $cita->registrado_por_profesional_id = $profesional->id;
+        $cita->save();
+
+        return $cita;
+    }
+
+    private function registrarAusenciaDemo(Cita $cita): void
+    {
+        $cita->loadMissing('expediente');
+        if ($cita->expediente === null) {
+            throw new RuntimeException('La cita DEMO de ausencia no tiene expediente.');
+        }
+
+        EstadisticaPreventivaAusencia::query()->firstOrCreate(
+            ['cita_id' => $cita->id],
+            [
+                'paciente_id' => $cita->expediente->paciente_id,
+                'profesional_id' => $cita->profesional_id,
+                'area_id' => $cita->area_id,
+                'fecha_registro' => $cita->fecha_registro_asistencia ?? now(),
+            ]
+        );
+    }
+
+    private function crearConsultaSenalesDemo(
+        ?Consulta $consulta,
+        Expediente $expediente,
+        Profesional $profesional
+    ): Consulta {
+        if ($consulta !== null) {
+            return $consulta;
+        }
+
+        $consulta = new Consulta();
+        $consulta->id = self::DEMO_CONSULTA_SENALES_ID;
+        $consulta->expediente_id = $expediente->id;
+        $consulta->profesional_id = $profesional->id;
+        $consulta->motivo_consulta = 'DEMO: señales para evaluación preventiva';
+        $consulta->notas_clinicas = 'Registro DEMO para validar señales preventivas.';
+        $consulta->diagnostico = 'Datos DEMO.';
+        $consulta->fecha_consulta = now();
+        $consulta->crisis_psicologica = 'Sí';
+        $consulta->indicadores_tendencia_suicida = ['ideas_suicidas'];
+        $consulta->save();
+
+        return $consulta;
+    }
+
+    private function crearAlertaDemo(
+        EvaluacionRiesgo $evaluacion,
+        string $senal,
+        string $valor,
+        float $umbral,
+        string $estado,
+        Profesional $responsable
+    ): void {
+        $alerta = AlertaPreventiva::query()
+            ->where('evaluacion_riesgo_id', $evaluacion->id)
+            ->where('senal', $senal)
+            ->first();
+
+        if ($alerta === null && in_array($estado, ['activa', 'en_seguimiento'], true)
+            && AlertaPreventiva::query()
+                ->where('paciente_id', $evaluacion->paciente_id)
+                ->where('area_id', $evaluacion->area_id)
+                ->where('senal', $senal)
+                ->whereIn('estado', ['activa', 'en_seguimiento'])
+                ->exists()) {
+            return;
+        }
+
+        if ($alerta === null) {
+            $alerta = new AlertaPreventiva();
+            $alerta->paciente_id = $evaluacion->paciente_id;
+            $alerta->area_id = $evaluacion->area_id;
+            $alerta->evaluacion_riesgo_id = $evaluacion->id;
+            $alerta->rubrica_version_id = $evaluacion->rubrica_version_id;
+            $alerta->senal = $senal;
+            $alerta->valor_calculado = $valor;
+            $alerta->umbral = $umbral;
+            $alerta->estado = $estado;
+            $alerta->responsable_profesional_id = $responsable->id;
+            $alerta->generada_en = now();
+            $alerta->save();
+        }
+
+        if (! in_array($alerta->estado, ['activa', 'en_seguimiento'], true)) {
+            return;
+        }
+
+        $recipients = Especialista::query()
+            ->whereHas('roles', fn ($query) => $query->whereIn('slug', ['area_coordinator', 'specialist']))
+            ->whereDoesntHave('roles', fn ($query) => $query->whereIn('slug', ['sysadmin', 'psychosocial_referent']))
+            ->whereHas('perfilesProfesionales', fn ($query) => $query->where('area_id', $alerta->area_id))
+            ->get();
+
+        foreach ($recipients as $recipient) {
+            $alreadyNotified = DB::table('notifications')
+                ->where('type', AlertaPreventivaCreada::class)
+                ->where('notifiable_type', $recipient::class)
+                ->where('notifiable_id', $recipient->getKey())
+                ->whereRaw("data::jsonb ->> 'alert_id' = ?", [$alerta->id])
+                ->exists();
+
+            if (! $alreadyNotified) {
+                $recipient->notify(new AlertaPreventivaCreada($alerta));
+            }
+        }
     }
 }

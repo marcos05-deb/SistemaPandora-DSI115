@@ -28,6 +28,7 @@ class EvaluacionRiesgo extends Model implements AuditableContract
         'disparador',
         'puntaje',
         'detalle',
+        'estado_evaluacion',
         'evento_origen_tipo',
         'evento_origen_id',
         'evaluada_en',
@@ -56,7 +57,7 @@ class EvaluacionRiesgo extends Model implements AuditableContract
     public function transformAudit(array $data): array
     {
         foreach (['old_values', 'new_values'] as $bucket) {
-            foreach (['paciente_id', 'disparador', 'puntaje', 'detalle', 'evento_origen_tipo', 'evento_origen_id'] as $field) {
+            foreach (['paciente_id', 'rubrica_version_id', 'disparador', 'puntaje', 'detalle', 'evento_origen_tipo', 'evento_origen_id'] as $field) {
                 if (isset($data[$bucket][$field])) {
                     $data[$bucket][$field] = '[CIFRADO]';
                 }

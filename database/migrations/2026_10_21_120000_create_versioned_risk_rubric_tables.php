@@ -145,11 +145,34 @@ return new class extends Migration
 
     public function down(): void
     {
+        $this->assertNoRiskDataWouldBeLost();
+
         DB::connection('pgsql_admin')->statement('DROP FUNCTION IF EXISTS public.lock_rubrica_for_versioning(uuid)');
         Schema::connection('pgsql_admin')->dropIfExists('evaluaciones_riesgo');
         Schema::connection('pgsql_admin')->dropIfExists('rubrica_variables');
         Schema::connection('pgsql_admin')->dropIfExists('rubrica_versiones');
         Schema::connection('pgsql_admin')->dropIfExists('rubricas');
+    }
+
+    private function assertNoRiskDataWouldBeLost(): void
+    {
+        $connection = DB::connection('pgsql_admin');
+        $schema = Schema::connection('pgsql_admin');
+
+        foreach (['rubrica_versiones', 'rubrica_variables', 'evaluaciones_riesgo', 'alertas_preventivas'] as $table) {
+            if ($schema->hasTable($table) && $connection->table($table)->exists()) {
+                throw new RuntimeException("HU-15 no puede revertirse mientras {$table} contenga datos.");
+            }
+        }
+
+        // The migration-owned canonical rubric is safe to remove when it has no dependent data.
+        if ($schema->hasTable('rubricas') && $connection->table('rubricas')->where(function ($query): void {
+            $query->where('codigo', '<>', 'riesgo_preventivo')
+                ->orWhere('nombre', '<>', 'Rúbrica de riesgo preventivo')
+                ->orWhereNotNull('descripcion');
+        })->exists()) {
+            throw new RuntimeException('HU-15 no puede revertirse mientras existan rúbricas con datos propios.');
+        }
     }
 
     private function restrictApplicationPrivileges(): void

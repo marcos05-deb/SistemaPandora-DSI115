@@ -1,8 +1,9 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { useTheme } from '@/Composables/useTheme';
 import { useAutoLogout } from '@/Composables/useAutoLogout';
+import { formatElSalvadorDateTime } from '@/utils/dates';
 
 defineProps({
     navigation: { 
@@ -21,6 +22,10 @@ useAutoLogout();
 const sidebarOpen = ref(false);
 const profileOpen = ref(false);
 const profileRef = ref(null);
+const notificationOpen = ref(false);
+const notificationRef = ref(null);
+const markingNotificationId = ref(null);
+const notificationError = ref('');
 const showFlash = ref(true);
 const flashExit = ref(false);
 const flashProgress = ref(100);
@@ -46,11 +51,18 @@ watch(() => page.props.flash?.message, (newMsg) => {
     }
 }, { immediate: true });
 
-watch(() => page.url, () => { sidebarOpen.value = false; profileOpen.value = false; });
+watch(() => page.url, () => {
+    sidebarOpen.value = false;
+    profileOpen.value = false;
+    notificationOpen.value = false;
+});
 
 function onDocClick(e) {
     if (profileRef.value && !profileRef.value.contains(e.target)) {
         profileOpen.value = false;
+    }
+    if (notificationRef.value && !notificationRef.value.contains(e.target)) {
+        notificationOpen.value = false;
     }
 }
 
@@ -58,7 +70,21 @@ function onKeydown(e) {
     if (e.key === 'Escape') {
         sidebarOpen.value = false;
         profileOpen.value = false;
+        notificationOpen.value = false;
     }
+}
+
+const clinicalNotifications = computed(() => page.props.clinicalNotifications || { unreadCount: 0, unread: [] });
+const unreadNotifications = computed(() => clinicalNotifications.value.unread || []);
+
+function markNotificationRead(id) {
+    notificationError.value = '';
+    markingNotificationId.value = id;
+    router.post(`/notificaciones/${encodeURIComponent(id)}/leida`, {}, {
+        preserveScroll: true,
+        onError: () => { notificationError.value = 'No fue posible actualizar la notificación. Inténtalo de nuevo.'; },
+        onFinish: () => { markingNotificationId.value = null; },
+    });
 }
 
 onMounted(() => {
@@ -101,6 +127,13 @@ const allLinks = [
         permission: 'rubricas',
     },
     {
+        label: 'Alertas',
+        href: '/alertas',
+        icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
+        match: (url) => url.startsWith('/alertas'),
+        permission: 'alertas',
+    },
+    {
         label: 'Citas',
         href: '/citas',
         icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
@@ -112,7 +145,7 @@ const allLinks = [
 const userRoles = computed(() => page.props.auth?.user?.roles || []);
 const sidebarLinks = computed(() => allLinks.filter(link =>
     (!link.roles || link.roles.some(r => userRoles.value.includes(r))) &&
-    (!link.permission || Boolean(page.props.clinicalPermissions?.rubricas))
+    (!link.permission || Boolean(page.props.clinicalPermissions?.[link.permission]))
 ));
 </script>
 
@@ -184,6 +217,55 @@ const sidebarLinks = computed(() => allLinks.filter(link =>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 lg:gap-3 text-[13px] text-[var(--chrome-text-muted)]">
+                    <div ref="notificationRef" class="relative">
+                        <button
+                            type="button"
+                            class="relative inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg transition-colors hover:bg-[var(--chrome-topbar-hover)] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--frost2)]"
+                            :aria-expanded="notificationOpen"
+                            aria-controls="clinical-notifications"
+                            :aria-label="`Notificaciones, ${clinicalNotifications.unreadCount || 0} sin leer`"
+                            @click="notificationOpen = !notificationOpen"
+                        >
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span v-if="clinicalNotifications.unreadCount > 0" class="absolute right-0.5 top-0.5 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-[var(--aurora-red)] px-1 text-[10px] font-bold leading-none text-white" aria-hidden="true">
+                                {{ clinicalNotifications.unreadCount > 99 ? '99+' : clinicalNotifications.unreadCount }}
+                            </span>
+                        </button>
+                        <section
+                            v-if="notificationOpen"
+                            id="clinical-notifications"
+                            aria-label="Notificaciones sin leer"
+                            class="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-[var(--nord4)] bg-white shadow-xl"
+                        >
+                            <div class="flex items-center justify-between border-b border-[var(--nord4)] px-4 py-3">
+                                <h2 class="text-sm font-semibold text-[var(--nord0)]">Notificaciones</h2>
+                                <span class="text-xs text-[var(--nord3)]">{{ clinicalNotifications.unreadCount || 0 }} sin leer</span>
+                            </div>
+                            <p v-if="notificationError" role="alert" class="px-4 pt-3 text-sm text-[var(--aurora-red)]">{{ notificationError }}</p>
+                            <p v-if="unreadNotifications.length === 0" class="px-4 py-6 text-center text-sm text-[var(--nord3)]">
+                                No tienes notificaciones sin leer.
+                            </p>
+                            <ul v-else class="max-h-80 divide-y divide-[var(--nord5)] overflow-y-auto">
+                                <li v-for="notification in unreadNotifications" :key="notification.id" class="flex items-start gap-3 px-4 py-3">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-medium text-[var(--nord0)]">{{ notification.label || notification.senal }}</p>
+                                        <p class="mt-1 text-xs text-[var(--nord3)]">{{ notification.senal }} · {{ formatElSalvadorDateTime(notification.created_at) }}</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="inline-flex min-h-10 shrink-0 items-center rounded-lg px-2 text-xs font-semibold text-[var(--nord10)] hover:bg-[var(--surface-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--nord10)] disabled:cursor-wait disabled:opacity-60"
+                                        :aria-label="`Marcar como leída: ${notification.label || notification.senal}`"
+                                        :disabled="markingNotificationId === notification.id"
+                                        @click="markNotificationRead(notification.id)"
+                                    >
+                                        {{ markingNotificationId === notification.id ? 'Guardando…' : 'Marcar leída' }}
+                                    </button>
+                                </li>
+                            </ul>
+                        </section>
+                    </div>
                     <button @click="toggleTheme" class="p-2 hover:text-white hover:bg-[var(--chrome-topbar-hover)] rounded-lg transition-colors" :title="isDark ? 'Modo Claro' : 'Modo Oscuro'">
                         <svg v-if="isDark" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                         <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>

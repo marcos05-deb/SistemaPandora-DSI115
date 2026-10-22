@@ -190,7 +190,7 @@ class CitaController extends Controller
                 ->values();
         }
 
-        $alertaPreventiva = ['activa' => false, 'total' => 0, 'umbral' => 2, 'ventana_dias' => 30, 'mensaje' => null];
+        $alertaPreventiva = ['activa' => false, 'total' => 0, 'umbral' => null, 'ventana_dias' => null, 'modo_calculo' => null, 'mensaje' => null];
         if (! empty($validated['paciente']) && ($user->hasRole('specialist') || $user->hasRole('area_coordinator'))) {
             $term = (string) $validated['paciente'];
             $pacienteFiltro = \App\Models\Paciente::query()
@@ -203,8 +203,25 @@ class CitaController extends Controller
                 ->first();
 
             if ($pacienteFiltro) {
+                $areas = $user->areas()->pluck('areas.id');
+                $areaFiltrada = ! empty($validated['especialista_id'])
+                    ? \App\Models\Profesional::query()
+                        ->whereKey($validated['especialista_id'])
+                        ->whereIn('area_id', $areas)
+                        ->value('area_id')
+                    : null;
+                $expedienteQuery = Expediente::query()
+                    ->where('paciente_id', $pacienteFiltro->codigo)
+                    ->where('estado', '!=', Expediente::ESTADO_CERRADO)
+                    ->when(! empty($validated['especialista_id']), fn ($query) => $query->where('area_id', $areaFiltrada));
+                $areaAlertaId = $expedienteQuery->orderByDesc('updated_at')->value('area_id') ?? $areaFiltrada;
                 $alertaPreventiva = app(\App\Services\AlertasPreventivasService::class)
-                    ->alertaPaciente($user, $pacienteFiltro->codigo);
+                    ->alertaPaciente(
+                        $user,
+                        $pacienteFiltro->codigo,
+                        null,
+                        $areaAlertaId === null ? null : (int) $areaAlertaId,
+                    );
             }
         }
 
@@ -317,7 +334,7 @@ class CitaController extends Controller
 
             if ($pacienteId) {
                 $alerta = app(\App\Services\AlertasPreventivasService::class)
-                    ->alertaPaciente($request->user(), $pacienteId);
+                    ->alertaPaciente($request->user(), $pacienteId, null, (int) $cita->area_id);
 
                 if ($alerta['activa']) {
                     $mensaje = $alerta['mensaje'];

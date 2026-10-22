@@ -3,20 +3,21 @@
 declare(strict_types=1);
 
 use App\Exceptions\RubricaInmutableException;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Area;
+use App\Models\Especialista;
 use App\Models\EvaluacionRiesgo;
 use App\Models\Expediente;
-use App\Models\Especialista;
 use App\Models\Paciente;
 use App\Models\Profesional;
 use App\Models\Rubrica;
 use App\Models\RubricaVariable;
 use App\Models\RubricaVersion;
 use App\Services\RubricaResolver;
-use App\Services\RubricaVersionService;
 use Carbon\CarbonInterface;
-use Illuminate\Support\Carbon;
 use Illuminate\Database\QueryException;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -24,7 +25,7 @@ use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
 
 beforeEach(function (): void {
-    $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+    $this->withoutMiddleware(PreventRequestForgery::class);
     $this->withSession(['_sym_key' => str_repeat('a', 32)]);
 
     $this->area = Area::factory()->create();
@@ -79,6 +80,16 @@ function hu15ValidPayload(array $overrides = []): array
         'referencia_validacion' => 'Protocolo de validación 2026',
         'variables' => hu15Variables(),
     ], $overrides);
+}
+
+/** @return array<string, string> */
+function hu15InertiaHeaders(): array
+{
+    return [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()) ?? '',
+        'Accept' => 'application/json',
+    ];
 }
 
 function hu15CreateVersion(
@@ -394,10 +405,11 @@ test('HU15-E06 should_resolve_effective_versions_and_mark_a_future_version_as_pr
     $beforeVersionOne = $resolver->vigente($versionOne->vigente_desde->copy()->subSecond());
     $beforeVersionTwo = $resolver->vigente($now);
     $afterVersionTwo = $resolver->vigente($versionTwo->vigente_desde->copy()->addSecond());
-    $response = $this->withHeaders(['X-Inertia' => 'true', 'Accept' => 'application/json'])
+    $headers = hu15InertiaHeaders();
+    $response = $this->withHeaders($headers)
         ->get(route('rubricas.show', $versionTwo->id));
     $page = json_decode($response->getContent(), true, flags: JSON_THROW_ON_ERROR);
-    $demoResponse = $this->withHeaders(['X-Inertia' => 'true', 'Accept' => 'application/json'])
+    $demoResponse = $this->withHeaders($headers)
         ->get(route('rubricas.show', $demoVersion->id));
     $demoPage = json_decode($demoResponse->getContent(), true, flags: JSON_THROW_ON_ERROR);
 
@@ -552,7 +564,7 @@ test('HU15-E10 should_assign_sequential_numbers_under_concurrent_creation_and_re
             file_put_contents(getenv('HU15_ATTEMPTED_FILE'), 'attempting');
         }
 
-        $version = app(App\Services\RubricaVersionService::class)->crearVersion($rubrica, $payload, $professional);
+        $version = app(\App\Services\RubricaVersionService::class)->crearVersion($rubrica, $payload, $professional);
         if (getenv('HU15_MODE') === 'holder') {
             $connection->commit();
         }
@@ -679,7 +691,7 @@ test('HU15-E11 should_expose_allowlisted_fields_and_stable_permissions_without_r
     $futureVersion = hu15CreateVersion($this->rubrica, $this->professional, 2, $now->copy()->addDay());
 
     // Act
-    $headers = ['X-Inertia' => 'true', 'Accept' => 'application/json'];
+    $headers = hu15InertiaHeaders();
     $showResponse = $this->withHeaders($headers)->get(route('rubricas.show', $effectiveVersion->id));
     $showPage = json_decode($showResponse->getContent(), true, flags: JSON_THROW_ON_ERROR);
     $indexResponse = $this->withHeaders($headers)->get(route('rubricas.index'));
@@ -725,7 +737,11 @@ test('HU15-E11 should_expose_allowlisted_fields_and_stable_permissions_without_r
             'umbral',
         ])
         ->and($showPage['props']['version']['umbral_puntaje_global'])->toBeNull()
-        ->and($showPage['props']['clinicalPermissions'])->toBe(['rubricas' => true, 'crear' => true])
+        ->and($showPage['props']['clinicalPermissions'])->toMatchArray([
+            'rubricas' => true,
+            'crear' => true,
+            'alertas' => true,
+        ])
         ->and($indexResponse->getStatusCode())->toBe(200)
         ->and($indexPage['component'])->toBe('Rubricas/Index')
         ->and($listedEffectiveVersion['id'])->toBe($effectiveVersion->id)
@@ -734,10 +750,18 @@ test('HU15-E11 should_expose_allowlisted_fields_and_stable_permissions_without_r
         ->and($listedFutureVersion['id'])->toBe($futureVersion->id)
         ->and($listedFutureVersion['es_vigente'])->toBeFalse()
         ->and($listedFutureVersion['estado_vigencia'])->toBe('programada')
-        ->and($indexPage['props']['clinicalPermissions'])->toBe(['rubricas' => true, 'crear' => true])
+        ->and($indexPage['props']['clinicalPermissions'])->toMatchArray([
+            'rubricas' => true,
+            'crear' => true,
+            'alertas' => true,
+        ])
         ->and($patientResponse->getStatusCode())->toBe(200)
         ->and($patientPage['props']['can'])->not->toHaveKey('rubricas')
-        ->and($patientPage['props']['clinicalPermissions'])->toBe(['rubricas' => true, 'crear' => true])
+        ->and($patientPage['props']['clinicalPermissions'])->toMatchArray([
+            'rubricas' => true,
+            'crear' => true,
+            'alertas' => true,
+        ])
         ->and(array_key_exists('roles', $indexPage['props']))->toBeFalse()
         ->and(array_key_exists('creada_por_profesional_id', $listedEffectiveVersion))->toBeFalse()
         ->and(array_key_exists('roles', $listedEffectiveVersion))->toBeFalse();

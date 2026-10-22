@@ -33,6 +33,8 @@ class Consulta extends Model implements AuditableContract
         'fecha_consulta',
         'tecnica_utilizada',
         'evaluacion_inicial',
+        'crisis_psicologica',
+        'indicadores_tendencia_suicida',
     ];
 
     protected $casts = [
@@ -43,7 +45,36 @@ class Consulta extends Model implements AuditableContract
         'plan_atencion' => AreaEncryptedFieldCast::class,
         'tecnica_utilizada' => AreaEncryptedFieldCast::class,
         'evaluacion_inicial' => EncryptedArrayCast::class,
+        'crisis_psicologica' => AreaEncryptedFieldCast::class,
+        'indicadores_tendencia_suicida' => EncryptedArrayCast::class,
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(static function (self $consulta): void {
+            if (! array_key_exists('crisis_psicologica', $consulta->getAttributes())) {
+                $consulta->crisis_psicologica = 'No';
+            }
+
+            if (! array_key_exists('indicadores_tendencia_suicida', $consulta->getAttributes())) {
+                $consulta->indicadores_tendencia_suicida = [];
+            }
+        });
+    }
+
+    /** @param array<string, mixed> $data */
+    public function transformAudit(array $data): array
+    {
+        foreach (['old_values', 'new_values'] as $bucket) {
+            foreach (['crisis_psicologica', 'indicadores_tendencia_suicida'] as $field) {
+                if (isset($data[$bucket][$field])) {
+                    $data[$bucket][$field] = '[CIFRADO]';
+                }
+            }
+        }
+
+        return $data;
+    }
 
     public function expediente(): BelongsTo
     {

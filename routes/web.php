@@ -154,6 +154,14 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         ->middleware('throttle:30,1')
         ->name('rubricas.show');
 
+    Route::get('/alertas', [\App\Http\Controllers\AlertaPreventivaController::class, 'index'])
+        ->middleware('throttle:30,1')
+        ->name('alertas.index');
+    Route::post('/notificaciones/{notification}/leida', [\App\Http\Controllers\AlertaPreventivaController::class, 'markNotificationAsRead'])
+        ->whereUuid('notification')
+        ->middleware('throttle:30,1')
+        ->name('notificaciones.leida');
+
     // Secure Search Routes (HU-06)
     Route::get('/busqueda-segura', [\App\Http\Controllers\SecureSearchController::class, 'index'])->name('busqueda-segura');
     Route::post('/busqueda-segura', [\App\Http\Controllers\SecureSearchController::class, 'search'])->name('busqueda-segura.search');
