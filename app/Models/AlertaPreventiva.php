@@ -9,6 +9,7 @@ use App\Models\Scopes\AreaScope;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
@@ -18,6 +19,8 @@ class AlertaPreventiva extends Model implements AuditableContract
     use HasUuids;
 
     public const ESTADOS = ['activa', 'en_seguimiento', 'cerrada', 'descartada'];
+
+    public const ESTADOS_ACTIVOS = ['activa', 'en_seguimiento'];
 
     public const SENALES = ['crisis_psicologica', 'ausencia_cita', 'tendencia_suicida'];
 
@@ -34,6 +37,12 @@ class AlertaPreventiva extends Model implements AuditableContract
         'estado',
         'responsable_profesional_id',
         'generada_en',
+        'resultado_cierre',
+        'justificacion_descarte',
+        'cerrada_en',
+        'descartada_en',
+        'cerrada_por_profesional_id',
+        'descartada_por_profesional_id',
     ];
 
     protected function casts(): array
@@ -42,6 +51,10 @@ class AlertaPreventiva extends Model implements AuditableContract
             'valor_calculado' => AreaEncryptedFieldCast::class,
             'umbral' => 'decimal:2',
             'generada_en' => 'datetime',
+            'resultado_cierre' => AreaEncryptedFieldCast::class,
+            'justificacion_descarte' => AreaEncryptedFieldCast::class,
+            'cerrada_en' => 'datetime',
+            'descartada_en' => 'datetime',
         ];
     }
 
@@ -63,6 +76,10 @@ class AlertaPreventiva extends Model implements AuditableContract
                 'valor_calculado',
                 'umbral',
                 'responsable_profesional_id',
+                'cerrada_por_profesional_id',
+                'descartada_por_profesional_id',
+                'resultado_cierre',
+                'justificacion_descarte',
             ] as $field) {
                 if (isset($data[$bucket][$field])) {
                     $data[$bucket][$field] = '[CIFRADO]';
@@ -106,5 +123,20 @@ class AlertaPreventiva extends Model implements AuditableContract
     public function responsable(): BelongsTo
     {
         return $this->belongsTo(Profesional::class, 'responsable_profesional_id');
+    }
+
+    public function seguimientos(): HasMany
+    {
+        return $this->hasMany(SeguimientoPreventivo::class, 'alerta_preventiva_id')->orderBy('created_at');
+    }
+
+    public function cerradaPor(): BelongsTo
+    {
+        return $this->belongsTo(Profesional::class, 'cerrada_por_profesional_id');
+    }
+
+    public function descartadaPor(): BelongsTo
+    {
+        return $this->belongsTo(Profesional::class, 'descartada_por_profesional_id');
     }
 }

@@ -157,6 +157,22 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
     Route::get('/alertas', [\App\Http\Controllers\AlertaPreventivaController::class, 'index'])
         ->middleware('throttle:30,1')
         ->name('alertas.index');
+    Route::get('/alertas/{alerta}', [\App\Http\Controllers\AlertaPreventivaController::class, 'show'])
+        ->whereUuid('alerta')
+        ->middleware('throttle:30,1')
+        ->name('alertas.show');
+    Route::post('/alertas/{alerta}/seguimientos', [\App\Http\Controllers\AlertaPreventivaController::class, 'storeSeguimiento'])
+        ->whereUuid('alerta')
+        ->middleware('throttle:20,1')
+        ->name('alertas.seguimientos.store');
+    Route::post('/alertas/{alerta}/cerrar', [\App\Http\Controllers\AlertaPreventivaController::class, 'cerrar'])
+        ->whereUuid('alerta')
+        ->middleware('throttle:10,1')
+        ->name('alertas.cerrar');
+    Route::post('/alertas/{alerta}/descartar', [\App\Http\Controllers\AlertaPreventivaController::class, 'descartar'])
+        ->whereUuid('alerta')
+        ->middleware('throttle:10,1')
+        ->name('alertas.descartar');
     Route::post('/notificaciones/{notification}/leida', [\App\Http\Controllers\AlertaPreventivaController::class, 'markNotificationAsRead'])
         ->whereUuid('notification')
         ->middleware('throttle:30,1')

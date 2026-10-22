@@ -642,7 +642,11 @@ test('HU16-E10 should_deduplicate_reprocessing_and_allow_reoccurrence_after_clos
     Artisan::call('alertas:reevaluar', ['--paciente' => $patient->codigo]);
     hu16RegisterConsultation($this, $expediente, ['crisis_psicologica' => true]);
     $firstAlert = AlertaPreventiva::query()->where('paciente_id', $patient->codigo)->firstOrFail();
-    DB::table('alertas_preventivas')->where('id', $firstAlert->id)->update(['estado' => 'cerrada']);
+    $firstAlert->resultado_cierre = 'HU16 synthetic closure result for recurrence test.';
+    $firstAlert->cerrada_en = now();
+    $firstAlert->cerrada_por_profesional_id = $this->specialistProfessional->id;
+    $firstAlert->estado = 'cerrada';
+    $firstAlert->save();
     hu16RegisterConsultation($this, $expediente, ['crisis_psicologica' => true]);
 
     // Assert

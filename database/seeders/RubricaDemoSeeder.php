@@ -14,6 +14,7 @@ use App\Models\Expediente;
 use App\Models\Profesional;
 use App\Models\Rubrica;
 use App\Models\RubricaVersion;
+use App\Models\SeguimientoPreventivo;
 use App\Notifications\AlertaPreventivaCreada;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -155,6 +156,7 @@ class RubricaDemoSeeder extends Seeder
         );
 
         $this->crearEscenariosDemoHu16($currentVersion, $absence);
+        $this->crearEscenariosDemoHu17($historicalVersion, $currentVersion, $absence);
     }
 
     private function crearVersionDemo(
@@ -340,6 +342,170 @@ class RubricaDemoSeeder extends Seeder
         }
     }
 
+    private function crearEscenariosDemoHu17(
+        RubricaVersion $historicalVersion,
+        RubricaVersion $currentVersion,
+        Cita $absence
+    ): void {
+        $absenceExpediente = $absence->expediente;
+        if ($absenceExpediente === null) {
+            throw new RuntimeException('La cita DEMO de seguimiento no tiene expediente.');
+        }
+
+        $psychologySpecialist = Profesional::query()
+            ->whereHas('especialista', fn ($query) => $query->where('email', 'especialista-psi@pandora.com'))
+            ->where('area_id', $absenceExpediente->area_id)
+            ->firstOrFail();
+        $coordinator = Profesional::query()
+            ->whereHas('especialista', fn ($query) => $query->where('email', 'coordinador@pandora.com'))
+            ->where('area_id', $absenceExpediente->area_id)
+            ->firstOrFail();
+        $medicineSpecialist = Profesional::query()
+            ->whereHas('especialista', fn ($query) => $query->where('email', 'especialista@pandora.com'))
+            ->firstOrFail();
+        $nutritionSpecialist = Profesional::query()
+            ->whereHas('especialista', fn ($query) => $query->where('email', 'especialista-nutri@pandora.com'))
+            ->firstOrFail();
+
+        $absenceEvaluation = $this->crearEvaluacionDemo(
+            $historicalVersion,
+            $absenceExpediente->paciente_id,
+            (int) $absenceExpediente->area_id,
+            'ausencia_cita',
+            1.00,
+            ['total' => 1, 'ventana_dias' => 30],
+            Cita::class,
+            $absence->id,
+            now()
+        );
+        $followupAlert = $this->crearAlertaDemo(
+            $absenceEvaluation,
+            'ausencia_cita',
+            '1',
+            1.00,
+            'en_seguimiento',
+            $psychologySpecialist
+        );
+
+        if ($followupAlert === null || $followupAlert->estado !== 'en_seguimiento') {
+            throw new RuntimeException('La alerta DEMO HU-17 de seguimiento no está disponible.');
+        }
+
+        $followupCount = SeguimientoPreventivo::query()
+            ->where('alerta_preventiva_id', $followupAlert->id)
+            ->where('area_id', $followupAlert->area_id)
+            ->count();
+        if ($followupCount > 2) {
+            throw new RuntimeException('La alerta DEMO HU-17 tiene más de dos seguimientos append-only.');
+        }
+
+        foreach (array_slice([
+            ['valoracion' => 'DEMO: revisión preventiva inicial.', 'accion' => 'DEMO: orientación preventiva documentada.', 'created_days_ago' => 3, 'review_days_ago' => 2],
+            ['valoracion' => 'DEMO: revisión preventiva de seguimiento.', 'accion' => 'DEMO: control preventivo pendiente.', 'created_days_ago' => 2, 'review_days_ago' => 1],
+        ], $followupCount) as $followup) {
+            $now = now();
+            $entry = new SeguimientoPreventivo;
+            $entry->alerta_preventiva_id = $followupAlert->id;
+            $entry->area_id = $followupAlert->area_id;
+            $entry->valoracion = $followup['valoracion'];
+            $entry->accion_preventiva = $followup['accion'];
+            $entry->responsable_profesional_id = $coordinator->id;
+            $entry->proxima_revision = $now->copy()->subDays($followup['review_days_ago']);
+            $entry->registrado_por_profesional_id = $coordinator->id;
+            $entry->created_at = $now->copy()->subDays($followup['created_days_ago']);
+            $entry->save();
+        }
+
+        $demoConsulta = Consulta::query()->with('expediente')->findOrFail(self::DEMO_CONSULTA_SENALES_ID);
+        $medicineExpediente = $demoConsulta->expediente;
+        if ($medicineExpediente === null) {
+            throw new RuntimeException('La consulta DEMO de cierre no tiene expediente.');
+        }
+
+        $medicineEvaluation = $this->crearEvaluacionDemo(
+            $currentVersion,
+            $medicineExpediente->paciente_id,
+            (int) $medicineExpediente->area_id,
+            'consulta_senales',
+            1.00,
+            ['tendencia_suicida' => [['clave_indicador' => 'ideas_suicidas', 'valor' => 1.00]]],
+            Consulta::class,
+            $demoConsulta->id,
+            now()
+        );
+        $closedAlert = $this->crearAlertaDemo(
+            $medicineEvaluation,
+            'tendencia_suicida',
+            '1',
+            1.00,
+            'cerrada',
+            $medicineSpecialist
+        );
+        if ($closedAlert === null || $closedAlert->estado !== 'cerrada') {
+            throw new RuntimeException('La alerta DEMO HU-17 cerrada no está disponible.');
+        }
+
+        $closedAlert->resultado_cierre ??= 'DEMO: seguimiento completado y resultado documentado.';
+        $closedAlert->cerrada_en ??= now()->subDay();
+        $closedAlert->cerrada_por_profesional_id ??= $medicineSpecialist->id;
+        if ($closedAlert->isDirty()) {
+            $closedAlert->save();
+        }
+
+        $discardedEvaluation = $this->crearEvaluacionDemo(
+            $historicalVersion,
+            $medicineExpediente->paciente_id,
+            (int) $medicineExpediente->area_id,
+            'consulta_senales',
+            1.00,
+            ['tendencia_suicida' => [['clave_indicador' => 'ideas_suicidas', 'valor' => 1.00]]],
+            Consulta::class,
+            $demoConsulta->id,
+            now()
+        );
+        $discardedAlert = $this->crearAlertaDemo(
+            $discardedEvaluation,
+            'tendencia_suicida',
+            '1',
+            1.00,
+            'descartada',
+            $medicineSpecialist
+        );
+        if ($discardedAlert === null || $discardedAlert->estado !== 'descartada') {
+            throw new RuntimeException('La alerta DEMO HU-17 descartada no está disponible.');
+        }
+
+        $discardedAlert->justificacion_descarte ??= 'DEMO: señal revisada y descartada tras verificación preventiva.';
+        $discardedAlert->descartada_en ??= now()->subDay();
+        $discardedAlert->descartada_por_profesional_id ??= $medicineSpecialist->id;
+        if ($discardedAlert->isDirty()) {
+            $discardedAlert->save();
+        }
+
+        $nutritionConsulta = Consulta::query()
+            ->with('expediente')
+            ->whereHas('expediente', fn ($query) => $query->where('area_id', $nutritionSpecialist->area_id))
+            ->oldest('fecha_consulta')
+            ->firstOrFail();
+        $nutritionExpediente = $nutritionConsulta->expediente;
+        if ($nutritionExpediente === null) {
+            throw new RuntimeException('La consulta DEMO de nutrición no tiene expediente.');
+        }
+
+        $nutritionEvaluation = $this->crearEvaluacionDemo(
+            $currentVersion,
+            $nutritionExpediente->paciente_id,
+            (int) $nutritionExpediente->area_id,
+            'crisis_psicologica',
+            1.00,
+            ['crisis_psicologica' => [['valor' => 1.00, 'umbral' => 1.00]]],
+            Consulta::class,
+            $nutritionConsulta->id,
+            now()
+        );
+        $this->crearAlertaDemo($nutritionEvaluation, 'crisis_psicologica', '1', 1.00, 'activa', $nutritionSpecialist);
+    }
+
     private function expedienteDosAusenciasDemo(Expediente $absenceExpediente): Expediente
     {
         $existingCita = Cita::query()
@@ -459,7 +625,7 @@ class RubricaDemoSeeder extends Seeder
         float $umbral,
         string $estado,
         Profesional $responsable
-    ): void {
+    ): ?AlertaPreventiva {
         $alerta = AlertaPreventiva::query()
             ->where('evaluacion_riesgo_id', $evaluacion->id)
             ->where('senal', $senal)
@@ -472,7 +638,7 @@ class RubricaDemoSeeder extends Seeder
                 ->where('senal', $senal)
                 ->whereIn('estado', ['activa', 'en_seguimiento'])
                 ->exists()) {
-            return;
+            return null;
         }
 
         if ($alerta === null) {
@@ -487,11 +653,20 @@ class RubricaDemoSeeder extends Seeder
             $alerta->estado = $estado;
             $alerta->responsable_profesional_id = $responsable->id;
             $alerta->generada_en = now();
+            if ($estado === 'cerrada') {
+                $alerta->resultado_cierre = 'DEMO: resultado documentado para el escenario de cierre.';
+                $alerta->cerrada_en = now();
+                $alerta->cerrada_por_profesional_id = $responsable->id;
+            } elseif ($estado === 'descartada') {
+                $alerta->justificacion_descarte = 'DEMO: justificación documentada para el escenario de descarte.';
+                $alerta->descartada_en = now();
+                $alerta->descartada_por_profesional_id = $responsable->id;
+            }
             $alerta->save();
         }
 
         if (! in_array($alerta->estado, ['activa', 'en_seguimiento'], true)) {
-            return;
+            return $alerta;
         }
 
         $recipients = Especialista::query()
@@ -512,5 +687,7 @@ class RubricaDemoSeeder extends Seeder
                 $recipient->notify(new AlertaPreventivaCreada($alerta));
             }
         }
+
+        return $alerta;
     }
 }

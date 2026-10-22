@@ -281,6 +281,12 @@ function hu16RollbackCreateConsultation(array $context, string $crisis, array $i
 
 function hu16RollbackRunMigration(string $migration): void
 {
+    if ($migration === '2026_10_21_130000_add_hu16_preventive_alerts.php'
+        && Schema::connection('pgsql_admin')->hasTable('seguimientos_preventivos')) {
+        $hu17Migration = require database_path('migrations/2026_10_21_140000_add_hu17_preventive_followups.php');
+        $hu17Migration->down();
+    }
+
     $instance = require database_path('migrations/'.$migration);
     $instance->down();
 }

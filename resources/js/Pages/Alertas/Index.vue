@@ -181,6 +181,13 @@ function refreshAlerts() {
                                     >
                                         Paciente {{ alert.paciente_carnet }}
                                     </Link>
+                                    <Link
+                                        :href="`/alertas/${encodeURIComponent(alert.id)}`"
+                                        class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-[var(--nord10)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--nord9)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--nord10)]"
+                                        :aria-label="`Revisar alerta de ${signalLabel(alert.senal)} para el paciente ${alert.paciente_carnet}`"
+                                    >
+                                        Revisar alerta
+                                    </Link>
                                 </div>
 
                                 <dl class="grid grid-cols-1 gap-x-6 gap-y-3 rounded-lg bg-[var(--nord6)]/70 p-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
