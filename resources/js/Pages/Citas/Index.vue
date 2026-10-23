@@ -214,7 +214,15 @@ const statusLabels = {
         >
             <p class="font-medium">{{ alertaPreventiva.mensaje }}</p>
             <p class="text-[12px] text-[var(--nord3)] mt-1">
-                Umbral: {{ alertaPreventiva.umbral }} ausencias en {{ alertaPreventiva.ventana_dias }} días.
+                <template v-if="alertaPreventiva.modo_calculo === 'frecuencia'">
+                    Umbral: {{ alertaPreventiva.umbral }} ausencias en {{ alertaPreventiva.ventana_dias }} días.
+                </template>
+                <template v-else-if="alertaPreventiva.modo_calculo === 'acumulacion'">
+                    Umbral: {{ alertaPreventiva.umbral }} ausencias acumuladas desde la fecha de derivación.
+                </template>
+                <template v-else-if="alertaPreventiva.modo_calculo === 'puntaje'">
+                    Umbral: {{ alertaPreventiva.umbral }} puntos ponderados por ausencia.
+                </template>
             </p>
         </div>
 

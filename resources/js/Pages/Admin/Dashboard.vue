@@ -1,8 +1,9 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 defineOptions({ layout: AdminLayout });
+const page = usePage();
 </script>
 
 <template>
@@ -14,7 +15,6 @@ defineOptions({ layout: AdminLayout });
             <p class="text-sm text-[var(--nord3)] mt-1">Métricas y monitoreo del sistema PANDORA.</p>
         </div>
 
-        <!-- Coming soon card -->
         <div class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden">
             <div class="relative px-6 py-14 text-center overflow-hidden">
                 <!-- Fondo reticulado -->
@@ -32,7 +32,7 @@ defineOptions({ layout: AdminLayout });
                     <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-6"
                         style="background: color-mix(in srgb, var(--aurora-yellow) 12%, transparent); border: 1px solid color-mix(in srgb, var(--aurora-yellow) 30%, transparent); color: var(--aurora-yellow);">
                         <span class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
-                        En Desarrollo
+                        Analítica institucional
                     </div>
 
                     <!-- Ícono -->
@@ -46,8 +46,14 @@ defineOptions({ layout: AdminLayout });
 
                     <h2 class="text-[18px] font-bold text-[var(--nord0)] mb-2 tracking-tight">Métricas del Sistema</h2>
                     <p class="text-[13px] text-[var(--nord3)] leading-relaxed mb-8">
-                        Los indicadores y estadísticas avanzadas del sistema estarán<br>disponibles en el próximo sprint de desarrollo.
+                        Consulta tendencias agregadas de atención, expedientes, citas y seguimiento preventivo.
                     </p>
+
+                    <Link v-if="page.props.can?.indicadores" href="/indicadores"
+                        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--aurora-purple)] px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--aurora-purple)]">
+                        Abrir indicadores
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7-7 7 7-7 7" /></svg>
+                    </Link>
 
                     <!-- Accesos rápidos disponibles -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">

@@ -6,12 +6,13 @@ namespace App\Events;
 
 use App\Models\Cita;
 use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Queue\SerializesModels;
 
 /**
  * Disparado cuando se registra ausencia — alimenta estadísticas preventivas (HU-14/HU-12).
  */
-class CitaAusenciaRegistrada
+class CitaAusenciaRegistrada implements ShouldDispatchAfterCommit
 {
     use Dispatchable;
     use SerializesModels;

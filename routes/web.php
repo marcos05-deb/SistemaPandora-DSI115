@@ -140,6 +140,55 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         });
     });
 
+    Route::get('/indicadores', [\App\Http\Controllers\IndicadoresController::class, 'index'])
+        ->middleware('throttle:30,1')
+        ->name('indicadores.index');
+
+    Route::get('/reportes', [\App\Http\Controllers\ReportesController::class, 'index'])
+        ->middleware('throttle:30,1')
+        ->name('reportes.index');
+    Route::get('/reportes/generar', [\App\Http\Controllers\ReportesController::class, 'generate'])
+        ->middleware('throttle:10,1')
+        ->name('reportes.generate');
+
+    Route::get('/rubricas', [\App\Http\Controllers\RubricaController::class, 'index'])
+        ->middleware('throttle:30,1')
+        ->name('rubricas.index');
+    Route::get('/rubricas/versiones/crear', [\App\Http\Controllers\RubricaController::class, 'create'])
+        ->middleware('throttle:30,1')
+        ->name('rubricas.create');
+    Route::post('/rubricas/versiones', [\App\Http\Controllers\RubricaController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('rubricas.store');
+    Route::get('/rubricas/versiones/{version}', [\App\Http\Controllers\RubricaController::class, 'show'])
+        ->whereUuid('version')
+        ->middleware('throttle:30,1')
+        ->name('rubricas.show');
+
+    Route::get('/alertas', [\App\Http\Controllers\AlertaPreventivaController::class, 'index'])
+        ->middleware('throttle:30,1')
+        ->name('alertas.index');
+    Route::get('/alertas/{alerta}', [\App\Http\Controllers\AlertaPreventivaController::class, 'show'])
+        ->whereUuid('alerta')
+        ->middleware('throttle:30,1')
+        ->name('alertas.show');
+    Route::post('/alertas/{alerta}/seguimientos', [\App\Http\Controllers\AlertaPreventivaController::class, 'storeSeguimiento'])
+        ->whereUuid('alerta')
+        ->middleware('throttle:20,1')
+        ->name('alertas.seguimientos.store');
+    Route::post('/alertas/{alerta}/cerrar', [\App\Http\Controllers\AlertaPreventivaController::class, 'cerrar'])
+        ->whereUuid('alerta')
+        ->middleware('throttle:10,1')
+        ->name('alertas.cerrar');
+    Route::post('/alertas/{alerta}/descartar', [\App\Http\Controllers\AlertaPreventivaController::class, 'descartar'])
+        ->whereUuid('alerta')
+        ->middleware('throttle:10,1')
+        ->name('alertas.descartar');
+    Route::post('/notificaciones/{notification}/leida', [\App\Http\Controllers\AlertaPreventivaController::class, 'markNotificationAsRead'])
+        ->whereUuid('notification')
+        ->middleware('throttle:30,1')
+        ->name('notificaciones.leida');
+
     // Secure Search Routes (HU-06)
     Route::get('/busqueda-segura', [\App\Http\Controllers\SecureSearchController::class, 'index'])->name('busqueda-segura');
     Route::post('/busqueda-segura', [\App\Http\Controllers\SecureSearchController::class, 'search'])->name('busqueda-segura.search');

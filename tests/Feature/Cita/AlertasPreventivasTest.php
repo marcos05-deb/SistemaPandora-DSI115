@@ -11,6 +11,8 @@ use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Profesional;
 use App\Models\Role;
+use App\Models\Rubrica;
+use App\Models\RubricaVersion;
 use App\Services\AlertasPreventivasService;
 
 beforeEach(function () {
@@ -29,6 +31,28 @@ beforeEach(function () {
     $this->profesional = Profesional::factory()->create([
         'user_id' => $this->especialista->id,
         'area_id' => $this->area->id,
+    ]);
+
+    // HU-16 replaces the fixed threshold with the approved active rubric version (2 absences / 30 days).
+    $rubrica = Rubrica::query()->where('codigo', Rubrica::CODIGO_RIESGO_PREVENTIVO)->firstOrFail();
+    $version = RubricaVersion::query()->create([
+        'rubrica_id' => $rubrica->id,
+        'numero_version' => 1,
+        'vigente_desde' => now()->subDay(),
+        'umbral_puntaje_global' => null,
+        'justificacion_cambio' => null,
+        'validada_en' => null,
+        'referencia_validacion' => null,
+        'es_demo' => true,
+        'creada_por_profesional_id' => $this->profesional->id,
+    ]);
+    $version->variables()->create([
+        'tipo_senal' => 'ausencia_cita',
+        'clave_indicador' => null,
+        'modo_calculo' => 'frecuencia',
+        'ventana_dias' => 30,
+        'ponderacion' => '1.00',
+        'umbral' => '2.00',
     ]);
 
     $this->otroEspecialista = Especialista::factory()->create();

@@ -103,6 +103,23 @@ const sidebarLinks = [
         match: (url) => url.startsWith('/admin/organigrama')
     },
 ];
+
+if (page.props.can?.indicadores) {
+    sidebarLinks.push({
+        label: 'Indicadores',
+        href: '/indicadores',
+        icon: 'M4 19V5m0 14h16M8 15v-4m4 4V7m4 8V9',
+        match: (url) => url.startsWith('/indicadores'),
+    });
+}
+if (page.props.can?.reportes) {
+    sidebarLinks.push({
+        label: 'Reportes',
+        href: '/reportes',
+        icon: 'M4 5h16M4 10h16M4 15h10m-10 4h16',
+        match: (url) => url.startsWith('/reportes'),
+    });
+}
 </script>
 
 <template>

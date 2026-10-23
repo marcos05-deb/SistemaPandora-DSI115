@@ -11,6 +11,7 @@ defineOptions({ layout: ClinicalLayout });
 const props = defineProps({
     expediente: { type: Object, required: true },
     esPrimeraConsulta: { type: Boolean, default: false },
+    indicadoresTendenciaSuicida: { type: Array, default: () => [] },
 });
 
 const hoy = todayLocalYmd();
@@ -25,6 +26,8 @@ const haceUnAno = (() => {
 
 const form = useForm({
     motivo_consulta: '',
+    crisis_psicologica: null,
+    indicadores_tendencia_suicida: [],
     notas_clinicas: '',
     diagnostico: '',
     plan_atencion: '',
@@ -56,6 +59,8 @@ const ACCORDION_FIELDS = {
 
 const FIELD_LABELS = {
     motivo_consulta: 'Motivo de consulta',
+    crisis_psicologica: 'Crisis psicológica',
+    indicadores_tendencia_suicida: 'Indicadores de tendencia suicida',
     fecha_consulta: 'Fecha de la consulta',
     tecnica_utilizada: 'Técnica utilizada',
     diagnostico: 'Diagnóstico',
@@ -87,6 +92,8 @@ const VISUAL_FIELD_ORDER = [
     'tecnica_utilizada',
     'diagnostico',
     'notas_clinicas',
+    'crisis_psicologica',
+    'indicadores_tendencia_suicida',
     'plan_atencion',
 ];
 
@@ -141,6 +148,9 @@ function runClientValidation() {
 
     if (isBlank(form.motivo_consulta)) {
         errors.motivo_consulta = 'El motivo de la consulta es obligatorio.';
+    }
+    if (typeof form.crisis_psicologica !== 'boolean') {
+        errors.crisis_psicologica = 'Seleccione Sí o No para indicar si hubo una crisis psicológica.';
     }
     if (isBlank(form.fecha_consulta)) {
         errors.fecha_consulta = 'La fecha de la consulta es obligatoria.';
@@ -264,6 +274,15 @@ const submit = async () => {
 watch(
     () => form.motivo_consulta,
     () => clearFieldError('motivo_consulta'),
+);
+watch(
+    () => form.crisis_psicologica,
+    () => clearFieldError('crisis_psicologica'),
+);
+watch(
+    () => form.indicadores_tendencia_suicida,
+    () => clearFieldError('indicadores_tendencia_suicida'),
+    { deep: true },
 );
 watch(
     () => form.fecha_consulta,
@@ -543,6 +562,84 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                         :class="hasError('notas_clinicas') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
                     ></textarea>
                     <p v-if="hasError('notas_clinicas')" id="notas_clinicas-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('notas_clinicas') }}</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <fieldset
+                        id="crisis_psicologica"
+                        tabindex="-1"
+                        class="rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2"
+                        :aria-invalid="hasError('crisis_psicologica') ? 'true' : 'false'"
+                        :aria-describedby="hasError('crisis_psicologica') ? 'crisis_psicologica-error' : undefined"
+                    >
+                        <legend class="text-[13px] font-semibold text-[var(--nord0)]">
+                            Crisis psicológica <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
+                        </legend>
+                        <div class="mt-2 flex gap-6">
+                            <label for="crisis_psicologica-si" class="inline-flex items-center gap-2 text-[13px] text-[var(--nord0)]">
+                                <input
+                                    id="crisis_psicologica-si"
+                                    v-model="form.crisis_psicologica"
+                                    type="radio"
+                                    name="crisis_psicologica"
+                                    required
+                                    :value="true"
+                                    :aria-invalid="hasError('crisis_psicologica') ? 'true' : 'false'"
+                                    :aria-describedby="hasError('crisis_psicologica') ? 'crisis_psicologica-error' : undefined"
+                                    class="text-[var(--nord8)] focus:ring-[var(--nord8)]"
+                                />
+                                Sí
+                            </label>
+                            <label for="crisis_psicologica-no" class="inline-flex items-center gap-2 text-[13px] text-[var(--nord0)]">
+                                <input
+                                    id="crisis_psicologica-no"
+                                    v-model="form.crisis_psicologica"
+                                    type="radio"
+                                    name="crisis_psicologica"
+                                    required
+                                    :value="false"
+                                    :aria-invalid="hasError('crisis_psicologica') ? 'true' : 'false'"
+                                    :aria-describedby="hasError('crisis_psicologica') ? 'crisis_psicologica-error' : undefined"
+                                    class="text-[var(--nord8)] focus:ring-[var(--nord8)]"
+                                />
+                                No
+                            </label>
+                        </div>
+                        <p v-if="hasError('crisis_psicologica')" id="crisis_psicologica-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('crisis_psicologica') }}</p>
+                    </fieldset>
+
+                    <fieldset
+                        id="indicadores_tendencia_suicida"
+                        tabindex="-1"
+                        class="rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2"
+                        :aria-invalid="hasError('indicadores_tendencia_suicida') ? 'true' : 'false'"
+                        :aria-describedby="hasError('indicadores_tendencia_suicida') ? 'indicadores_tendencia_suicida-error' : undefined"
+                    >
+                        <legend class="text-[13px] font-semibold text-[var(--nord0)]">Indicadores de tendencia suicida</legend>
+                        <div v-if="props.indicadoresTendenciaSuicida.length" class="mt-2 space-y-2">
+                            <label
+                                v-for="(indicador, index) in props.indicadoresTendenciaSuicida"
+                                :key="indicador"
+                                :for="'indicador-tendencia-' + index"
+                                class="inline-flex items-center gap-2 text-[13px] text-[var(--nord0)]"
+                            >
+                                <input
+                                    :id="'indicador-tendencia-' + index"
+                                    v-model="form.indicadores_tendencia_suicida"
+                                    type="checkbox"
+                                    :value="indicador"
+                                    :aria-invalid="hasError('indicadores_tendencia_suicida') ? 'true' : 'false'"
+                                    :aria-describedby="hasError('indicadores_tendencia_suicida') ? 'indicadores_tendencia_suicida-error' : undefined"
+                                    class="rounded text-[var(--nord8)] focus:ring-[var(--nord8)]"
+                                />
+                                <span class="capitalize">{{ indicador.replaceAll('_', ' ') }}</span>
+                            </label>
+                        </div>
+                        <p v-else class="mt-2 text-[12px] text-[var(--nord3)]">
+                            No hay indicadores de tendencia suicida configurados.
+                        </p>
+                        <p v-if="hasError('indicadores_tendencia_suicida')" id="indicadores_tendencia_suicida-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('indicadores_tendencia_suicida') }}</p>
+                    </fieldset>
                 </div>
 
                 <div>

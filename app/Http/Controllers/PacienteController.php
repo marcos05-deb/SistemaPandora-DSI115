@@ -199,13 +199,6 @@ class PacienteController extends Controller
             $auditor->record($user, $expedienteVisible, 'view_expediente');
         }
 
-        // R593-04: alerta clínica solo para especialistas/coordinadores del área.
-        $alertaPreventiva = ['activa' => false, 'total' => 0, 'umbral' => 2, 'ventana_dias' => 30, 'mensaje' => null];
-        if ($user->hasRole('specialist') || $user->hasRole('area_coordinator')) {
-            $alertaPreventiva = app(\App\Services\AlertasPreventivasService::class)
-                ->alertaPaciente($user, $paciente->codigo);
-        }
-
         $areasDisponibles = [];
         if ($user->hasRole('psychosocial_referent')) {
             $areasDisponibles = \App\Models\Area::select('id', 'nombre')->orderBy('nombre')->get();
@@ -231,6 +224,20 @@ class PacienteController extends Controller
         $expedienteCerrado = $expedienteActivo
             ? null
             : $paciente->expedientes->where('estado', 'cerrado')->sortByDesc('fecha_cierre')->first();
+
+        // R593-04: alerta clínica solo para especialistas/coordinadores del área.
+        $alertaPreventiva = ['activa' => false, 'total' => 0, 'umbral' => null, 'ventana_dias' => null, 'modo_calculo' => null, 'mensaje' => null];
+        if ($user->hasRole('specialist') || $user->hasRole('area_coordinator')) {
+            $areaExpediente = $expedienteActivo ?? $expedienteCerrado;
+            $alertaPreventiva = app(\App\Services\AlertasPreventivasService::class)
+                ->alertaPaciente(
+                    $user,
+                    $paciente->codigo,
+                    null,
+                    $areaExpediente ? (int) $areaExpediente->area_id : null,
+                );
+        }
+
         $canCloseExpediente = $expedienteActivo ? $user->can('close', $expedienteActivo) : false;
         $canUpdateExpedientePolicy = $expedienteActivo ? $user->can('update', $expedienteActivo) : false;
 

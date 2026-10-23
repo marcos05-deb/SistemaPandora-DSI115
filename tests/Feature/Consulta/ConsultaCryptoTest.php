@@ -72,6 +72,8 @@ test('los campos de consulta (incluyendo json) se almacenan cifrados y son ilegi
         'plan_atencion' => 'Psicoterapia breve con seguimiento semanal',
         'tecnica_utilizada' => 'Entrevista Semiestructurada',
         'fecha_consulta' => now()->toDateString(),
+        'crisis_psicologica' => false,
+        'indicadores_tendencia_suicida' => [],
         'evaluacion_inicial' => $evaluacionInicial,
     ];
 
