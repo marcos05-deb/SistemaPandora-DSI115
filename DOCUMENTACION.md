@@ -576,3 +576,41 @@
 - **Seed final B.7:** `migrate:fresh --database=pgsql_admin --seed --force` PASS al finalizar las pruebas. Psicología 30 consultas/39 citas (cinco estados); Trabajo Social 1/2; cobertura consultas ene/feb/mar/sep/oct y citas sep/oct; cohortes de ausencias 6/1/1; 6 alertas, 2 seguimientos, 6 unread, 3 versiones DEMO, cero terminales sin motivo y seis índices HU-18 confirmados. Sin escrituras de BD posteriores.
 - **Gates pendientes:** QA visual/capturas, full suite verde (tres fallos heredados), Pint global por hallazgos heredados y cita literal de aprobación técnica Fase 3. Evidencia y recorrido manual: `docs/evidencia/HU-19.md`.
 - **Estado:** HU-19 queda **INCOMPLETA** frente a C.3; se entrega en commit Conventional separado de HU-18, sin push.
+
+### [2026-10-24] HU-21 — auditoría inmutable
+- **Alcance:** Clasificación de modelos (`config/auditoria.php`), Auditable en Paciente/Contacto/Solicitud/Especialista/Profesional, URL sanitizada, eventos de autenticación sin secretos, listados agregados, índices + REVOKE TRUNCATE + trigger en `audits`.
+- **Inmutabilidad:** modelo `App\Models\Audit`, guards Eloquent, privilegios DML y trigger PostgreSQL.
+- **Tests:** `tests/Feature/HU21/AuditoriaInmutableTest.php` 9/9 PASS; `AuditLoggingTest` 9/9 PASS.
+- **Docs:** `docs/auditoria/matriz_cobertura.md`, `docs/evidencia/HU-21.md`.
+- **Pendiente humano:** verificar privilegios/triggers en Azure; re-verificación B.5.5 tras HU-20.
+- **Estado:** implementación entregada en rama `feat/hu-21-auditoria-inmutable` (commits por HU).
+
+### [2026-10-24] HU-20 — exportar reportes PDF/Excel
+- **Alcance:** Exportación recalculada en servidor (`ReporteExportService`) a PDF (DomPDF) y Excel (OpenSpout), con saneamiento anti-fórmulas, encabezados, throttle 5/1, registro append-only `exportaciones_reporte` (sha256) y botones en `Reportes/Index.vue` (`can.exportar`).
+- **Rutas:** `GET /reportes/exportar/pdf` y `GET /reportes/exportar/excel` (mismos parámetros que HU-19).
+- **Tests:** `tests/Feature/HU20/ExportarReportesTest.php` 11/11 PASS.
+- **Docs:** `docs/evidencia/HU-20.md`.
+- **Estado:** implementación en rama `feat/hu-20-exportar-reportes`.
+
+### [2026-10-24] HU-22 — bitácora de auditoría
+- **Alcance:** Consulta paginada `/admin/bitacora` con filtros (usuario, acción, período, registro), Policy solo sysadmin, enmascarado de URL/carnet, solo nombres de campos, evento `bitacora_consultada`.
+- **Tests:** `tests/Feature/HU22/BitacoraAuditoriaTest.php` 12/12 PASS.
+- **Docs:** `docs/evidencia/HU-22.md`.
+- **Estado:** implementación en rama `feat/hu-22-bitacora-auditoria`.
+
+### [2026-10-24] HU-23 — exportar evidencia de auditoría
+- **Alcance:** CSV UTF-8 (BOM) de la bitácora filtrada, metadatos de generación, SHA-256, tabla append-only `exportaciones_auditoria`, ruta `GET /admin/bitacora/exportar` throttle 5/1, botón en UI (`can.exportarBitacora`).
+- **Tests:** `tests/Feature/HU23/ExportarEvidenciaAuditoriaTest.php` 13/13 PASS.
+- **Docs:** `docs/evidencia/HU-23.md`.
+- **Estado:** implementación en rama `feat/hu-23-exportar-evidencia-auditoria`.
+
+### [2026-10-24] Cierre técnico HU-15…23 — tests y bypass de cleanup
+- **Agente:** Composer (IA) / José Eduardo Artiga Franco (contexto de sesión)
+- **Problema:** Los tests concurrentes HU15-E10 y HU17-E08 borraban filas de `audits` en `finally` vía `pgsql_admin`; el trigger HU-21 `prevent_audits_mutation` abortaba el cleanup y contaminaba la suite (UniqueConstraint en rúbricas).
+- **Solución:**
+  - Migración `2026_10_24_150000_allow_audits_immutability_bypass_for_test_cleanup.php`: la función permite mutación solo si `current_setting('app.bypass_audits_immutability', true) = 'on'`. El rol app sigue sin DELETE/UPDATE/TRUNCATE.
+  - Helper `tests/Support/AuditsImmutability::bypass()` usado en cleanup de HU15/HU17.
+  - `TestCase::beforeRefreshingDatabase` / `afterRefreshingDatabase` activan el GUC durante `migrate:fresh` de Pest.
+- **Verificación:** `php artisan test tests/Feature/HU{15..23}` → **129 passed (808 assertions)**.
+- **UI local (navegador):** rúbricas, alertas+detalle, indicadores, reportes+PDF, bitácora+CSV SHA-256.
+- **Rama:** `feat/hu-23-exportar-evidencia-auditoria`.

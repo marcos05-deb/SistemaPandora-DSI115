@@ -150,6 +150,12 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
     Route::get('/reportes/generar', [\App\Http\Controllers\ReportesController::class, 'generate'])
         ->middleware('throttle:10,1')
         ->name('reportes.generate');
+    Route::get('/reportes/exportar/pdf', [\App\Http\Controllers\ReportesController::class, 'exportPdf'])
+        ->middleware('throttle:5,1')
+        ->name('reportes.export.pdf');
+    Route::get('/reportes/exportar/excel', [\App\Http\Controllers\ReportesController::class, 'exportExcel'])
+        ->middleware('throttle:5,1')
+        ->name('reportes.export.excel');
 
     Route::get('/rubricas', [\App\Http\Controllers\RubricaController::class, 'index'])
         ->middleware('throttle:30,1')
@@ -204,6 +210,13 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         Route::get('/users/{id}/edit', [\App\Http\Controllers\Admin\UserController::class, 'edit'])->name('admin.users.edit');
         Route::put('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('admin.users.update');
         Route::delete('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('admin.users.destroy');
+
+        Route::get('/bitacora', [\App\Http\Controllers\Admin\BitacoraController::class, 'index'])
+            ->middleware('throttle:30,1')
+            ->name('admin.bitacora.index');
+        Route::get('/bitacora/exportar', [\App\Http\Controllers\Admin\BitacoraController::class, 'export'])
+            ->middleware('throttle:5,1')
+            ->name('admin.bitacora.export');
 
         // Patients audit (solo consulta; sin edición de datos clínicos/personales)
         Route::get('/pacientes', [\App\Http\Controllers\Admin\PacienteController::class, 'index'])->name('admin.pacientes.index');

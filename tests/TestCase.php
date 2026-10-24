@@ -3,6 +3,8 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
+use Throwable;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -25,5 +27,30 @@ abstract class TestCase extends BaseTestCase
             '--drop-types' => true,
             '--database' => 'pgsql_admin',
         ];
+    }
+
+    /**
+     * migrate:fresh / wipe pueden intentar TRUNCATE de audits; el trigger HU-21 lo bloquea.
+     */
+    protected function beforeRefreshingDatabase(): void
+    {
+        try {
+            DB::connection('pgsql_admin')->unprepared(
+                "SELECT set_config('app.bypass_audits_immutability', 'on', false)"
+            );
+        } catch (Throwable) {
+            // BD aún sin migrar o sin la función.
+        }
+    }
+
+    protected function afterRefreshingDatabase(): void
+    {
+        try {
+            DB::connection('pgsql_admin')->unprepared(
+                "SELECT set_config('app.bypass_audits_immutability', 'off', false)"
+            );
+        } catch (Throwable) {
+            // ignore
+        }
     }
 }

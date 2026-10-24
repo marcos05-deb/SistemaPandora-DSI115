@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Especialista;
 use App\Services\Auth\JwtService;
+use App\Services\AuthAccessAuditor;
 use App\Services\Crypto\KeyDerivationService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -28,6 +28,7 @@ class LoginController extends Controller
     public function __construct(
         private readonly KeyDerivationService $kdf,
         private readonly JwtService $jwt,
+        private readonly AuthAccessAuditor $authAuditor,
     ) {}
 
     /**
@@ -60,12 +61,13 @@ class LoginController extends Controller
 
         if ($existingUser && $existingUser->locked_until && $existingUser->locked_until->getTimestamp() > now()->getTimestamp()) {
             $remaining = $existingUser->locked_until->diffInMinutes(now());
+
             return back()->withErrors([
                 'email' => "Cuenta bloqueada. Intente nuevamente en {$remaining} minutos.",
             ])->onlyInput('email');
         }
 
-        if ($existingUser && !$existingUser->is_active) {
+        if ($existingUser && ! $existingUser->is_active) {
             return back()->withErrors([
                 'email' => 'Las credenciales proporcionadas son incorrectas.',
             ])->onlyInput('email');
@@ -80,7 +82,9 @@ class LoginController extends Controller
         $credentials = $request->only('email', 'password');
         $passwordPlain = $request->input('password');
 
-        if (!Auth::attempt($credentials)) {
+        if (! Auth::attempt($credentials)) {
+            $this->authAuditor->loginFailed($existingUser, $email, $request);
+
             if ($existingUser) {
                 $existingUser->increment('failed_login_attempts');
                 if ($existingUser->failed_login_attempts >= 3) {
@@ -119,6 +123,8 @@ class LoginController extends Controller
         session(['_sym_key' => base64_encode($derivedKey)]);
 
         $especialista->save();
+
+        $this->authAuditor->loginSucceeded($especialista, $request);
 
         // Emitir token JWT en cookie HttpOnly
         $jwtToken = $this->jwt->create($especialista);

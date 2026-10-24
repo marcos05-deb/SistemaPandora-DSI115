@@ -5,17 +5,23 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Casts\AreaEncryptedFieldCast;
+use App\Models\Concerns\MasksEncryptedAuditAttributes;
 use App\Models\Scopes\AreaScope;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class Expediente extends Model implements Auditable
 {
-    use HasFactory, SoftDeletes, HasUuids, \OwenIt\Auditing\Auditable;
+    use HasFactory, HasUuids, \OwenIt\Auditing\Auditable, SoftDeletes;
+    use MasksEncryptedAuditAttributes {
+        MasksEncryptedAuditAttributes::transformAudit insteadof \OwenIt\Auditing\Auditable;
+        MasksEncryptedAuditAttributes::transformAudit as private maskEncryptedAudit;
+    }
 
     /**
      * Motivo del cambio clínico a incluir en el INSERT de auditoría (RP-04).
@@ -70,31 +76,23 @@ class Expediente extends Model implements Auditable
 
     protected $casts = [
         'motivo_consulta' => AreaEncryptedFieldCast::class,
-        'notas_clinicas'  => AreaEncryptedFieldCast::class,
-        'diagnostico'     => AreaEncryptedFieldCast::class,
-        'fecha_derivacion'=> 'datetime',
+        'notas_clinicas' => AreaEncryptedFieldCast::class,
+        'diagnostico' => AreaEncryptedFieldCast::class,
+        'fecha_derivacion' => 'datetime',
         'motivo_derivacion' => AreaEncryptedFieldCast::class,
-        'motivo_cierre'   => AreaEncryptedFieldCast::class,
+        'motivo_cierre' => AreaEncryptedFieldCast::class,
         'resultado_final' => AreaEncryptedFieldCast::class,
-        'fecha_cierre'    => 'datetime',
+        'fecha_cierre' => 'datetime',
         'actualizado_clinicamente_en' => 'datetime',
     ];
 
     /**
-     * Evita dejar campos clínicos en texto plano en el log de auditoría.
-     *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     public function transformAudit(array $data): array
     {
-        foreach (['old_values', 'new_values'] as $bucket) {
-            foreach (['motivo_derivacion', 'resultado_final', 'motivo_cierre', 'motivo_consulta', 'notas_clinicas', 'diagnostico'] as $campo) {
-                if (isset($data[$bucket][$campo])) {
-                    $data[$bucket][$campo] = '[CIFRADO]';
-                }
-            }
-        }
+        $data = $this->maskEncryptedAudit($data);
 
         if ($this->auditMotivoCambio) {
             $data['new_values']['motivo_cambio'] = $this->auditMotivoCambio;
@@ -105,7 +103,7 @@ class Expediente extends Model implements Auditable
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new AreaScope());
+        static::addGlobalScope(new AreaScope);
     }
 
     public function paciente(): BelongsTo
@@ -123,7 +121,7 @@ class Expediente extends Model implements Auditable
         return $this->belongsTo(Profesional::class, 'derivado_por_profesional_id');
     }
 
-    public function consultas(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function consultas(): HasMany
     {
         return $this->hasMany(Consulta::class);
     }
@@ -138,12 +136,12 @@ class Expediente extends Model implements Auditable
         return $this->belongsTo(Especialista::class, 'actualizado_clinicamente_por_usuario_id');
     }
 
-    public function solicitudesCorreccion(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function solicitudesCorreccion(): HasMany
     {
         return $this->hasMany(SolicitudCorreccionExpediente::class, 'expediente_id');
     }
 
-    public function citas(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function citas(): HasMany
     {
         return $this->hasMany(Cita::class);
     }

@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Events\CitaAusenciaRegistrada;
+use App\Events\ConsultaSenalesRiesgoRegistradas;
+use App\Listeners\EvaluarRiesgoTrasAusencia;
+use App\Listeners\EvaluarRiesgoTrasConsulta;
+use App\Listeners\RegistrarAusenciaEnEstadisticasPreventivas;
+use App\Models\Audit;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -9,12 +15,6 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use App\Events\CitaAusenciaRegistrada;
-use App\Events\ConsultaSenalesRiesgoRegistradas;
-use App\Listeners\RegistrarAusenciaEnEstadisticasPreventivas;
-use App\Listeners\EvaluarRiesgoTrasAusencia;
-use App\Listeners\EvaluarRiesgoTrasConsulta;
-use OwenIt\Auditing\Models\Audit;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
         $this->configureClinicalAuditGuards();
         $this->configureHttpsForProxies();
+        $this->configureExportTempDirs();
 
         Event::listen(
             CitaAusenciaRegistrada::class,
@@ -54,6 +55,18 @@ class AppServiceProvider extends ServiceProvider
         }
     }
 
+    /** Producción read-only: PDF/Excel deben escribir solo en tmpfs (/tmp). */
+    private function configureExportTempDirs(): void
+    {
+        $tmp = sys_get_temp_dir();
+        config([
+            'dompdf.options.tempDir' => $tmp,
+            'dompdf.options.fontDir' => $tmp.'/dompdf-fonts',
+            'dompdf.options.fontCache' => $tmp.'/dompdf-fonts',
+            'dompdf.options.chroot' => base_path(),
+        ]);
+    }
+
     private function configureClinicalAuditGuards(): void
     {
         Audit::updating(function (): bool {
@@ -68,7 +81,7 @@ class AppServiceProvider extends ServiceProvider
     private function configureRateLimiting(): void
     {
         RateLimiter::for('login', function (Request $request) {
-            $key = Str::lower($request->input('email')) . '|' . $request->ip();
+            $key = Str::lower($request->input('email')).'|'.$request->ip();
 
             return Limit::perMinutes(10, 10)
                 ->by($key)

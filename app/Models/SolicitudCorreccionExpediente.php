@@ -7,10 +7,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class SolicitudCorreccionExpediente extends Model
+class SolicitudCorreccionExpediente extends Model implements Auditable
 {
-    use HasUuids;
+    use AuditableTrait, HasUuids;
 
     public const TIPO_DATOS = 'datos_generales';
 
@@ -77,6 +79,17 @@ class SolicitudCorreccionExpediente extends Model
     protected $casts = [
         'campos_solicitados' => 'array',
         'revisado_en' => 'datetime',
+    ];
+
+    /** @var list<string> */
+    protected $auditInclude = [
+        'tipo',
+        'estado',
+        'paciente_id',
+        'expediente_id',
+        'solicitante_usuario_id',
+        'revisado_por_usuario_id',
+        'campos_solicitados',
     ];
 
     public function paciente(): BelongsTo
