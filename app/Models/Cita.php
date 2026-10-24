@@ -4,17 +4,26 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Casts\AreaEncryptedFieldCast;
+use App\Enums\EstadoCita;
+use App\Events\CitaAusenciaRegistrada;
+use App\Models\Concerns\MasksEncryptedAuditAttributes;
 use App\Models\Scopes\AreaScope;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class Cita extends Model implements Auditable
 {
-    use HasFactory, SoftDeletes, HasUuids, \OwenIt\Auditing\Auditable;
+    use HasFactory, HasUuids, MasksEncryptedAuditAttributes, \OwenIt\Auditing\Auditable, SoftDeletes {
+        MasksEncryptedAuditAttributes::transformAudit insteadof \OwenIt\Auditing\Auditable;
+    }
 
     /**
      * Aplica el AreaScope a nivel global para aislar las citas por área clínica.
@@ -75,9 +84,9 @@ class Cita extends Model implements Auditable
         'fecha_registro_asistencia' => 'datetime',
         'fecha_reprogramacion' => 'datetime',
         'fecha_cancelacion' => 'datetime',
-        'motivo' => \App\Casts\AreaEncryptedFieldCast::class,
-        'motivo_cancelacion' => \App\Casts\AreaEncryptedFieldCast::class,
-        'motivo_reprogramacion' => \App\Casts\AreaEncryptedFieldCast::class,
+        'motivo' => AreaEncryptedFieldCast::class,
+        'motivo_cancelacion' => AreaEncryptedFieldCast::class,
+        'motivo_reprogramacion' => AreaEncryptedFieldCast::class,
     ];
 
     public const DURACION_MINUTOS = 60;
@@ -88,14 +97,14 @@ class Cita extends Model implements Auditable
      */
     public static function hayConflictoHorario(
         int|string $profesionalUserId,
-        \Illuminate\Support\Carbon $inicio,
+        Carbon $inicio,
         ?string $exceptoCitaId = null
     ): bool {
         $fin = $inicio->copy()->addMinutes(self::DURACION_MINUTOS);
 
         $query = static::query()
             ->where('profesional_user_id', $profesionalUserId)
-            ->where('estado', \App\Enums\EstadoCita::Programada->value)
+            ->where('estado', EstadoCita::Programada->value)
             ->where('fecha_hora', '<', $fin)
             ->whereRaw(
                 "fecha_hora + (INTERVAL '1 minute' * ?) > ?",
@@ -146,21 +155,21 @@ class Cita extends Model implements Auditable
 
     public function registrarAsistencia(string $estado, string $profesionalId): void
     {
-        \Illuminate\Support\Facades\DB::transaction(function () use ($estado, $profesionalId) {
+        DB::transaction(function () use ($estado, $profesionalId) {
             /** @var self $cita */
             $cita = static::query()
                 ->whereKey($this->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($cita->estado !== \App\Enums\EstadoCita::Programada->value) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+            if ($cita->estado !== EstadoCita::Programada->value) {
+                throw ValidationException::withMessages([
                     'estado' => 'Solo se puede registrar asistencia de citas programadas.',
                 ]);
             }
 
             if ($cita->fecha_hora->isFuture()) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'fecha_hora' => 'No se puede registrar asistencia antes de la hora programada de la cita.',
                 ]);
             }
@@ -172,8 +181,8 @@ class Cita extends Model implements Auditable
 
             $this->refresh();
 
-            if ($estado === \App\Enums\EstadoCita::Ausente->value) {
-                \App\Events\CitaAusenciaRegistrada::dispatch($cita);
+            if ($estado === EstadoCita::Ausente->value) {
+                CitaAusenciaRegistrada::dispatch($cita);
             }
         });
     }

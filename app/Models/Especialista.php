@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * Modelo Especialista — Roadmap §1 (Glosario de Dominio).
@@ -20,9 +21,9 @@ use Illuminate\Notifications\Notifiable;
  *
  * Nunca llamar "usuario" ni "doctor" en el código del dominio.
  */
-class Especialista extends Authenticatable
+class Especialista extends Authenticatable implements Auditable
 {
-    use HasFactory, Notifiable, SoftDeletes;
+    use AuditableTrait, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * Apunta a la tabla 'users' existente en la DB.
@@ -46,6 +47,14 @@ class Especialista extends Authenticatable
         'password',
         'remember_token',
         'kdf_salt',
+    ];
+
+    /** @var list<string> */
+    protected $auditExclude = [
+        'password',
+        'remember_token',
+        'kdf_salt',
+        'failed_login_attempts',
     ];
 
     protected function casts(): array

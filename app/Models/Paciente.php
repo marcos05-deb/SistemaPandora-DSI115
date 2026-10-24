@@ -5,19 +5,30 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Casts\EncryptedFieldCast;
+use App\Casts\EncryptedJsonFieldCast;
+use App\Models\Concerns\MasksEncryptedAuditAttributes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Paciente extends Model
+class Paciente extends Model implements Auditable
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use AuditableTrait, HasFactory, HasUuids, MasksEncryptedAuditAttributes, SoftDeletes {
+        MasksEncryptedAuditAttributes::transformAudit insteadof AuditableTrait;
+    }
 
     protected $table = 'pacientes';
+
     protected $primaryKey = 'codigo';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -49,16 +60,27 @@ class Paciente extends Model
         'referido_por' => EncryptedFieldCast::class,
         'llevado_por' => EncryptedFieldCast::class,
         'motivo_consulta' => EncryptedFieldCast::class,
-        'etiquetas_motivo' => \App\Casts\EncryptedJsonFieldCast::class,
+        'etiquetas_motivo' => EncryptedJsonFieldCast::class,
         'datos_corregidos_en' => 'datetime',
     ];
+
+    /** @var list<string> */
+    protected $auditExclude = [
+        'carnet',
+    ];
+
+    /** @return list<string> */
+    protected function additionalMaskedAuditAttributes(): array
+    {
+        return ['carnet'];
+    }
 
     public function expedientes(): HasMany
     {
         return $this->hasMany(Expediente::class, 'paciente_id', 'codigo');
     }
 
-    public function historialMultidisciplinario(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    public function historialMultidisciplinario(): HasManyThrough
     {
         return $this->hasManyThrough(
             Consulta::class,
@@ -75,12 +97,12 @@ class Paciente extends Model
         return $this->hasMany(ContactoPaciente::class, 'paciente_id', 'codigo');
     }
 
-    public function carrera(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function carrera(): BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'carrera_id', 'id');
     }
 
-    public function datosCorregidosPor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function datosCorregidosPor(): BelongsTo
     {
         return $this->belongsTo(Especialista::class, 'datos_corregidos_por_usuario_id');
     }

@@ -2,20 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Expediente;
-use App\Models\Cita;
-use App\Http\Requests\CitaStoreRequest;
+use App\Enums\EstadoCita;
 use App\Http\Requests\CitaAsistenciaRequest;
-use App\Http\Requests\CitaReprogramarRequest;
 use App\Http\Requests\CitaCancelarRequest;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
+use App\Http\Requests\CitaReprogramarRequest;
+use App\Http\Requests\CitaStoreRequest;
 use App\Http\Resources\CitaResource;
-use Inertia\Inertia;
+use App\Models\Cita;
+use App\Models\Expediente;
+use App\Models\Paciente;
+use App\Models\Profesional;
+use App\Services\AlertasPreventivasService;
+use App\Services\ClinicalAccessAuditor;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class CitaController extends Controller
 {
@@ -62,7 +70,7 @@ class CitaController extends Controller
 
         $vista = $validated['vista'] ?? 'lista';
         $referencia = isset($validated['referencia'])
-            ? \Illuminate\Support\Carbon::parse($validated['referencia'])->startOfDay()
+            ? Carbon::parse($validated['referencia'])->startOfDay()
             : now()->startOfDay();
         $page = max(1, (int) ($validated['page'] ?? 1));
 
@@ -83,7 +91,7 @@ class CitaController extends Controller
             $profesionalIds = $user->perfilesProfesionales()->pluck('id');
             $query->whereIn('profesional_id', $profesionalIds);
         } elseif (! empty($validated['especialista_id'])) {
-            $profesionalFiltro = \App\Models\Profesional::query()
+            $profesionalFiltro = Profesional::query()
                 ->whereKey($validated['especialista_id'])
                 ->whereIn('area_id', $user->areas()->pluck('areas.id'))
                 ->first();
@@ -107,7 +115,7 @@ class CitaController extends Controller
                 $q->where(function ($inner) use ($pacienteTerm) {
                     $inner->where('carnet', 'ilike', $pacienteTerm);
                     // codigo es UUID: comparar solo si el término es un UUID válido (evita 500 en PG).
-                    if (\Illuminate\Support\Str::isUuid($pacienteTerm)) {
+                    if (Str::isUuid($pacienteTerm)) {
                         $inner->orWhere('codigo', $pacienteTerm);
                     }
                 });
@@ -170,7 +178,7 @@ class CitaController extends Controller
 
         $especialistas = [];
         if ($user->hasRole('area_coordinator')) {
-            $especialistas = \App\Models\Profesional::with('especialista:id,name')
+            $especialistas = Profesional::with('especialista:id,name')
                 ->whereIn('area_id', $user->areas()->pluck('areas.id'))
                 ->get()
                 ->map(fn ($p) => [
@@ -193,10 +201,10 @@ class CitaController extends Controller
         $alertaPreventiva = ['activa' => false, 'total' => 0, 'umbral' => null, 'ventana_dias' => null, 'modo_calculo' => null, 'mensaje' => null];
         if (! empty($validated['paciente']) && ($user->hasRole('specialist') || $user->hasRole('area_coordinator'))) {
             $term = (string) $validated['paciente'];
-            $pacienteFiltro = \App\Models\Paciente::query()
+            $pacienteFiltro = Paciente::query()
                 ->where(function ($q) use ($term) {
                     $q->where('carnet', $term);
-                    if (\Illuminate\Support\Str::isUuid($term)) {
+                    if (Str::isUuid($term)) {
                         $q->orWhere('codigo', $term);
                     }
                 })
@@ -205,7 +213,7 @@ class CitaController extends Controller
             if ($pacienteFiltro) {
                 $areas = $user->areas()->pluck('areas.id');
                 $areaFiltrada = ! empty($validated['especialista_id'])
-                    ? \App\Models\Profesional::query()
+                    ? Profesional::query()
                         ->whereKey($validated['especialista_id'])
                         ->whereIn('area_id', $areas)
                         ->value('area_id')
@@ -215,7 +223,7 @@ class CitaController extends Controller
                     ->where('estado', '!=', Expediente::ESTADO_CERRADO)
                     ->when(! empty($validated['especialista_id']), fn ($query) => $query->where('area_id', $areaFiltrada));
                 $areaAlertaId = $expedienteQuery->orderByDesc('updated_at')->value('area_id') ?? $areaFiltrada;
-                $alertaPreventiva = app(\App\Services\AlertasPreventivasService::class)
+                $alertaPreventiva = app(AlertasPreventivasService::class)
                     ->alertaPaciente(
                         $user,
                         $pacienteFiltro->codigo,
@@ -224,6 +232,14 @@ class CitaController extends Controller
                     );
             }
         }
+
+        app(ClinicalAccessAuditor::class)->recordListing($user, Cita::class, [
+            'vista' => $vista,
+            'estado' => $estado,
+            'fecha' => $validated['fecha'] ?? null,
+            'fecha_desde' => $validated['fecha_desde'] ?? null,
+            'fecha_hasta' => $validated['fecha_hasta'] ?? null,
+        ]);
 
         return Inertia::render('Citas/Index', [
             'citas' => CitaResource::collection($citas),
@@ -268,19 +284,19 @@ class CitaController extends Controller
 
         try {
             DB::transaction(function () use ($request, $expediente, $profesional) {
-                $fechaHora = \Illuminate\Support\Carbon::parse($request->validated('fecha_hora'));
+                $fechaHora = Carbon::parse($request->validated('fecha_hora'));
                 $profesionalId = $profesional->id;
                 $profesionalUserId = (int) $profesional->user_id;
 
                 $this->bloquearAgendaUsuario($profesionalUserId);
 
                 if (Cita::hayConflictoHorario($profesionalUserId, $fechaHora)) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                    throw ValidationException::withMessages([
                         'fecha_hora' => 'El horario seleccionado se solapa con otra cita programada del especialista.',
                     ]);
                 }
 
-                $cita = new Cita();
+                $cita = new Cita;
                 $cita->expediente_id = $expediente->id;
                 $cita->consulta_id = $request->validated('consulta_id');
                 $cita->profesional_id = $profesionalId;
@@ -321,19 +337,19 @@ class CitaController extends Controller
             $profesional->id
         );
 
-        $etiqueta = $request->validated('estado') === \App\Enums\EstadoCita::Asistida->value
+        $etiqueta = $request->validated('estado') === EstadoCita::Asistida->value
             ? 'Asistió'
             : 'Ausente';
 
         $mensaje = "Asistencia registrada: {$etiqueta}.";
         $variant = 'success';
 
-        if ($request->validated('estado') === \App\Enums\EstadoCita::Ausente->value) {
+        if ($request->validated('estado') === EstadoCita::Ausente->value) {
             $pacienteId = $cita->expediente?->paciente_id
                 ?? $cita->loadMissing('expediente')->expediente?->paciente_id;
 
             if ($pacienteId) {
-                $alerta = app(\App\Services\AlertasPreventivasService::class)
+                $alerta = app(AlertasPreventivasService::class)
                     ->alertaPaciente($request->user(), $pacienteId, null, (int) $cita->area_id);
 
                 if ($alerta['activa']) {
@@ -367,31 +383,31 @@ class CitaController extends Controller
                 $profesionalUserId = (int) $citaBloqueada->profesional_user_id;
                 $this->bloquearAgendaUsuario($profesionalUserId);
 
-                if ($citaBloqueada->estado !== \App\Enums\EstadoCita::Programada->value) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                if ($citaBloqueada->estado !== EstadoCita::Programada->value) {
+                    throw ValidationException::withMessages([
                         'estado' => 'Solo se pueden reprogramar citas que estén en estado programada.',
                     ]);
                 }
 
                 if (! $citaBloqueada->fecha_hora->isFuture()) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                    throw ValidationException::withMessages([
                         'fecha_hora' => 'Solo se pueden reprogramar citas futuras cuya hora aún no haya llegado.',
                     ]);
                 }
 
-                $nuevaFecha = \Illuminate\Support\Carbon::parse($request->validated('fecha_hora'));
+                $nuevaFecha = Carbon::parse($request->validated('fecha_hora'));
 
                 if (Cita::hayConflictoHorario(
                     $profesionalUserId,
                     $nuevaFecha,
                     $citaBloqueada->id
                 )) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                    throw ValidationException::withMessages([
                         'fecha_hora' => 'El horario seleccionado se solapa con otra cita programada del especialista.',
                     ]);
                 }
 
-                $nuevaCita = new Cita();
+                $nuevaCita = new Cita;
                 $nuevaCita->expediente_id = $citaBloqueada->expediente_id;
                 $nuevaCita->consulta_id = $citaBloqueada->consulta_id;
                 $nuevaCita->profesional_id = $citaBloqueada->profesional_id;
@@ -399,11 +415,11 @@ class CitaController extends Controller
                 $nuevaCita->area_id = $citaBloqueada->area_id;
                 $nuevaCita->fecha_hora = $nuevaFecha;
                 $nuevaCita->motivo = $citaBloqueada->motivo;
-                $nuevaCita->estado = \App\Enums\EstadoCita::Programada->value;
+                $nuevaCita->estado = EstadoCita::Programada->value;
                 $nuevaCita->cita_origen_id = $citaBloqueada->id;
                 $nuevaCita->save();
 
-                $citaBloqueada->estado = \App\Enums\EstadoCita::Reprogramada->value;
+                $citaBloqueada->estado = EstadoCita::Reprogramada->value;
                 $citaBloqueada->motivo_reprogramacion = $request->validated('motivo_reprogramacion');
                 $citaBloqueada->reprogramado_por_profesional_id = $reprogramador->id;
                 $citaBloqueada->fecha_reprogramacion = now();
@@ -441,19 +457,19 @@ class CitaController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($citaBloqueada->estado !== \App\Enums\EstadoCita::Programada->value) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+            if ($citaBloqueada->estado !== EstadoCita::Programada->value) {
+                throw ValidationException::withMessages([
                     'estado' => 'Solo se pueden cancelar citas que estén en estado programada.',
                 ]);
             }
 
             if (! $citaBloqueada->fecha_hora->isFuture()) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'fecha_hora' => 'Solo se pueden cancelar citas futuras cuya hora aún no haya llegado.',
                 ]);
             }
 
-            $citaBloqueada->estado = \App\Enums\EstadoCita::Cancelada->value;
+            $citaBloqueada->estado = EstadoCita::Cancelada->value;
             $citaBloqueada->motivo_cancelacion = $request->validated('motivo_cancelacion');
             $citaBloqueada->cancelado_por_profesional_id = $cancelador->id;
             $citaBloqueada->fecha_cancelacion = now();

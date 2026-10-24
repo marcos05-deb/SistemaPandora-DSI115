@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Especialista;
+use App\Services\AuthAccessAuditor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 
 /**
  * LogoutController — HU-02.
@@ -23,12 +24,16 @@ use Illuminate\Support\Facades\Session;
  */
 class LogoutController extends Controller
 {
-    public function destroy(Request $request)
+    public function destroy(Request $request, AuthAccessAuditor $authAuditor)
     {
+        $user = Auth::guard('web')->user();
+        if ($user instanceof Especialista) {
+            $authAuditor->logout($user, $request);
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return redirect('/login')->withCookie(
