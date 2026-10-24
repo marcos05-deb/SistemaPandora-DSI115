@@ -6,6 +6,7 @@ use App\Models\AlertaPreventiva;
 use App\Models\Especialista;
 use App\Models\Rubrica;
 use App\Notifications\AlertaPreventivaCreada;
+use App\Policies\BitacoraPolicy;
 use App\Policies\IndicadorPolicy;
 use App\Services\ClinicalAccessAuditor;
 use Illuminate\Http\Request;
@@ -35,6 +36,9 @@ class HandleInertiaRequests extends Middleware
                 : false,
             'exportar' => $user instanceof Especialista
                 ? app(IndicadorPolicy::class)->ver($user)
+                : false,
+            'bitacora' => $user instanceof Especialista
+                ? app(BitacoraPolicy::class)->viewAny($user)
                 : false,
         ];
 

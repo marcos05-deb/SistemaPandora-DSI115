@@ -591,3 +591,9 @@
 - **Tests:** `tests/Feature/HU20/ExportarReportesTest.php` 11/11 PASS.
 - **Docs:** `docs/evidencia/HU-20.md`.
 - **Estado:** implementación en rama `feat/hu-20-exportar-reportes`.
+
+### [2026-10-24] HU-22 — bitácora de auditoría
+- **Alcance:** Consulta paginada `/admin/bitacora` con filtros (usuario, acción, período, registro), Policy solo sysadmin, enmascarado de URL/carnet, solo nombres de campos, evento `bitacora_consultada`.
+- **Tests:** `tests/Feature/HU22/BitacoraAuditoriaTest.php` 12/12 PASS.
+- **Docs:** `docs/evidencia/HU-22.md`.
+- **Estado:** implementación en rama `feat/hu-22-bitacora-auditoria`.
