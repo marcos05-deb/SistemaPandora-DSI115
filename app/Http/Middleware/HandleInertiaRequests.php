@@ -40,6 +40,9 @@ class HandleInertiaRequests extends Middleware
             'bitacora' => $user instanceof Especialista
                 ? app(BitacoraPolicy::class)->viewAny($user)
                 : false,
+            'exportarBitacora' => $user instanceof Especialista
+                ? app(BitacoraPolicy::class)->exportar($user)
+                : false,
         ];
 
         return [

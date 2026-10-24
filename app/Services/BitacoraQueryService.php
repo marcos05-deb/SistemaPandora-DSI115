@@ -20,11 +20,24 @@ final class BitacoraQueryService
 
     public function buscar(FiltrosBitacora $filtros): LengthAwarePaginator
     {
+        return $this->consulta($filtros)->paginate(self::PER_PAGE)->withQueryString();
+    }
+
+    /**
+     * Misma consulta de listado (HU-22), reutilizada por exportación (HU-23).
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<Audit>
+     */
+    public function consulta(FiltrosBitacora $filtros, ?CarbonImmutable $corteEn = null): \Illuminate\Database\Eloquent\Builder
+    {
         $tz = (string) config('app.timezone');
         $desde = CarbonImmutable::parse($filtros->desde, $tz)->startOfDay()->utc();
         $hasta = CarbonImmutable::parse($filtros->hasta, $tz)->endOfDay()->utc();
+        if ($corteEn !== null && $corteEn->lt($hasta)) {
+            $hasta = $corteEn->utc();
+        }
 
-        $query = Audit::query()
+        return Audit::query()
             ->select([
                 'audits.id',
                 'audits.user_id',
@@ -45,17 +58,24 @@ final class BitacoraQueryService
             ->when($filtros->tipo !== null, static fn ($q) => $q->where('audits.auditable_type', $filtros->tipo))
             ->orderByDesc('audits.created_at')
             ->orderByDesc('audits.id');
+    }
 
-        return $query->paginate(self::PER_PAGE)->withQueryString();
+    public function contar(FiltrosBitacora $filtros, ?CarbonImmutable $corteEn = null): int
+    {
+        return (int) $this->consulta($filtros, $corteEn)->toBase()->getCountForPagination();
     }
 
     /**
-     * @param  LengthAwarePaginator<int, Audit>  $paginator
+     * @param  LengthAwarePaginator<int, Audit>|iterable<int, Audit>  $eventos
      * @return list<array<string, mixed>>
      */
-    public function mapear(LengthAwarePaginator $paginator): array
+    public function mapear(LengthAwarePaginator|iterable $eventos): array
     {
-        $userIds = collect($paginator->items())
+        $items = $eventos instanceof LengthAwarePaginator
+            ? $eventos->items()
+            : (is_array($eventos) ? $eventos : iterator_to_array($eventos));
+
+        $userIds = collect($items)
             ->pluck('user_id')
             ->filter()
             ->unique()
@@ -69,7 +89,7 @@ final class BitacoraQueryService
             ->get(['id', 'name'])
             ->keyBy('id');
 
-        return collect($paginator->items())->map(function (Audit $audit) use ($users): array {
+        return collect($items)->map(function (Audit $audit) use ($users): array {
             $user = $audit->user_id !== null ? $users->get((int) $audit->user_id) : null;
             $rol = $user?->roles->first()?->nombre;
 

@@ -214,6 +214,9 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         Route::get('/bitacora', [\App\Http\Controllers\Admin\BitacoraController::class, 'index'])
             ->middleware('throttle:30,1')
             ->name('admin.bitacora.index');
+        Route::get('/bitacora/exportar', [\App\Http\Controllers\Admin\BitacoraController::class, 'export'])
+            ->middleware('throttle:5,1')
+            ->name('admin.bitacora.export');
 
         // Patients audit (solo consulta; sin edición de datos clínicos/personales)
         Route::get('/pacientes', [\App\Http\Controllers\Admin\PacienteController::class, 'index'])->name('admin.pacientes.index');

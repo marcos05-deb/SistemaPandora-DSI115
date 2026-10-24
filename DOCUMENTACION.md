@@ -597,3 +597,9 @@
 - **Tests:** `tests/Feature/HU22/BitacoraAuditoriaTest.php` 12/12 PASS.
 - **Docs:** `docs/evidencia/HU-22.md`.
 - **Estado:** implementación en rama `feat/hu-22-bitacora-auditoria`.
+
+### [2026-10-24] HU-23 — exportar evidencia de auditoría
+- **Alcance:** CSV UTF-8 (BOM) de la bitácora filtrada, metadatos de generación, SHA-256, tabla append-only `exportaciones_auditoria`, ruta `GET /admin/bitacora/exportar` throttle 5/1, botón en UI (`can.exportarBitacora`).
+- **Tests:** `tests/Feature/HU23/ExportarEvidenciaAuditoriaTest.php` 13/13 PASS.
+- **Docs:** `docs/evidencia/HU-23.md`.
+- **Estado:** implementación en rama `feat/hu-23-exportar-evidencia-auditoria`.

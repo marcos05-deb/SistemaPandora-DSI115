@@ -12,11 +12,15 @@ const props = defineProps({
     usuarios: { type: Array, default: () => [] },
     acciones: { type: Array, default: () => [] },
     orden: { type: String, default: 'más reciente primero' },
+    export_max: { type: Number, default: 50000 },
 });
 
 const page = usePage();
 const errorSummary = ref(null);
 const expanded = ref(null);
+const exporting = ref(false);
+const exportError = ref('');
+const exportSuccess = ref('');
 const form = useForm({
     desde: props.filtros.desde,
     hasta: props.filtros.hasta,
@@ -29,8 +33,11 @@ const form = useForm({
 const meta = computed(() => props.eventos.meta ?? {});
 const rows = computed(() => props.eventos.data ?? []);
 const canView = computed(() => Boolean(page.props.can?.bitacora));
+const canExport = computed(() => Boolean(page.props.can?.exportarBitacora));
 
 function applyFilters() {
+    exportError.value = '';
+    exportSuccess.value = '';
     form.get('/admin/bitacora', {
         preserveState: true,
         preserveScroll: true,
@@ -41,6 +48,64 @@ function applyFilters() {
 
 function clearFilters() {
     router.get('/admin/bitacora', {}, { preserveState: false, replace: true });
+}
+
+function exportQuery() {
+    const params = new URLSearchParams();
+    params.set('desde', form.desde);
+    params.set('hasta', form.hasta);
+    if (form.usuario) params.set('usuario', form.usuario);
+    if (form.accion) params.set('accion', form.accion);
+    if (form.registro) params.set('registro', form.registro);
+    if (form.tipo) params.set('tipo', form.tipo);
+    return params.toString();
+}
+
+async function exportEvidence() {
+    if (!canExport.value || exporting.value) return;
+    exportError.value = '';
+    exportSuccess.value = '';
+    exporting.value = true;
+    try {
+        const response = await fetch(`/admin/bitacora/exportar?${exportQuery()}`, {
+            headers: { Accept: 'text/csv', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+        });
+        if (response.status === 403) {
+            exportError.value = 'No tienes permiso para exportar la bitácora.';
+            return;
+        }
+        if (response.status === 422) {
+            const payload = await response.json().catch(() => ({}));
+            const first = payload.errors ? Object.values(payload.errors).flat()[0] : null;
+            exportError.value = first || 'No se pudo exportar con esos filtros.';
+            return;
+        }
+        if (!response.ok) {
+            exportError.value = 'No fue posible generar el archivo de evidencia.';
+            return;
+        }
+        const blob = await response.blob();
+        const disposition = response.headers.get('Content-Disposition') || '';
+        const match = disposition.match(/filename="?([^"]+)"?/i);
+        const filename = match?.[1] || 'bitacora.csv';
+        const sha = response.headers.get('X-Checksum-SHA256') || '';
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+        exportSuccess.value = sha
+            ? `Evidencia descargada. SHA-256: ${sha}`
+            : 'Evidencia descargada.';
+    } catch {
+        exportError.value = 'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.';
+    } finally {
+        exporting.value = false;
+    }
 }
 
 function toggle(id) {
@@ -76,10 +141,27 @@ function formatDate(value) {
                         <h2 id="bitacora-filters-title" class="text-lg font-semibold text-[var(--nord0)]">Filtros</h2>
                         <p class="mt-1 text-xs text-[var(--nord3)]">Período máximo 366 días. Por defecto: últimos 7 días.</p>
                     </div>
-                    <button type="button" class="min-h-10 rounded-lg px-3 text-sm font-medium text-[var(--nord2)] underline decoration-[var(--nord4)] underline-offset-4 hover:text-[var(--nord0)]" @click="clearFilters">
-                        Limpiar
-                    </button>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" class="min-h-10 rounded-lg px-3 text-sm font-medium text-[var(--nord2)] underline decoration-[var(--nord4)] underline-offset-4 hover:text-[var(--nord0)]" @click="clearFilters">
+                            Limpiar
+                        </button>
+                        <button
+                            v-if="canExport"
+                            type="button"
+                            :disabled="exporting"
+                            class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--nord4)] bg-white px-4 text-sm font-semibold text-[var(--nord1)] hover:bg-[var(--nord6)] disabled:cursor-not-allowed disabled:opacity-60"
+                            @click="exportEvidence"
+                        >
+                            <svg v-if="exporting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+                            {{ exporting ? 'Exportando…' : 'Exportar evidencia' }}
+                        </button>
+                    </div>
                 </div>
+                <p v-if="canExport" class="mb-3 text-xs text-[var(--nord3)]">
+                    Se exportarán los filtros activos (total estimado en pantalla: {{ meta.total ?? 0 }}; máximo {{ export_max }}).
+                </p>
+                <p v-if="exportSuccess" role="status" class="mb-3 text-sm text-[var(--aurora-green)]">{{ exportSuccess }}</p>
+                <p v-if="exportError" role="alert" class="mb-3 text-sm text-[var(--aurora-red)]">{{ exportError }}</p>
 
                 <div v-if="Object.keys(form.errors).length" ref="errorSummary" role="alert" tabindex="-1" class="mb-4 rounded-xl border border-[var(--aurora-red)]/40 bg-[var(--aurora-red)]/10 p-3 text-sm text-[var(--nord0)]">
                     <h3 class="font-semibold">Revisa los filtros</h3>

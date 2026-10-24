@@ -10,6 +10,7 @@ use App\Models\Consulta;
 use App\Models\ContactoPaciente;
 use App\Models\Especialista;
 use App\Models\EstadisticaPreventivaAusencia;
+use App\Models\ExportacionAuditoria;
 use App\Models\ExportacionReporte;
 use App\Models\EvaluacionRiesgo;
 use App\Models\Expediente;
@@ -51,6 +52,7 @@ return [
         AlertaPreventiva::class,
         SeguimientoPreventivo::class,
         ExportacionReporte::class,
+        ExportacionAuditoria::class,
     ],
 
     /*
@@ -76,4 +78,10 @@ return [
     // Segmento tras /pacientes/ (carnet u otro id en ruta) → placeholder.
     'carnet_url_pattern' => '#/pacientes/[^/?\s]+#i',
     'carnet_url_replacement' => '/pacientes/{carnet}',
+
+    // Solo tests HU-23: fuerza fallo tras generar el temporal y antes de registrar.
+    'simulate_export_failure' => false,
+
+    // Tope de eventos por exportación CSV de bitácora (HU-23).
+    'export_max_eventos' => 50000,
 ];

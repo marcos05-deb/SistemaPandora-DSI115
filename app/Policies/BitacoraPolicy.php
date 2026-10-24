@@ -12,4 +12,9 @@ final class BitacoraPolicy
     {
         return $user->hasRole('sysadmin');
     }
+
+    public function exportar(Especialista $user): bool
+    {
+        return $this->viewAny($user);
+    }
 }

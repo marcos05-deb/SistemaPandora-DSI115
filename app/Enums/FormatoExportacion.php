@@ -8,12 +8,14 @@ enum FormatoExportacion: string
 {
     case Pdf = 'pdf';
     case Excel = 'xlsx';
+    case Csv = 'csv';
 
     public function mime(): string
     {
         return match ($this) {
             self::Pdf => 'application/pdf',
             self::Excel => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            self::Csv => 'text/csv; charset=UTF-8',
         };
     }
 

@@ -7,9 +7,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BitacoraIndexRequest;
 use App\Models\Especialista;
+use App\Services\BitacoraExportService;
 use App\Services\BitacoraQueryService;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 final class BitacoraController extends Controller
 {
@@ -38,6 +40,23 @@ final class BitacoraController extends Controller
             'usuarios' => $service->usuariosDisponibles(),
             'acciones' => $service->catalogoAcciones(),
             'orden' => 'más reciente primero',
+            'export_max' => BitacoraExportService::MAX_EVENTOS,
+        ]);
+    }
+
+    public function export(BitacoraIndexRequest $request, BitacoraExportService $exports): SymfonyResponse
+    {
+        /** @var Especialista $user */
+        $user = $request->user();
+        $archivo = $exports->exportar($request->filtros(), $user);
+
+        return response($archivo->contenido, 200, [
+            'Content-Type' => $archivo->formato->mime(),
+            'Content-Disposition' => 'attachment; filename="'.$archivo->nombreArchivo.'"',
+            'Cache-Control' => 'no-store, private',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Checksum-SHA256' => $archivo->sha256,
+            'Content-Length' => (string) strlen($archivo->contenido),
         ]);
     }
 }
