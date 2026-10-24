@@ -576,3 +576,11 @@
 - **Seed final B.7:** `migrate:fresh --database=pgsql_admin --seed --force` PASS al finalizar las pruebas. Psicología 30 consultas/39 citas (cinco estados); Trabajo Social 1/2; cobertura consultas ene/feb/mar/sep/oct y citas sep/oct; cohortes de ausencias 6/1/1; 6 alertas, 2 seguimientos, 6 unread, 3 versiones DEMO, cero terminales sin motivo y seis índices HU-18 confirmados. Sin escrituras de BD posteriores.
 - **Gates pendientes:** QA visual/capturas, full suite verde (tres fallos heredados), Pint global por hallazgos heredados y cita literal de aprobación técnica Fase 3. Evidencia y recorrido manual: `docs/evidencia/HU-19.md`.
 - **Estado:** HU-19 queda **INCOMPLETA** frente a C.3; se entrega en commit Conventional separado de HU-18, sin push.
+
+### [2026-10-24] HU-21 — auditoría inmutable
+- **Alcance:** Clasificación de modelos (`config/auditoria.php`), Auditable en Paciente/Contacto/Solicitud/Especialista/Profesional, URL sanitizada, eventos de autenticación sin secretos, listados agregados, índices + REVOKE TRUNCATE + trigger en `audits`.
+- **Inmutabilidad:** modelo `App\Models\Audit`, guards Eloquent, privilegios DML y trigger PostgreSQL.
+- **Tests:** `tests/Feature/HU21/AuditoriaInmutableTest.php` 9/9 PASS; `AuditLoggingTest` 9/9 PASS.
+- **Docs:** `docs/auditoria/matriz_cobertura.md`, `docs/evidencia/HU-21.md`.
+- **Pendiente humano:** verificar privilegios/triggers en Azure; re-verificación B.5.5 tras HU-20.
+- **Estado:** implementación entregada en rama `feat/hu-21-auditoria-inmutable` (commits por HU).

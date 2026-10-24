@@ -16,10 +16,13 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 class Consulta extends Model implements AuditableContract
 {
+    use Auditable;
+    use Concerns\MasksEncryptedAuditAttributes {
+        Concerns\MasksEncryptedAuditAttributes::transformAudit insteadof Auditable;
+    }
     use HasFactory;
     use HasUuids;
     use SoftDeletes;
-    use Auditable;
 
     protected $table = 'consultas';
 
@@ -60,20 +63,6 @@ class Consulta extends Model implements AuditableContract
                 $consulta->indicadores_tendencia_suicida = [];
             }
         });
-    }
-
-    /** @param array<string, mixed> $data */
-    public function transformAudit(array $data): array
-    {
-        foreach (['old_values', 'new_values'] as $bucket) {
-            foreach (['crisis_psicologica', 'indicadores_tendencia_suicida'] as $field) {
-                if (isset($data[$bucket][$field])) {
-                    $data[$bucket][$field] = '[CIFRADO]';
-                }
-            }
-        }
-
-        return $data;
     }
 
     public function expediente(): BelongsTo

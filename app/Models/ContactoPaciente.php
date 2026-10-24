@@ -2,21 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
 use App\Casts\EncryptedFieldCast;
+use App\Models\Concerns\MasksEncryptedAuditAttributes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class ContactoPaciente extends Model
+class ContactoPaciente extends Model implements Auditable
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use AuditableTrait, HasFactory, HasUuids, MasksEncryptedAuditAttributes, SoftDeletes {
+        MasksEncryptedAuditAttributes::transformAudit insteadof AuditableTrait;
+    }
 
     protected $table = 'contactos_paciente';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -27,7 +34,7 @@ class ContactoPaciente extends Model
         'telefono_personal',
         'telefono_casa',
         'direccion',
-        'es_responsable'
+        'es_responsable',
     ];
 
     protected $casts = [

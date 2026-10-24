@@ -3,15 +3,16 @@
 namespace Tests\Feature\Compliance;
 
 use App\Models\Area;
+use App\Models\Audit;
 use App\Models\Especialista;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Profesional;
 use App\Models\Role;
 use App\Services\ClinicalAccessAuditor;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use OwenIt\Auditing\Models\Audit;
 use PHPUnit\Framework\Attributes\Group;
 
 #[Group('hipaa')]
@@ -128,7 +129,7 @@ class AuditLoggingTest extends ComplianceTestCase
                 ->where('id', $audit->id)
                 ->update(['tags' => 'tampered_sql']);
             $this->fail('Debía fallar el UPDATE directo sobre audits');
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             DB::connection('pgsql')->statement('ROLLBACK TO SAVEPOINT audit_update_guard');
             $this->assertTrue(
                 str_contains(strtolower($e->getMessage()), 'permission')
@@ -152,7 +153,7 @@ class AuditLoggingTest extends ComplianceTestCase
                 ->where('id', $audit->id)
                 ->delete();
             $this->fail('Debía fallar el DELETE directo sobre audits');
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             DB::connection('pgsql')->statement('ROLLBACK TO SAVEPOINT audit_delete_guard');
             $this->assertTrue(
                 str_contains(strtolower($e->getMessage()), 'permission')

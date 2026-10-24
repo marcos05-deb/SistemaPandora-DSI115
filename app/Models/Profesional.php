@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * Modelo Profesional — Perfil extendido del Especialista.
@@ -15,9 +16,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Vincula al usuario autenticado (users) con su área de especialidad.
  * Usa UUID como primary key (definido en la DB existente).
  */
-class Profesional extends Model
+class Profesional extends Model implements Auditable
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use AuditableTrait, HasFactory, HasUuids, SoftDeletes;
 
     protected $table = 'profesionales';
 
