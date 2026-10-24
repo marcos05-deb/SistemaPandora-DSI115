@@ -4,11 +4,13 @@
     "description": "PANDORA - Sistema de Gestión Clínica (DSI115)",
     "require": {
         "php": "^8.2",
+        "barryvdh/laravel-dompdf": "^3.0",
         "firebase/php-jwt": "^7.0",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^13.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
+        "openspout/openspout": "^4.0",
         "owen-it/laravel-auditing": "^14.0",
         "tightenco/ziggy": "^2.0"
     },

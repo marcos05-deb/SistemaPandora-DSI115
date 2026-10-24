@@ -10,6 +10,7 @@ use App\Models\Consulta;
 use App\Models\ContactoPaciente;
 use App\Models\Especialista;
 use App\Models\EstadisticaPreventivaAusencia;
+use App\Models\ExportacionReporte;
 use App\Models\EvaluacionRiesgo;
 use App\Models\Expediente;
 use App\Models\Facultad;
@@ -49,6 +50,7 @@ return [
         EvaluacionRiesgo::class,
         AlertaPreventiva::class,
         SeguimientoPreventivo::class,
+        ExportacionReporte::class,
     ],
 
     /*

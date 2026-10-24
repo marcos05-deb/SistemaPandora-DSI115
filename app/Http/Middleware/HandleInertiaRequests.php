@@ -33,6 +33,9 @@ class HandleInertiaRequests extends Middleware
             'reportes' => $user instanceof Especialista
                 ? app(IndicadorPolicy::class)->ver($user)
                 : false,
+            'exportar' => $user instanceof Especialista
+                ? app(IndicadorPolicy::class)->ver($user)
+                : false,
         ];
 
         return [

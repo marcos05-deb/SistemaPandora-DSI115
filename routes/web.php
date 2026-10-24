@@ -150,6 +150,12 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
     Route::get('/reportes/generar', [\App\Http\Controllers\ReportesController::class, 'generate'])
         ->middleware('throttle:10,1')
         ->name('reportes.generate');
+    Route::get('/reportes/exportar/pdf', [\App\Http\Controllers\ReportesController::class, 'exportPdf'])
+        ->middleware('throttle:5,1')
+        ->name('reportes.export.pdf');
+    Route::get('/reportes/exportar/excel', [\App\Http\Controllers\ReportesController::class, 'exportExcel'])
+        ->middleware('throttle:5,1')
+        ->name('reportes.export.excel');
 
     Route::get('/rubricas', [\App\Http\Controllers\RubricaController::class, 'index'])
         ->middleware('throttle:30,1')

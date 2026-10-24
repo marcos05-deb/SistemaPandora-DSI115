@@ -34,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
         $this->configureClinicalAuditGuards();
         $this->configureHttpsForProxies();
+        $this->configureExportTempDirs();
 
         Event::listen(
             CitaAusenciaRegistrada::class,
@@ -52,6 +53,18 @@ class AppServiceProvider extends ServiceProvider
         if (str_starts_with($appUrl, 'https://')) {
             URL::forceScheme('https');
         }
+    }
+
+    /** Producción read-only: PDF/Excel deben escribir solo en tmpfs (/tmp). */
+    private function configureExportTempDirs(): void
+    {
+        $tmp = sys_get_temp_dir();
+        config([
+            'dompdf.options.tempDir' => $tmp,
+            'dompdf.options.fontDir' => $tmp.'/dompdf-fonts',
+            'dompdf.options.fontCache' => $tmp.'/dompdf-fonts',
+            'dompdf.options.chroot' => base_path(),
+        ]);
     }
 
     private function configureClinicalAuditGuards(): void
