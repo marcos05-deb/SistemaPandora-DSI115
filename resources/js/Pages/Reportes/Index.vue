@@ -1,5 +1,5 @@
 <script setup>
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, ref } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
@@ -18,7 +18,11 @@ const props = defineProps({
     reporte: { type: Object, default: null },
 });
 
+const page = usePage();
 const pageError = ref('');
+const exportError = ref('');
+const exportSuccess = ref('');
+const exporting = ref('');
 const errorSummary = ref(null);
 const form = useForm({
     desde: props.reporte?.parametros_aplicados.desde ?? props.predeterminados.desde,
@@ -28,6 +32,7 @@ const form = useForm({
     agrupar_por: [...(props.reporte?.parametros_aplicados.agrupar_por ?? props.predeterminados.agrupar_por)],
 });
 
+const canExport = computed(() => Boolean(props.reporte) && Boolean(page.props.can?.exportar));
 const formatter = new Intl.NumberFormat('es-SV', { maximumFractionDigits: 1 });
 const groupLabels = {
     indicador: 'Indicador',
@@ -39,6 +44,8 @@ const dimensionHeaders = computed(() => form.agrupar_por.map((group) => ({ id: g
 
 function generateReport() {
     pageError.value = '';
+    exportError.value = '';
+    exportSuccess.value = '';
     form.get('/reportes/generar', {
         preserveState: true,
         preserveScroll: true,
@@ -53,6 +60,63 @@ function generateReport() {
             pageError.value = 'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.';
         },
     });
+}
+
+function exportQuery() {
+    const params = new URLSearchParams();
+    params.set('desde', form.desde);
+    params.set('hasta', form.hasta);
+    params.set('area', form.area);
+    form.indicadores.forEach((id) => params.append('indicadores[]', id));
+    form.agrupar_por.forEach((id) => params.append('agrupar_por[]', id));
+    return params.toString();
+}
+
+async function downloadExport(formato) {
+    if (!canExport.value || exporting.value) {
+        return;
+    }
+    exportError.value = '';
+    exportSuccess.value = '';
+    exporting.value = formato;
+    const path = formato === 'pdf' ? '/reportes/exportar/pdf' : '/reportes/exportar/excel';
+    try {
+        const response = await fetch(`${path}?${exportQuery()}`, {
+            headers: { Accept: 'application/octet-stream', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+        });
+        if (response.status === 403) {
+            exportError.value = 'No tienes permiso para exportar con esos parámetros.';
+            return;
+        }
+        if (response.status === 422) {
+            const payload = await response.json().catch(() => ({}));
+            const first = payload.errors ? Object.values(payload.errors).flat()[0] : null;
+            exportError.value = first || 'Revisa los parámetros antes de exportar.';
+            return;
+        }
+        if (!response.ok) {
+            exportError.value = 'No fue posible generar el archivo de exportación.';
+            return;
+        }
+        const blob = await response.blob();
+        const disposition = response.headers.get('Content-Disposition') || '';
+        const match = disposition.match(/filename="?([^"]+)"?/i);
+        const filename = match?.[1] || `reporte.${formato === 'pdf' ? 'pdf' : 'xlsx'}`;
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+        exportSuccess.value = formato === 'pdf' ? 'PDF descargado.' : 'Excel descargado.';
+    } catch {
+        exportError.value = 'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.';
+    } finally {
+        exporting.value = '';
+    }
 }
 
 function resetForm() {
@@ -175,7 +239,7 @@ function dateLabel(value) {
         </section>
 
         <section v-if="reporte" aria-labelledby="report-results-title" aria-live="polite" class="space-y-4">
-            <div class="flex flex-wrap items-end justify-between gap-2">
+            <div class="flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h2 id="report-results-title" class="text-xl font-semibold text-[var(--nord0)]">Reporte generado</h2>
                     <p class="mt-1 text-xs text-[var(--nord3)]">{{ dateLabel(reporte.parametros_aplicados.desde) }} — {{ dateLabel(reporte.parametros_aplicados.hasta) }} · {{ areaLabel(reporte.parametros_aplicados.area) }}</p>
@@ -184,7 +248,21 @@ function dateLabel(value) {
                         Agrupar por: {{ reporte.parametros_aplicados.agrupar_por.map((group) => groupLabels[group]).join(' + ') }}
                     </p>
                 </div>
-                <p class="text-xs text-[var(--nord3)]">Generado por {{ reporte.generado_por }} · {{ new Intl.DateTimeFormat('es-SV', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(reporte.generado_en)) }}</p>
+                <div class="flex flex-col items-end gap-2">
+                    <p class="text-xs text-[var(--nord3)]">Generado por {{ reporte.generado_por }} · {{ new Intl.DateTimeFormat('es-SV', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(reporte.generado_en)) }}</p>
+                    <div v-if="canExport" class="flex flex-wrap justify-end gap-2">
+                        <button type="button" :disabled="Boolean(exporting)" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--nord4)] bg-white px-4 py-2 text-sm font-semibold text-[var(--nord1)] transition hover:bg-[var(--nord6)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--frost3)] disabled:cursor-not-allowed disabled:opacity-60" @click="downloadExport('pdf')">
+                            <svg v-if="exporting === 'pdf'" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+                            {{ exporting === 'pdf' ? 'Generando PDF…' : 'Descargar PDF' }}
+                        </button>
+                        <button type="button" :disabled="Boolean(exporting)" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--nord4)] bg-white px-4 py-2 text-sm font-semibold text-[var(--nord1)] transition hover:bg-[var(--nord6)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--frost3)] disabled:cursor-not-allowed disabled:opacity-60" @click="downloadExport('excel')">
+                            <svg v-if="exporting === 'excel'" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+                            {{ exporting === 'excel' ? 'Generando Excel…' : 'Descargar Excel' }}
+                        </button>
+                    </div>
+                    <p v-if="exportSuccess" role="status" class="text-sm text-[var(--aurora-green)]">{{ exportSuccess }}</p>
+                    <p v-if="exportError" role="alert" class="text-sm text-[var(--aurora-red)]">{{ exportError }}</p>
+                </div>
             </div>
 
             <p v-if="reporte.sin_datos" class="rounded-xl border border-[var(--nord4)] bg-white p-5 text-sm text-[var(--nord2)]">Sin datos en el período; los totales son cero.</p>

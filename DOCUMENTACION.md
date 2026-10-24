@@ -584,3 +584,10 @@
 - **Docs:** `docs/auditoria/matriz_cobertura.md`, `docs/evidencia/HU-21.md`.
 - **Pendiente humano:** verificar privilegios/triggers en Azure; re-verificación B.5.5 tras HU-20.
 - **Estado:** implementación entregada en rama `feat/hu-21-auditoria-inmutable` (commits por HU).
+
+### [2026-10-24] HU-20 — exportar reportes PDF/Excel
+- **Alcance:** Exportación recalculada en servidor (`ReporteExportService`) a PDF (DomPDF) y Excel (OpenSpout), con saneamiento anti-fórmulas, encabezados, throttle 5/1, registro append-only `exportaciones_reporte` (sha256) y botones en `Reportes/Index.vue` (`can.exportar`).
+- **Rutas:** `GET /reportes/exportar/pdf` y `GET /reportes/exportar/excel` (mismos parámetros que HU-19).
+- **Tests:** `tests/Feature/HU20/ExportarReportesTest.php` 11/11 PASS.
+- **Docs:** `docs/evidencia/HU-20.md`.
+- **Estado:** implementación en rama `feat/hu-20-exportar-reportes`.
