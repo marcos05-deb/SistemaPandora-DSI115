@@ -32,7 +32,10 @@ abstract class TestCase extends BaseTestCase
     /**
      * migrate:fresh / wipe pueden intentar TRUNCATE de audits; el trigger HU-21 lo bloquea.
      */
-    protected function beforeRefreshingDatabase(): void
+    /**
+     * Sin `: void` — debe coincidir con RefreshDatabase del framework (Laravel 11).
+     */
+    protected function beforeRefreshingDatabase()
     {
         try {
             DB::connection('pgsql_admin')->unprepared(
@@ -43,7 +46,7 @@ abstract class TestCase extends BaseTestCase
         }
     }
 
-    protected function afterRefreshingDatabase(): void
+    protected function afterRefreshingDatabase()
     {
         try {
             DB::connection('pgsql_admin')->unprepared(
