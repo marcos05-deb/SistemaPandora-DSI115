@@ -603,3 +603,14 @@
 - **Tests:** `tests/Feature/HU23/ExportarEvidenciaAuditoriaTest.php` 13/13 PASS.
 - **Docs:** `docs/evidencia/HU-23.md`.
 - **Estado:** implementación en rama `feat/hu-23-exportar-evidencia-auditoria`.
+
+### [2026-10-24] Cierre técnico HU-15…23 — tests y bypass de cleanup
+- **Agente:** Composer (IA) / José Eduardo Artiga Franco (contexto de sesión)
+- **Problema:** Los tests concurrentes HU15-E10 y HU17-E08 borraban filas de `audits` en `finally` vía `pgsql_admin`; el trigger HU-21 `prevent_audits_mutation` abortaba el cleanup y contaminaba la suite (UniqueConstraint en rúbricas).
+- **Solución:**
+  - Migración `2026_10_24_150000_allow_audits_immutability_bypass_for_test_cleanup.php`: la función permite mutación solo si `current_setting('app.bypass_audits_immutability', true) = 'on'`. El rol app sigue sin DELETE/UPDATE/TRUNCATE.
+  - Helper `tests/Support/AuditsImmutability::bypass()` usado en cleanup de HU15/HU17.
+  - `TestCase::beforeRefreshingDatabase` / `afterRefreshingDatabase` activan el GUC durante `migrate:fresh` de Pest.
+- **Verificación:** `php artisan test tests/Feature/HU{15..23}` → **129 passed (808 assertions)**.
+- **UI local (navegador):** rúbricas, alertas+detalle, indicadores, reportes+PDF, bitácora+CSV SHA-256.
+- **Rama:** `feat/hu-23-exportar-evidencia-auditoria`.

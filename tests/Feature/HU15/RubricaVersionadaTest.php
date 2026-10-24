@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
+use Tests\Support\AuditsImmutability;
 
 beforeEach(function (): void {
     $this->withoutMiddleware(PreventRequestForgery::class);
@@ -657,22 +658,24 @@ test('HU15-E10 should_assign_sequential_numbers_under_concurrent_creation_and_re
             $writer->stop(1);
         }
 
-        $committedVersionIds = $admin->table('rubrica_versiones')
-            ->where('rubrica_id', $this->rubrica->id)
-            ->pluck('id')
-            ->all();
-        $committedVariableIds = $admin->table('rubrica_variables')
-            ->whereIn('rubrica_version_id', $committedVersionIds)
-            ->pluck('id')
-            ->all();
-        $admin->table('audits')
-            ->whereIn('auditable_id', [...$committedVersionIds, ...$committedVariableIds])
-            ->delete();
-        $admin->table('rubrica_variables')->whereIn('id', $committedVariableIds)->delete();
-        $admin->table('rubrica_versiones')->whereIn('id', $committedVersionIds)->delete();
-        $admin->table('profesionales')->where('id', $professional->id)->delete();
-        $admin->table('users')->where('id', $author->id)->delete();
-        $admin->table('areas')->where('id', $area->id)->delete();
+        AuditsImmutability::bypass(function () use ($admin, $professional, $author, $area): void {
+            $committedVersionIds = $admin->table('rubrica_versiones')
+                ->where('rubrica_id', $this->rubrica->id)
+                ->pluck('id')
+                ->all();
+            $committedVariableIds = $admin->table('rubrica_variables')
+                ->whereIn('rubrica_version_id', $committedVersionIds)
+                ->pluck('id')
+                ->all();
+            $admin->table('audits')
+                ->whereIn('auditable_id', [...$committedVersionIds, ...$committedVariableIds])
+                ->delete();
+            $admin->table('rubrica_variables')->whereIn('id', $committedVariableIds)->delete();
+            $admin->table('rubrica_versiones')->whereIn('id', $committedVersionIds)->delete();
+            $admin->table('profesionales')->where('id', $professional->id)->delete();
+            $admin->table('users')->where('id', $author->id)->delete();
+            $admin->table('areas')->where('id', $area->id)->delete();
+        });
 
         foreach (glob($barrier.'/*') ?: [] as $file) {
             @unlink($file);

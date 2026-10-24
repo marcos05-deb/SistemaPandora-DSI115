@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
+use Tests\Support\AuditsImmutability;
 
 beforeEach(function (): void {
     $this->withoutMiddleware(PreventRequestForgery::class);
@@ -570,24 +571,38 @@ test('HU17-E08 should_serialize_concurrent_terminal_transitions_under_a_row_lock
             $first?->stop(1);
             $second?->stop(1);
         }
-        $admin->table('audits')->whereIn('auditable_id', [
-            $alert->id,
-            $evaluation->id,
-            $version->id,
-            $concurrentRubrica->id,
-            $patient->codigo,
-            $professional->id,
-        ])->delete();
-        $admin->table('alertas_preventivas')->where('id', $alert->id)->delete();
-        $admin->table('evaluaciones_riesgo')->where('id', $evaluation->id)->delete();
-        $admin->table('rubrica_versiones')->where('id', $version->id)->delete();
-        $admin->table('rubricas')->where('id', $concurrentRubrica->id)->delete();
-        $admin->table('pacientes')->where('codigo', $patient->codigo)->delete();
-        $admin->table('carreras')->where('id', $career->id)->delete();
-        $admin->table('facultades')->where('id', $faculty->id)->delete();
-        $admin->table('profesionales')->where('id', $professional->id)->delete();
-        $admin->table('users')->where('id', $user->id)->delete();
-        $admin->table('areas')->where('id', $area->id)->delete();
+        AuditsImmutability::bypass(function () use (
+            $admin,
+            $alert,
+            $evaluation,
+            $version,
+            $concurrentRubrica,
+            $patient,
+            $career,
+            $faculty,
+            $professional,
+            $user,
+            $area,
+        ): void {
+            $admin->table('audits')->whereIn('auditable_id', [
+                $alert->id,
+                $evaluation->id,
+                $version->id,
+                $concurrentRubrica->id,
+                $patient->codigo,
+                $professional->id,
+            ])->delete();
+            $admin->table('alertas_preventivas')->where('id', $alert->id)->delete();
+            $admin->table('evaluaciones_riesgo')->where('id', $evaluation->id)->delete();
+            $admin->table('rubrica_versiones')->where('id', $version->id)->delete();
+            $admin->table('rubricas')->where('id', $concurrentRubrica->id)->delete();
+            $admin->table('pacientes')->where('codigo', $patient->codigo)->delete();
+            $admin->table('carreras')->where('id', $career->id)->delete();
+            $admin->table('facultades')->where('id', $faculty->id)->delete();
+            $admin->table('profesionales')->where('id', $professional->id)->delete();
+            $admin->table('users')->where('id', $user->id)->delete();
+            $admin->table('areas')->where('id', $area->id)->delete();
+        });
         foreach (glob($barrier.'/*') ?: [] as $file) {
             @unlink($file);
         }

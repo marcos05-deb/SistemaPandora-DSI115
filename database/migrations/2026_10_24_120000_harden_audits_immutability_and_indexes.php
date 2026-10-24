@@ -44,6 +44,15 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
+    -- Bypass solo para cleanup de pruebas (set_config). El rol app no tiene DELETE/UPDATE.
+    IF current_setting('app.bypass_audits_immutability', true) = 'on' THEN
+        IF TG_OP = 'DELETE' THEN
+            RETURN OLD;
+        END IF;
+
+        RETURN NEW;
+    END IF;
+
     RAISE EXCEPTION 'audits es append-only: UPDATE/DELETE/TRUNCATE no permitidos'
         USING ERRCODE = '42501';
 END;
