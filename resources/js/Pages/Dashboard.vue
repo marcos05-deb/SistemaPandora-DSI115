@@ -38,8 +38,32 @@ const props = defineProps({
     areasDisponibles: {
         type: Array,
         default: () => []
+    },
+    alertOverview: {
+        type: Object,
+        default: () => ({
+            visible: false,
+            total: 0,
+            abiertas: 0,
+            por_estado: [],
+            por_senal: [],
+            urgentes: [],
+        })
     }
 });
+
+const ESTADO_COLORS = {
+    activa: 'var(--aurora-red)',
+    en_seguimiento: 'var(--frost3)',
+    cerrada: 'var(--aurora-green)',
+    descartada: 'var(--nord3)',
+};
+
+const SENAL_COLORS = {
+    crisis_psicologica: 'var(--aurora-orange, #D08770)',
+    ausencia_cita: 'var(--frost4)',
+    tendencia_suicida: 'var(--aurora-red)',
+};
 
 const getAreaName = (areaId) => {
     const area = props.areasDisponibles.find(a => a.id === areaId);
@@ -54,6 +78,47 @@ const isExpedienteClosed = (paciente) => {
     if (!paciente.expedientes || paciente.expedientes.length === 0) return false;
     return paciente.expedientes.every(exp => exp.estado === 'cerrado');
 };
+
+const showAlertCharts = computed(() => Boolean(props.alertOverview?.visible));
+
+const maxSenalCount = computed(() => {
+    const counts = (props.alertOverview?.por_senal || []).map((row) => row.count);
+    return Math.max(1, ...counts, 0);
+});
+
+/** Arcos SVG para donut de estados (circunferencia ~ 2πr con r=40). */
+const donutSegments = computed(() => {
+    const rows = props.alertOverview?.por_estado || [];
+    const total = rows.reduce((sum, row) => sum + row.count, 0);
+    const circumference = 2 * Math.PI * 40;
+    if (total === 0) {
+        return [{
+            key: 'empty',
+            color: 'var(--nord5)',
+            dasharray: `${circumference} ${circumference}`,
+            dashoffset: 0,
+            count: 0,
+            label: 'Sin alertas',
+        }];
+    }
+
+    let offset = 0;
+    return rows
+        .filter((row) => row.count > 0)
+        .map((row) => {
+            const length = (row.count / total) * circumference;
+            const segment = {
+                key: row.key,
+                label: row.label,
+                count: row.count,
+                color: ESTADO_COLORS[row.key] || 'var(--nord10)',
+                dasharray: `${length} ${circumference - length}`,
+                dashoffset: -offset,
+            };
+            offset += length;
+            return segment;
+        });
+});
 </script>
 
 <template>
@@ -139,6 +204,131 @@ const isExpedienteClosed = (paciente) => {
                 </div>
             </div>
         </div>
+
+        <!-- Alertas preventivas — resumen visual (HU-16/17) -->
+        <section
+            v-if="showAlertCharts"
+            aria-labelledby="dashboard-alertas-title"
+            class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden animate-fade-in"
+        >
+            <div class="px-6 py-4 border-b border-[var(--nord4)] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="min-w-0">
+                    <h2 id="dashboard-alertas-title" class="text-base font-semibold text-[var(--nord0)] flex items-center gap-2">
+                        <svg class="h-4 w-4 text-[var(--aurora-red)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                        </svg>
+                        Alertas preventivas
+                    </h2>
+                    <p class="mt-1 text-sm text-[var(--nord3)]">
+                        Resumen de tu área · {{ alertOverview.abiertas }} abiertas de {{ alertOverview.total }} registradas
+                    </p>
+                </div>
+                <Link
+                    href="/alertas"
+                    class="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[var(--nord10)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--nord9)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--nord10)]"
+                >
+                    Ver bandeja
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
+                </Link>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6 p-6 lg:grid-cols-3">
+                <!-- Donut por estado -->
+                <div class="flex flex-col items-center gap-4 sm:flex-row sm:items-start lg:flex-col lg:items-center">
+                    <div class="relative h-40 w-40 shrink-0">
+                        <svg viewBox="0 0 100 100" class="h-full w-full -rotate-90" role="img" :aria-label="`Distribución por estado: ${alertOverview.total} alertas`">
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="var(--nord5)" stroke-width="12" />
+                            <circle
+                                v-for="segment in donutSegments"
+                                :key="segment.key"
+                                cx="50"
+                                cy="50"
+                                r="40"
+                                fill="none"
+                                :stroke="segment.color"
+                                stroke-width="12"
+                                stroke-linecap="butt"
+                                :stroke-dasharray="segment.dasharray"
+                                :stroke-dashoffset="segment.dashoffset"
+                                class="transition-all duration-700 ease-out"
+                            />
+                        </svg>
+                        <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center rotate-0">
+                            <span class="text-3xl font-bold tabular-nums text-[var(--nord0)]">{{ alertOverview.total }}</span>
+                            <span class="text-[10px] font-semibold uppercase tracking-wider text-[var(--nord3)]">Total</span>
+                        </div>
+                    </div>
+                    <ul class="w-full space-y-2 text-sm">
+                        <li
+                            v-for="row in alertOverview.por_estado"
+                            :key="row.key"
+                            class="flex items-center justify-between gap-3"
+                        >
+                            <span class="inline-flex items-center gap-2 text-[var(--nord1)]">
+                                <span class="h-2.5 w-2.5 rounded-full shrink-0" :style="{ background: ESTADO_COLORS[row.key] || 'var(--nord10)' }" aria-hidden="true" />
+                                {{ row.label }}
+                            </span>
+                            <span class="font-semibold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Barras por señal -->
+                <div class="lg:col-span-1">
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--nord3)]">Por señal</h3>
+                    <ul class="space-y-3" role="list">
+                        <li v-for="row in alertOverview.por_senal" :key="row.key">
+                            <div class="mb-1 flex items-center justify-between gap-2 text-sm">
+                                <span class="truncate text-[var(--nord1)]">{{ row.label }}</span>
+                                <span class="shrink-0 font-semibold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
+                            </div>
+                            <div class="h-2 overflow-hidden rounded-full bg-[var(--nord5)]" role="presentation">
+                                <div
+                                    class="h-full rounded-full transition-all duration-700 ease-out"
+                                    :style="{
+                                        width: `${(row.count / maxSenalCount) * 100}%`,
+                                        background: SENAL_COLORS[row.key] || 'var(--nord10)',
+                                    }"
+                                />
+                            </div>
+                        </li>
+                    </ul>
+                    <p v-if="alertOverview.total === 0" class="mt-4 text-sm text-[var(--nord3)]">Aún no hay alertas en tu área.</p>
+                </div>
+
+                <!-- Urgentes -->
+                <div>
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--nord3)]">Requieren atención</h3>
+                    <ul v-if="alertOverview.urgentes.length" class="divide-y divide-[var(--nord5)] rounded-xl border border-[var(--nord4)] overflow-hidden">
+                        <li v-for="alerta in alertOverview.urgentes" :key="alerta.id">
+                            <Link
+                                :href="`/alertas/${alerta.id}`"
+                                class="flex flex-col gap-1 px-3 py-3 transition-colors hover:bg-[var(--nord6)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--frost3)]"
+                            >
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-sm font-medium text-[var(--nord0)] truncate">{{ alerta.senal_label }}</span>
+                                    <span
+                                        class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                                        :class="alerta.estado === 'activa'
+                                            ? 'bg-[var(--aurora-red)]/10 text-[var(--aurora-red)] border border-[var(--aurora-red)]/20'
+                                            : 'bg-[var(--frost3)]/10 text-[var(--frost3)] border border-[var(--frost3)]/20'"
+                                    >
+                                        {{ alerta.estado_label }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center justify-between gap-2 text-[12px] text-[var(--nord3)]">
+                                    <span class="font-mono">{{ alerta.paciente_carnet || '—' }}</span>
+                                    <span>{{ formatDate(alerta.generada_en) }}</span>
+                                </div>
+                            </Link>
+                        </li>
+                    </ul>
+                    <p v-else class="rounded-xl border border-dashed border-[var(--nord4)] bg-[var(--surface-subtle)] px-4 py-6 text-center text-sm text-[var(--nord3)]">
+                        No hay alertas activas pendientes.
+                    </p>
+                </div>
+            </div>
+        </section>
 
         <!-- Patients List / Empty State -->
         <div class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden">

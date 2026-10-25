@@ -91,10 +91,14 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
             ];
         }
 
+        $alertOverview = app(\App\Services\DashboardAlertOverviewService::class)
+            ->forUser($user);
+
         return Inertia::render('Dashboard', [
             'pacientes' => $pacientes,
             'stats' => $stats,
             'areasDisponibles' => $areasDisponibles,
+            'alertOverview' => $alertOverview,
         ]);
     })->name('dashboard');
 
