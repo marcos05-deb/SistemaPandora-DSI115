@@ -4,6 +4,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import EmptyState from '@/Components/UI/EmptyState.vue';
 import DerivacionModal from '@/Components/Expediente/DerivacionModal.vue';
+import AlertOverviewCharts from '@/Components/Dashboard/AlertOverviewCharts.vue';
 import { formatLocalDate } from '@/utils/dates';
 
 defineOptions({ layout: ClinicalLayout });
@@ -38,6 +39,25 @@ const props = defineProps({
     areasDisponibles: {
         type: Array,
         default: () => []
+    },
+    alertOverview: {
+        type: Object,
+        default: () => ({
+            visible: false,
+            reveal_carnets: false,
+            scope: null,
+            total: 0,
+            abiertas: 0,
+            por_estado: [],
+            por_senal: [],
+            urgentes: [],
+            por_etiqueta: [],
+            tendencia_suicida: {
+                total_alumnos: 0,
+                por_facultad: [],
+                por_carrera: [],
+            },
+        })
     }
 });
 
@@ -55,6 +75,7 @@ const isExpedienteClosed = (paciente) => {
     return paciente.expedientes.every(exp => exp.estado === 'cerrado');
 };
 </script>
+
 
 <template>
     <Head title="Panel Clínico" />
@@ -139,6 +160,8 @@ const isExpedienteClosed = (paciente) => {
                 </div>
             </div>
         </div>
+
+        <AlertOverviewCharts :overview="alertOverview" />
 
         <!-- Patients List / Empty State -->
         <div class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden">
