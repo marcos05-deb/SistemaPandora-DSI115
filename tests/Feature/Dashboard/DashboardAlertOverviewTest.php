@@ -81,7 +81,9 @@ it('incluye resumen de alertas en el dashboard del coordinador', function (): vo
             ->has('alertOverview.por_estado', 4)
             ->has('alertOverview.por_senal', 3)
             ->has('alertOverview.urgentes', 1)
+            ->where('alertOverview.reveal_carnets', true)
             ->where('alertOverview.urgentes.0.paciente_carnet', $paciente->carnet)
+            ->has('alertOverview.tendencia_suicida')
         );
 });
 
@@ -98,5 +100,66 @@ it('oculta el resumen de alertas al referente psicosocial', function (): void {
             ->component('Dashboard')
             ->where('alertOverview.visible', false)
             ->where('alertOverview.total', 0)
+        );
+});
+
+it('muestra las mismas gráficas al admin sin carnets', function (): void {
+    $admin = Especialista::factory()->withRole('sysadmin')->create();
+
+    $rubrica = Rubrica::query()->where('codigo', Rubrica::CODIGO_RIESGO_PREVENTIVO)->firstOrFail();
+    $version = RubricaVersion::query()->create([
+        'rubrica_id' => $rubrica->id,
+        'numero_version' => 9102,
+        'vigente_desde' => Carbon::now()->subDay(),
+        'umbral_puntaje_global' => null,
+        'justificacion_cambio' => 'Admin overview test',
+        'validada_en' => Carbon::now()->subDay()->toDateString(),
+        'referencia_validacion' => 'Admin overview',
+        'es_demo' => false,
+        'creada_por_profesional_id' => $this->coordinator->profesional->id,
+    ]);
+
+    $paciente = Paciente::factory()->create([
+        'creado_por_profesional_id' => $this->coordinator->profesional->id,
+    ]);
+
+    $evaluacion = EvaluacionRiesgo::query()->create([
+        'paciente_id' => $paciente->codigo,
+        'area_id' => $this->area->id,
+        'rubrica_version_id' => $version->id,
+        'disparador' => 'ausencia_cita',
+        'puntaje' => '2.00',
+        'detalle' => 'Admin overview evaluation',
+        'estado_evaluacion' => 'evaluada',
+        'evento_origen_tipo' => Consulta::class,
+        'evento_origen_id' => (string) Str::uuid(),
+        'evaluada_en' => Carbon::now(),
+    ]);
+
+    AlertaPreventiva::query()->create([
+        'paciente_id' => $paciente->codigo,
+        'area_id' => $this->area->id,
+        'evaluacion_riesgo_id' => $evaluacion->id,
+        'rubrica_version_id' => $version->id,
+        'senal' => 'ausencia_cita',
+        'valor_calculado' => '2.00',
+        'umbral' => '2.00',
+        'estado' => 'activa',
+        'responsable_profesional_id' => $this->coordinator->profesional->id,
+        'generada_en' => Carbon::now(),
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Admin/Dashboard')
+            ->where('alertOverview.visible', true)
+            ->where('alertOverview.reveal_carnets', false)
+            ->where('alertOverview.scope', 'institucional')
+            ->where('alertOverview.total', 1)
+            ->has('alertOverview.urgentes', 1)
+            ->missing('alertOverview.urgentes.0.paciente_carnet')
+            ->has('alertOverview.tendencia_suicida')
         );
 });

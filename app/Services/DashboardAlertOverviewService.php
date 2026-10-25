@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Http\Requests\StorePacienteRequest;
 use App\Models\AlertaPreventiva;
+use App\Models\Area;
 use App\Models\Consulta;
 use App\Models\Especialista;
 use App\Models\Expediente;
@@ -15,19 +16,22 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Resumen agregado del panel clínico (alertas + tipología de casos).
- * Sin notas clínicas ni nombres; solo conteos y carnets operativos ya usados en bandeja.
+ * Resumen agregado del panel (alertas + tipología + tendencia).
+ * Sysadmin: mismas gráficas institucionales, sin carnets.
+ * Coordinador/especialista: carnet solo en la lista de alertas urgentes.
  */
 final class DashboardAlertOverviewService
 {
     /**
      * @return array{
      *     visible: bool,
+     *     reveal_carnets: bool,
+     *     scope: 'institucional'|'area'|null,
      *     total: int,
      *     abiertas: int,
      *     por_estado: list<array{key: string, label: string, count: int}>,
      *     por_senal: list<array{key: string, label: string, count: int}>,
-     *     urgentes: list<array{id: string, senal: string, senal_label: string, estado: string, estado_label: string, paciente_carnet: string|null, generada_en: string|null}>,
+     *     urgentes: list<array{id: string, senal: string, senal_label: string, estado: string, estado_label: string, generada_en: string|null, paciente_carnet?: string|null}>,
      *     por_etiqueta: list<array{key: string, label: string, count: int}>,
      *     tendencia_suicida: array{
      *         total_alumnos: int,
@@ -46,6 +50,8 @@ final class DashboardAlertOverviewService
 
         $empty = [
             'visible' => false,
+            'reveal_carnets' => false,
+            'scope' => null,
             'total' => 0,
             'abiertas' => 0,
             'por_estado' => [],
@@ -55,13 +61,24 @@ final class DashboardAlertOverviewService
             'tendencia_suicida' => $emptyTendencia,
         ];
 
-        if (! Gate::forUser($user)->allows('viewAny', AlertaPreventiva::class)) {
+        $isSysadmin = $user->hasRole('sysadmin');
+        $canClinicalOverview = Gate::forUser($user)->allows('viewAny', AlertaPreventiva::class);
+
+        if (! $isSysadmin && ! $canClinicalOverview) {
             return $empty;
         }
 
-        $areaIds = $user->areas()->pluck('areas.id')->all();
-        if ($areaIds === []) {
-            return $empty;
+        if ($isSysadmin) {
+            $areaIds = Area::query()->orderBy('id')->pluck('id')->all();
+            $scope = 'institucional';
+            $revealCarnets = false;
+        } else {
+            $areaIds = $user->areas()->pluck('areas.id')->all();
+            if ($areaIds === []) {
+                return $empty;
+            }
+            $scope = 'area';
+            $revealCarnets = $user->hasRole('area_coordinator') || $user->hasRole('specialist');
         }
 
         $base = AlertaPreventiva::query();
@@ -98,15 +115,20 @@ final class DashboardAlertOverviewService
         $abiertas = (int) collect(AlertaPreventiva::ESTADOS_ACTIVOS)
             ->sum(static fn (string $estado): int => (int) ($porEstadoRaw[$estado] ?? 0));
 
-        $urgentes = (clone $base)
-            ->with(['paciente:codigo,carnet'])
+        $urgentesQuery = (clone $base)
             ->whereIn('estado', AlertaPreventiva::ESTADOS_ACTIVOS)
             ->orderByRaw("CASE estado WHEN 'activa' THEN 0 WHEN 'en_seguimiento' THEN 1 ELSE 2 END")
             ->orderByDesc('generada_en')
-            ->limit(5)
+            ->limit(5);
+
+        if ($revealCarnets) {
+            $urgentesQuery->with(['paciente:codigo,carnet']);
+        }
+
+        $urgentes = $urgentesQuery
             ->get()
-            ->map(static function (AlertaPreventiva $alerta): array {
-                return [
+            ->map(static function (AlertaPreventiva $alerta) use ($revealCarnets): array {
+                $row = [
                     'id' => (string) $alerta->id,
                     'senal' => (string) $alerta->senal,
                     'senal_label' => AlertaPreventiva::labelForSignal((string) $alerta->senal),
@@ -116,15 +138,22 @@ final class DashboardAlertOverviewService
                         'en_seguimiento' => 'En seguimiento',
                         default => (string) $alerta->estado,
                     },
-                    'paciente_carnet' => $alerta->paciente?->carnet,
                     'generada_en' => $alerta->generada_en?->toIso8601String(),
                 ];
+
+                if ($revealCarnets) {
+                    $row['paciente_carnet'] = $alerta->paciente?->carnet;
+                }
+
+                return $row;
             })
             ->values()
             ->all();
 
         return [
             'visible' => true,
+            'reveal_carnets' => $revealCarnets,
+            'scope' => $scope,
             'total' => $total,
             'abiertas' => $abiertas,
             'por_estado' => $porEstado,
