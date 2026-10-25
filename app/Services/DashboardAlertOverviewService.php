@@ -11,6 +11,7 @@ use App\Models\Especialista;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -19,14 +20,6 @@ use Illuminate\Support\Facades\Gate;
  */
 final class DashboardAlertOverviewService
 {
-    /** @var list<string> */
-    public const INDICADORES_TENDENCIA_DEMO = [
-        'ideas_suicidas',
-        'planificacion',
-        'intentos_previos',
-        'autolesion',
-    ];
-
     /**
      * @return array{
      *     visible: bool,
@@ -37,20 +30,18 @@ final class DashboardAlertOverviewService
      *     urgentes: list<array{id: string, senal: string, senal_label: string, estado: string, estado_label: string, paciente_carnet: string|null, generada_en: string|null}>,
      *     por_etiqueta: list<array{key: string, label: string, count: int}>,
      *     tendencia_suicida: array{
-     *         alumnos_con_indicador: int,
-     *         alumnos_con_alerta: int,
-     *         alumnos_etiqueta_ideas: int,
-     *         por_indicador: list<array{key: string, label: string, count: int}>
+     *         total_alumnos: int,
+     *         por_facultad: list<array{id: int, label: string, count: int}>,
+     *         por_carrera: list<array{id: int, label: string, facultad_id: int, facultad_label: string, count: int}>
      *     }
      * }
      */
     public function forUser(Especialista $user): array
     {
         $emptyTendencia = [
-            'alumnos_con_indicador' => 0,
-            'alumnos_con_alerta' => 0,
-            'alumnos_etiqueta_ideas' => 0,
-            'por_indicador' => [],
+            'total_alumnos' => 0,
+            'por_facultad' => [],
+            'por_carrera' => [],
         ];
 
         $empty = [
@@ -186,18 +177,86 @@ final class DashboardAlertOverviewService
     }
 
     /**
+     * Alumnos del área con señal de tendencia suicida (consulta, alerta o etiqueta),
+     * agregados por facultad y carrera (sin PHI).
+     *
      * @param  list<int|string>  $areaIds
      * @return array{
-     *     alumnos_con_indicador: int,
-     *     alumnos_con_alerta: int,
-     *     alumnos_etiqueta_ideas: int,
-     *     por_indicador: list<array{key: string, label: string, count: int}>
+     *     total_alumnos: int,
+     *     por_facultad: list<array{id: int, label: string, count: int}>,
+     *     por_carrera: list<array{id: int, label: string, facultad_id: int, facultad_label: string, count: int}>
      * }
      */
     private function aggregateTendenciaSuicida(array $areaIds): array
     {
-        $indicatorCounts = array_fill_keys(self::INDICADORES_TENDENCIA_DEMO, 0);
-        $patientsWithIndicator = [];
+        $pacienteIds = $this->pacienteIdsConTendenciaSuicida($areaIds);
+
+        if ($pacienteIds === []) {
+            return [
+                'total_alumnos' => 0,
+                'por_facultad' => [],
+                'por_carrera' => [],
+            ];
+        }
+
+        $rows = Paciente::query()
+            ->whereIn('codigo', $pacienteIds)
+            ->join('carreras', 'carreras.id', '=', 'pacientes.carrera_id')
+            ->join('facultades', 'facultades.id', '=', 'carreras.facultad_id')
+            ->groupBy('carreras.id', 'carreras.nombre', 'facultades.id', 'facultades.nombre')
+            ->orderByDesc(DB::raw('COUNT(DISTINCT pacientes.codigo)'))
+            ->orderBy('facultades.nombre')
+            ->orderBy('carreras.nombre')
+            ->get([
+                'carreras.id as carrera_id',
+                'carreras.nombre as carrera_nombre',
+                'facultades.id as facultad_id',
+                'facultades.nombre as facultad_nombre',
+                DB::raw('COUNT(DISTINCT pacientes.codigo) as aggregate'),
+            ]);
+
+        $porFacultadMap = [];
+        $porCarrera = [];
+
+        foreach ($rows as $row) {
+            $facultadId = (int) $row->facultad_id;
+            $count = (int) $row->aggregate;
+
+            if (! isset($porFacultadMap[$facultadId])) {
+                $porFacultadMap[$facultadId] = [
+                    'id' => $facultadId,
+                    'label' => (string) $row->facultad_nombre,
+                    'count' => 0,
+                ];
+            }
+            $porFacultadMap[$facultadId]['count'] += $count;
+
+            $porCarrera[] = [
+                'id' => (int) $row->carrera_id,
+                'label' => (string) $row->carrera_nombre,
+                'facultad_id' => $facultadId,
+                'facultad_label' => (string) $row->facultad_nombre,
+                'count' => $count,
+            ];
+        }
+
+        $porFacultad = array_values($porFacultadMap);
+        usort($porFacultad, static fn (array $a, array $b): int => $b['count'] <=> $a['count']);
+
+        return [
+            'total_alumnos' => count($pacienteIds),
+            'por_facultad' => $porFacultad,
+            'por_carrera' => $porCarrera,
+        ];
+    }
+
+    /**
+     * @param  list<int|string>  $areaIds
+     * @return list<string>
+     */
+    private function pacienteIdsConTendenciaSuicida(array $areaIds): array
+    {
+        $ids = [];
 
         $consultas = Consulta::query()
             ->whereHas('expediente', static function ($query) use ($areaIds): void {
@@ -213,26 +272,22 @@ final class DashboardAlertOverviewService
             if (! is_array($indicators) || $indicators === []) {
                 continue;
             }
-
             $pacienteId = $consulta->expediente?->paciente_id;
             if (is_string($pacienteId) && $pacienteId !== '') {
-                $patientsWithIndicator[$pacienteId] = true;
-            }
-
-            foreach ($indicators as $clave) {
-                if (is_string($clave) && array_key_exists($clave, $indicatorCounts)) {
-                    $indicatorCounts[$clave]++;
-                }
+                $ids[$pacienteId] = true;
             }
         }
 
-        $alumnosConAlerta = (int) AlertaPreventiva::query()
+        AlertaPreventiva::query()
             ->where('senal', 'tendencia_suicida')
-            ->distinct('paciente_id')
-            ->count('paciente_id');
+            ->pluck('paciente_id')
+            ->each(static function (mixed $pacienteId) use (&$ids): void {
+                if (is_string($pacienteId) && $pacienteId !== '') {
+                    $ids[$pacienteId] = true;
+                }
+            });
 
-        $alumnosEtiquetaIdeas = 0;
-        $pacienteIds = Expediente::query()
+        $areaPacienteIds = Expediente::query()
             ->withoutGlobalScopes()
             ->whereIn('area_id', $areaIds)
             ->whereNull('deleted_at')
@@ -240,41 +295,16 @@ final class DashboardAlertOverviewService
             ->pluck('paciente_id');
 
         Paciente::query()
-            ->whereIn('codigo', $pacienteIds)
+            ->whereIn('codigo', $areaPacienteIds)
             ->get(['codigo', 'etiquetas_motivo'])
-            ->each(function (Paciente $paciente) use (&$alumnosEtiquetaIdeas): void {
+            ->each(static function (Paciente $paciente) use (&$ids): void {
                 $tags = $paciente->etiquetas_motivo;
                 if (is_array($tags) && in_array('Ideas Suicidas', $tags, true)) {
-                    $alumnosEtiquetaIdeas++;
+                    $ids[(string) $paciente->codigo] = true;
                 }
             });
 
-        $porIndicador = [];
-        foreach ($indicatorCounts as $key => $count) {
-            $porIndicador[] = [
-                'key' => $key,
-                'label' => $this->labelForTendenciaIndicador($key),
-                'count' => $count,
-            ];
-        }
-
-        return [
-            'alumnos_con_indicador' => count($patientsWithIndicator),
-            'alumnos_con_alerta' => $alumnosConAlerta,
-            'alumnos_etiqueta_ideas' => $alumnosEtiquetaIdeas,
-            'por_indicador' => $porIndicador,
-        ];
-    }
-
-    private function labelForTendenciaIndicador(string $key): string
-    {
-        return match ($key) {
-            'ideas_suicidas' => 'Ideas suicidas',
-            'planificacion' => 'Planificación',
-            'intentos_previos' => 'Intentos previos',
-            'autolesion' => 'Autolesión',
-            default => $key,
-        };
+        return array_keys($ids);
     }
 
     /**

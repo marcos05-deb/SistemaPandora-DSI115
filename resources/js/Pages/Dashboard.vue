@@ -50,10 +50,9 @@ const props = defineProps({
             urgentes: [],
             por_etiqueta: [],
             tendencia_suicida: {
-                alumnos_con_indicador: 0,
-                alumnos_con_alerta: 0,
-                alumnos_etiqueta_ideas: 0,
-                por_indicador: [],
+                total_alumnos: 0,
+                por_facultad: [],
+                por_carrera: [],
             },
         })
     }
@@ -115,15 +114,50 @@ const maxEtiquetaCount = computed(() => {
 });
 
 const tendencia = computed(() => props.alertOverview?.tendencia_suicida ?? {
-    alumnos_con_indicador: 0,
-    alumnos_con_alerta: 0,
-    alumnos_etiqueta_ideas: 0,
-    por_indicador: [],
+    total_alumnos: 0,
+    por_facultad: [],
+    por_carrera: [],
 });
 
-const maxTendenciaIndicador = computed(() => {
-    const counts = (tendencia.value.por_indicador || []).map((row) => row.count);
+const maxFacultadCount = computed(() => {
+    const counts = (tendencia.value.por_facultad || []).map((row) => row.count);
     return Math.max(1, ...counts, 0);
+});
+
+const maxCarreraCount = computed(() => {
+    const counts = (tendencia.value.por_carrera || []).map((row) => row.count);
+    return Math.max(1, ...counts, 0);
+});
+
+/** Columnas SVG (facultad): chart 320×140, margen inferior para etiquetas. */
+const facultadBars = computed(() => {
+    const rows = tendencia.value.por_facultad || [];
+    if (rows.length === 0) {
+        return [];
+    }
+    const chartW = 320;
+    const chartH = 120;
+    const gap = 8;
+    const barW = Math.max(18, (chartW - gap * (rows.length + 1)) / rows.length);
+    const max = maxFacultadCount.value;
+
+    return rows.map((row, index) => {
+        const h = Math.max(4, (row.count / max) * chartH);
+        const x = gap + index * (barW + gap);
+        const y = chartH - h;
+        const short = row.label
+            .replace(/^Facultad (de |Multidisciplinaria (de |)?)/i, '')
+            .slice(0, 14);
+        return {
+            ...row,
+            x,
+            y,
+            w: barW,
+            h,
+            labelX: x + barW / 2,
+            short,
+        };
+    });
 });
 
 /** Arcos SVG para donut de estados (circunferencia ~ 2πr con r=40). */
@@ -370,79 +404,130 @@ const donutSegments = computed(() => {
             </div>
         </section>
 
-        <!-- Tipología de casos + tendencia suicida -->
+        <!-- Tipología de casos por etiqueta -->
         <section
             v-if="showAlertCharts"
             aria-labelledby="dashboard-casos-title"
-            class="grid grid-cols-1 gap-4 lg:grid-cols-2"
+            class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden"
         >
-            <div class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden">
-                <div class="px-6 py-4 border-b border-[var(--nord4)]">
-                    <h2 id="dashboard-casos-title" class="text-base font-semibold text-[var(--nord0)]">Tipos de caso por etiqueta</h2>
-                    <p class="mt-1 text-sm text-[var(--nord3)]">Conteo de estudiantes del área según etiquetas de motivo (agregado).</p>
+            <div class="px-6 py-4 border-b border-[var(--nord4)]">
+                <h2 id="dashboard-casos-title" class="text-base font-semibold text-[var(--nord0)]">Tipos de caso por etiqueta</h2>
+                <p class="mt-1 text-sm text-[var(--nord3)]">Conteo de estudiantes del área según etiquetas de motivo (agregado).</p>
+            </div>
+            <div class="p-6">
+                <ul v-if="etiquetasConDatos.length" class="grid grid-cols-1 gap-3 sm:grid-cols-2" role="list">
+                    <li v-for="(row, idx) in etiquetasConDatos" :key="row.key">
+                        <div class="mb-1 flex items-center justify-between gap-2 text-sm">
+                            <span class="truncate text-[var(--nord1)]">{{ row.label }}</span>
+                            <span class="shrink-0 font-semibold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
+                        </div>
+                        <div class="h-2.5 overflow-hidden rounded-full bg-[var(--nord5)]">
+                            <div
+                                class="h-full rounded-full transition-all duration-700 ease-out"
+                                :style="{
+                                    width: `${(row.count / maxEtiquetaCount) * 100}%`,
+                                    background: ETIQUETA_PALETTE[idx % ETIQUETA_PALETTE.length],
+                                }"
+                            />
+                        </div>
+                    </li>
+                </ul>
+                <p v-else class="text-sm text-[var(--nord3)]">Aún no hay etiquetas registradas en expedientes del área.</p>
+            </div>
+        </section>
+
+        <!-- Tendencia suicida — estadística por facultad / carrera -->
+        <section
+            v-if="showAlertCharts"
+            aria-labelledby="dashboard-tendencia-title"
+            class="bg-white rounded-2xl shadow-sm border border-[var(--aurora-red)]/30 overflow-hidden"
+        >
+            <div class="px-6 py-4 border-b border-[var(--nord4)] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-[var(--aurora-red)]/[0.04]">
+                <div class="min-w-0">
+                    <h2 id="dashboard-tendencia-title" class="text-base font-semibold text-[var(--nord0)]">
+                        Tendencia suicida por facultad y carrera
+                    </h2>
+                    <p class="mt-1 text-sm text-[var(--nord3)]">
+                        Estudiantes del área con indicador en consulta, alerta preventiva o etiqueta «Ideas Suicidas».
+                    </p>
                 </div>
-                <div class="p-6">
-                    <ul v-if="etiquetasConDatos.length" class="space-y-3" role="list">
-                        <li v-for="(row, idx) in etiquetasConDatos" :key="row.key">
-                            <div class="mb-1 flex items-center justify-between gap-2 text-sm">
-                                <span class="truncate text-[var(--nord1)]">{{ row.label }}</span>
-                                <span class="shrink-0 font-semibold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
+                <div class="shrink-0 rounded-xl border border-[var(--aurora-red)]/25 bg-white px-4 py-2 text-center">
+                    <p class="text-2xl font-bold tabular-nums text-[var(--aurora-red)]">{{ tendencia.total_alumnos }}</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-[var(--nord3)]">Alumnos</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-8 p-6 lg:grid-cols-2">
+                <div>
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--nord3)]">Por facultad</h3>
+                    <div v-if="facultadBars.length" class="overflow-x-auto">
+                        <svg
+                            viewBox="0 0 320 168"
+                            class="mx-auto h-48 w-full max-w-md"
+                            role="img"
+                            :aria-label="`Gráfico de barras: ${tendencia.total_alumnos} alumnos con tendencia suicida por facultad`"
+                        >
+                            <line x1="0" y1="120" x2="320" y2="120" stroke="var(--nord4)" stroke-width="1" />
+                            <g v-for="bar in facultadBars" :key="bar.id">
+                                <rect
+                                    :x="bar.x"
+                                    :y="bar.y"
+                                    :width="bar.w"
+                                    :height="bar.h"
+                                    rx="4"
+                                    fill="var(--aurora-red)"
+                                    class="transition-all duration-700 ease-out opacity-90"
+                                >
+                                    <title>{{ bar.label }}: {{ bar.count }}</title>
+                                </rect>
+                                <text
+                                    :x="bar.labelX"
+                                    :y="bar.y - 6"
+                                    text-anchor="middle"
+                                    class="fill-[var(--nord0)] text-[11px] font-semibold"
+                                >{{ bar.count }}</text>
+                                <text
+                                    :x="bar.labelX"
+                                    y="138"
+                                    text-anchor="middle"
+                                    class="fill-[var(--nord3)] text-[9px]"
+                                >
+                                    <tspan v-for="(chunk, ci) in bar.short.match(/.{1,7}/g) || [bar.short]" :key="ci" :x="bar.labelX" :dy="ci === 0 ? 0 : 10">{{ chunk }}</tspan>
+                                </text>
+                            </g>
+                        </svg>
+                        <ul class="mt-2 space-y-1.5 text-xs text-[var(--nord3)]">
+                            <li v-for="row in tendencia.por_facultad" :key="row.id" class="flex justify-between gap-2">
+                                <span class="truncate">{{ row.label }}</span>
+                                <span class="font-semibold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <p v-else class="rounded-xl border border-dashed border-[var(--nord4)] px-4 py-8 text-center text-sm text-[var(--nord3)]">
+                        Sin casos de tendencia suicida en el área.
+                    </p>
+                </div>
+
+                <div>
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--nord3)]">Por carrera</h3>
+                    <ul v-if="tendencia.por_carrera.length" class="max-h-72 space-y-3 overflow-y-auto pr-1" role="list">
+                        <li v-for="row in tendencia.por_carrera" :key="row.id">
+                            <div class="mb-1 flex items-start justify-between gap-2 text-sm">
+                                <div class="min-w-0">
+                                    <p class="truncate font-medium text-[var(--nord0)]">{{ row.label }}</p>
+                                    <p class="truncate text-[11px] text-[var(--nord3)]">{{ row.facultad_label }}</p>
+                                </div>
+                                <span class="shrink-0 font-semibold tabular-nums text-[var(--aurora-red)]">{{ row.count }}</span>
                             </div>
-                            <div class="h-2.5 overflow-hidden rounded-full bg-[var(--nord5)]">
+                            <div class="h-2 overflow-hidden rounded-full bg-[var(--nord5)]">
                                 <div
-                                    class="h-full rounded-full transition-all duration-700 ease-out"
-                                    :style="{
-                                        width: `${(row.count / maxEtiquetaCount) * 100}%`,
-                                        background: ETIQUETA_PALETTE[idx % ETIQUETA_PALETTE.length],
-                                    }"
+                                    class="h-full rounded-full bg-[var(--aurora-red)]/80 transition-all duration-700 ease-out"
+                                    :style="{ width: `${(row.count / maxCarreraCount) * 100}%` }"
                                 />
                             </div>
                         </li>
                     </ul>
-                    <p v-else class="text-sm text-[var(--nord3)]">Aún no hay etiquetas registradas en expedientes del área.</p>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl shadow-sm border border-[var(--aurora-red)]/25 overflow-hidden">
-                <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--aurora-red)]/[0.04]">
-                    <h2 class="text-base font-semibold text-[var(--nord0)] flex items-center gap-2">
-                        <span class="inline-flex h-2 w-2 rounded-full bg-[var(--aurora-red)]" aria-hidden="true" />
-                        Tendencia suicida
-                    </h2>
-                    <p class="mt-1 text-sm text-[var(--nord3)]">Prioridad clínica: alumnos con indicadores o alerta preventiva.</p>
-                </div>
-                <div class="p-6 space-y-5">
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="rounded-xl border border-[var(--nord4)] bg-[var(--surface-subtle)] p-3 text-center">
-                            <p class="text-2xl font-bold tabular-nums text-[var(--aurora-red)]">{{ tendencia.alumnos_con_indicador }}</p>
-                            <p class="mt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--nord3)] leading-tight">Con indicador en consulta</p>
-                        </div>
-                        <div class="rounded-xl border border-[var(--nord4)] bg-[var(--surface-subtle)] p-3 text-center">
-                            <p class="text-2xl font-bold tabular-nums text-[var(--nord0)]">{{ tendencia.alumnos_con_alerta }}</p>
-                            <p class="mt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--nord3)] leading-tight">Con alerta abierta</p>
-                        </div>
-                        <div class="rounded-xl border border-[var(--nord4)] bg-[var(--surface-subtle)] p-3 text-center">
-                            <p class="text-2xl font-bold tabular-nums text-[var(--nord10)]">{{ tendencia.alumnos_etiqueta_ideas }}</p>
-                            <p class="mt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--nord3)] leading-tight">Etiqueta Ideas Suicidas</p>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--nord3)]">Indicadores registrados</h3>
-                        <ul class="space-y-2.5" role="list">
-                            <li v-for="row in tendencia.por_indicador" :key="row.key">
-                                <div class="mb-1 flex items-center justify-between gap-2 text-sm">
-                                    <span class="text-[var(--nord1)]">{{ row.label }}</span>
-                                    <span class="font-semibold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
-                                </div>
-                                <div class="h-2 overflow-hidden rounded-full bg-[var(--nord5)]">
-                                    <div
-                                        class="h-full rounded-full bg-[var(--aurora-red)] transition-all duration-700 ease-out"
-                                        :style="{ width: `${(row.count / maxTendenciaIndicador) * 100}%` }"
-                                    />
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
+                    <p v-else class="text-sm text-[var(--nord3)]">Sin desglose por carrera.</p>
                 </div>
             </div>
         </section>

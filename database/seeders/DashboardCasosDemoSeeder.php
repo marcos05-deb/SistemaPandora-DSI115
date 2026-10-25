@@ -20,7 +20,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 
 /**
- * Datos DEMO locales para gráficas del panel: etiquetas de caso y tendencia suicida.
+ * Datos DEMO locales para gráficas del panel: etiquetas y tendencia por facultad/carrera.
  * Solo corre en local/testing.
  */
 class DashboardCasosDemoSeeder extends Seeder
@@ -40,8 +40,13 @@ class DashboardCasosDemoSeeder extends Seeder
         $profesional = $coordinator?->profesional
             ?? Profesional::query()->where('area_id', $area->id)->oldest('created_at')->firstOrFail();
 
-        $carreraId = Carrera::query()->value('id');
-        if ($carreraId === null) {
+        $carreras = Carrera::query()
+            ->with('facultad')
+            ->whereHas('facultad', static fn ($q) => $q->where('nombre', 'not like', 'Institución%'))
+            ->orderBy('id')
+            ->get();
+
+        if ($carreras->count() < 4) {
             return;
         }
 
@@ -54,30 +59,28 @@ class DashboardCasosDemoSeeder extends Seeder
             ->first()
             ?? $rubrica->versiones()->orderByDesc('numero_version')->firstOrFail();
 
+        // Distribución intencional: varias facultades/carreras + casos con tendencia.
         $perfiles = [
-            ['carnet' => 'DG24001', 'etiquetas' => ['Problemas Académicos', 'Dificultades Socioeconómicas'], 'indicadores' => []],
-            ['carnet' => 'DG24002', 'etiquetas' => ['Duelo'], 'indicadores' => []],
-            ['carnet' => 'DG24003', 'etiquetas' => ['Violencia Familiar'], 'indicadores' => []],
-            ['carnet' => 'DG24004', 'etiquetas' => ['Violencia Pareja', 'Conflictos Interpersonales'], 'indicadores' => []],
-            ['carnet' => 'DG24005', 'etiquetas' => ['Problemas de Adaptación'], 'indicadores' => []],
-            ['carnet' => 'DG24006', 'etiquetas' => ['Ideas Suicidas', 'Problemas Académicos'], 'indicadores' => ['ideas_suicidas']],
-            ['carnet' => 'DG24007', 'etiquetas' => ['Ideas Suicidas'], 'indicadores' => ['ideas_suicidas', 'planificacion']],
-            ['carnet' => 'DG24008', 'etiquetas' => ['Ideas Suicidas', 'Duelo'], 'indicadores' => ['ideas_suicidas', 'intentos_previos']],
-            ['carnet' => 'DG24009', 'etiquetas' => ['Violencia Docente'], 'indicadores' => ['autolesion']],
-            ['carnet' => 'DG24010', 'etiquetas' => ['Conflictos Interpersonales', 'Problemas Académicos'], 'indicadores' => []],
-            ['carnet' => 'DG24011', 'etiquetas' => ['Dificultades Socioeconómicas'], 'indicadores' => []],
-            ['carnet' => 'DG24012', 'etiquetas' => ['Ideas Suicidas', 'Violencia Familiar'], 'indicadores' => ['ideas_suicidas', 'planificacion', 'autolesion']],
+            ['carnet' => 'DG24001', 'carrera_i' => 0, 'etiquetas' => ['Problemas Académicos', 'Dificultades Socioeconómicas'], 'indicadores' => []],
+            ['carnet' => 'DG24002', 'carrera_i' => 1, 'etiquetas' => ['Duelo'], 'indicadores' => []],
+            ['carnet' => 'DG24003', 'carrera_i' => 2, 'etiquetas' => ['Violencia Familiar'], 'indicadores' => []],
+            ['carnet' => 'DG24004', 'carrera_i' => 3, 'etiquetas' => ['Violencia Pareja', 'Conflictos Interpersonales'], 'indicadores' => []],
+            ['carnet' => 'DG24005', 'carrera_i' => 4, 'etiquetas' => ['Problemas de Adaptación'], 'indicadores' => []],
+            ['carnet' => 'DG24006', 'carrera_i' => 0, 'etiquetas' => ['Ideas Suicidas', 'Problemas Académicos'], 'indicadores' => ['ideas_suicidas']],
+            ['carnet' => 'DG24007', 'carrera_i' => 1, 'etiquetas' => ['Ideas Suicidas'], 'indicadores' => ['ideas_suicidas', 'planificacion']],
+            ['carnet' => 'DG24008', 'carrera_i' => 5, 'etiquetas' => ['Ideas Suicidas', 'Duelo'], 'indicadores' => ['ideas_suicidas', 'intentos_previos']],
+            ['carnet' => 'DG24009', 'carrera_i' => 6, 'etiquetas' => ['Violencia Docente'], 'indicadores' => ['autolesion']],
+            ['carnet' => 'DG24010', 'carrera_i' => 2, 'etiquetas' => ['Conflictos Interpersonales', 'Problemas Académicos'], 'indicadores' => []],
+            ['carnet' => 'DG24011', 'carrera_i' => 7, 'etiquetas' => ['Dificultades Socioeconómicas'], 'indicadores' => []],
+            ['carnet' => 'DG24012', 'carrera_i' => 3, 'etiquetas' => ['Ideas Suicidas', 'Violencia Familiar'], 'indicadores' => ['ideas_suicidas', 'planificacion', 'autolesion']],
+            ['carnet' => 'DG24013', 'carrera_i' => 0, 'etiquetas' => ['Ideas Suicidas'], 'indicadores' => ['ideas_suicidas']],
+            ['carnet' => 'DG24014', 'carrera_i' => 5, 'etiquetas' => ['Ideas Suicidas', 'Problemas Académicos'], 'indicadores' => ['ideas_suicidas', 'planificacion']],
+            ['carnet' => 'DG24015', 'carrera_i' => 6, 'etiquetas' => ['Ideas Suicidas'], 'indicadores' => ['ideas_suicidas']],
         ];
 
         foreach ($perfiles as $index => $perfil) {
-            $this->seedCaso(
-                $perfil,
-                $index,
-                $area,
-                $profesional,
-                (int) $carreraId,
-                $version
-            );
+            $carrera = $carreras[$perfil['carrera_i'] % $carreras->count()];
+            $this->seedCaso($perfil, $index, $area, $profesional, $carrera, $version);
         }
     }
 
@@ -89,7 +92,7 @@ class DashboardCasosDemoSeeder extends Seeder
         int $index,
         Area $area,
         Profesional $profesional,
-        int $carreraId,
+        Carrera $carrera,
         RubricaVersion $version
     ): void {
         foreach ($perfil['etiquetas'] as $tag) {
@@ -98,10 +101,10 @@ class DashboardCasosDemoSeeder extends Seeder
             }
         }
 
-        $paciente = Paciente::query()->firstOrCreate(
+        $paciente = Paciente::query()->updateOrCreate(
             ['carnet' => $perfil['carnet']],
             [
-                'carrera_id' => $carreraId,
+                'carrera_id' => $carrera->id,
                 'creado_por_profesional_id' => $profesional->id,
                 'sexo' => $index % 2 === 0 ? 'F' : 'M',
                 'estado_civil' => 'Soltero',
@@ -114,11 +117,6 @@ class DashboardCasosDemoSeeder extends Seeder
                 'etiquetas_motivo' => $perfil['etiquetas'],
             ]
         );
-
-        if ($paciente->wasRecentlyCreated === false) {
-            $paciente->etiquetas_motivo = $perfil['etiquetas'];
-            $paciente->save();
-        }
 
         $expediente = Expediente::query()
             ->where('paciente_id', $paciente->codigo)
@@ -139,7 +137,8 @@ class DashboardCasosDemoSeeder extends Seeder
         }
 
         $consultaId = sprintf('00000000-0000-7000-8000-%012d', 500 + $index);
-        if (! Consulta::withTrashed()->whereKey($consultaId)->exists()) {
+        $consulta = Consulta::withTrashed()->whereKey($consultaId)->first();
+        if ($consulta === null) {
             $consulta = new Consulta;
             $consulta->id = $consultaId;
             $consulta->expediente_id = $expediente->id;
@@ -157,14 +156,18 @@ class DashboardCasosDemoSeeder extends Seeder
                 'indicadores_tendencia_suicida' => $perfil['indicadores'],
             ]);
             $consulta->save();
+        } else {
+            $consulta->setRelation('expediente', $expediente);
+            $consulta->indicadores_tendencia_suicida = $perfil['indicadores'];
+            $consulta->crisis_psicologica = $perfil['indicadores'] !== [] ? 'Sí' : 'No';
+            $consulta->save();
         }
 
         if ($perfil['indicadores'] === [] || ! in_array('ideas_suicidas', $perfil['indicadores'], true)) {
             return;
         }
 
-        // Alertas de tendencia para un subconjunto (prioridad clínica en el panel).
-        if (! in_array($perfil['carnet'], ['DG24006', 'DG24007', 'DG24012'], true)) {
+        if (! in_array($perfil['carnet'], ['DG24006', 'DG24007', 'DG24012', 'DG24014'], true)) {
             return;
         }
 
