@@ -4,17 +4,29 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Http\Requests\StorePacienteRequest;
 use App\Models\AlertaPreventiva;
+use App\Models\Consulta;
 use App\Models\Especialista;
+use App\Models\Expediente;
+use App\Models\Paciente;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Resumen agregado de alertas para el panel clínico (sin PHI clínico).
- * Solo carnet operativo + señal/estado ya visibles en la bandeja de alertas.
+ * Resumen agregado del panel clínico (alertas + tipología de casos).
+ * Sin notas clínicas ni nombres; solo conteos y carnets operativos ya usados en bandeja.
  */
 final class DashboardAlertOverviewService
 {
+    /** @var list<string> */
+    public const INDICADORES_TENDENCIA_DEMO = [
+        'ideas_suicidas',
+        'planificacion',
+        'intentos_previos',
+        'autolesion',
+    ];
+
     /**
      * @return array{
      *     visible: bool,
@@ -22,11 +34,25 @@ final class DashboardAlertOverviewService
      *     abiertas: int,
      *     por_estado: list<array{key: string, label: string, count: int}>,
      *     por_senal: list<array{key: string, label: string, count: int}>,
-     *     urgentes: list<array{id: string, senal: string, senal_label: string, estado: string, estado_label: string, paciente_carnet: string|null, generada_en: string|null}>
+     *     urgentes: list<array{id: string, senal: string, senal_label: string, estado: string, estado_label: string, paciente_carnet: string|null, generada_en: string|null}>,
+     *     por_etiqueta: list<array{key: string, label: string, count: int}>,
+     *     tendencia_suicida: array{
+     *         alumnos_con_indicador: int,
+     *         alumnos_con_alerta: int,
+     *         alumnos_etiqueta_ideas: int,
+     *         por_indicador: list<array{key: string, label: string, count: int}>
+     *     }
      * }
      */
     public function forUser(Especialista $user): array
     {
+        $emptyTendencia = [
+            'alumnos_con_indicador' => 0,
+            'alumnos_con_alerta' => 0,
+            'alumnos_etiqueta_ideas' => 0,
+            'por_indicador' => [],
+        ];
+
         $empty = [
             'visible' => false,
             'total' => 0,
@@ -34,9 +60,16 @@ final class DashboardAlertOverviewService
             'por_estado' => [],
             'por_senal' => [],
             'urgentes' => [],
+            'por_etiqueta' => [],
+            'tendencia_suicida' => $emptyTendencia,
         ];
 
         if (! Gate::forUser($user)->allows('viewAny', AlertaPreventiva::class)) {
+            return $empty;
+        }
+
+        $areaIds = $user->areas()->pluck('areas.id')->all();
+        if ($areaIds === []) {
             return $empty;
         }
 
@@ -106,7 +139,142 @@ final class DashboardAlertOverviewService
             'por_estado' => $porEstado,
             'por_senal' => $porSenal,
             'urgentes' => $urgentes,
+            'por_etiqueta' => $this->aggregateEtiquetas($areaIds),
+            'tendencia_suicida' => $this->aggregateTendenciaSuicida($areaIds),
         ];
+    }
+
+    /**
+     * @param  list<int|string>  $areaIds
+     * @return list<array{key: string, label: string, count: int}>
+     */
+    private function aggregateEtiquetas(array $areaIds): array
+    {
+        $counts = array_fill_keys(StorePacienteRequest::ETIQUETAS_VALIDAS, 0);
+
+        $pacienteIds = Expediente::query()
+            ->withoutGlobalScopes()
+            ->whereIn('area_id', $areaIds)
+            ->whereNull('deleted_at')
+            ->distinct()
+            ->pluck('paciente_id');
+
+        Paciente::query()
+            ->whereIn('codigo', $pacienteIds)
+            ->get(['codigo', 'etiquetas_motivo'])
+            ->each(function (Paciente $paciente) use (&$counts): void {
+                $tags = $paciente->etiquetas_motivo;
+                if (! is_array($tags)) {
+                    return;
+                }
+                foreach ($tags as $tag) {
+                    if (is_string($tag) && array_key_exists($tag, $counts)) {
+                        $counts[$tag]++;
+                    }
+                }
+            });
+
+        return array_map(
+            static fn (string $label, int $count): array => [
+                'key' => $label,
+                'label' => $label,
+                'count' => $count,
+            ],
+            array_keys($counts),
+            array_values($counts)
+        );
+    }
+
+    /**
+     * @param  list<int|string>  $areaIds
+     * @return array{
+     *     alumnos_con_indicador: int,
+     *     alumnos_con_alerta: int,
+     *     alumnos_etiqueta_ideas: int,
+     *     por_indicador: list<array{key: string, label: string, count: int}>
+     * }
+     */
+    private function aggregateTendenciaSuicida(array $areaIds): array
+    {
+        $indicatorCounts = array_fill_keys(self::INDICADORES_TENDENCIA_DEMO, 0);
+        $patientsWithIndicator = [];
+
+        $consultas = Consulta::query()
+            ->whereHas('expediente', static function ($query) use ($areaIds): void {
+                $query->withoutGlobalScopes()
+                    ->whereIn('area_id', $areaIds)
+                    ->whereNull('deleted_at');
+            })
+            ->with(['expediente:id,paciente_id,area_id'])
+            ->get(['id', 'expediente_id', 'indicadores_tendencia_suicida']);
+
+        foreach ($consultas as $consulta) {
+            $indicators = $consulta->indicadores_tendencia_suicida;
+            if (! is_array($indicators) || $indicators === []) {
+                continue;
+            }
+
+            $pacienteId = $consulta->expediente?->paciente_id;
+            if (is_string($pacienteId) && $pacienteId !== '') {
+                $patientsWithIndicator[$pacienteId] = true;
+            }
+
+            foreach ($indicators as $clave) {
+                if (is_string($clave) && array_key_exists($clave, $indicatorCounts)) {
+                    $indicatorCounts[$clave]++;
+                }
+            }
+        }
+
+        $alumnosConAlerta = (int) AlertaPreventiva::query()
+            ->where('senal', 'tendencia_suicida')
+            ->distinct('paciente_id')
+            ->count('paciente_id');
+
+        $alumnosEtiquetaIdeas = 0;
+        $pacienteIds = Expediente::query()
+            ->withoutGlobalScopes()
+            ->whereIn('area_id', $areaIds)
+            ->whereNull('deleted_at')
+            ->distinct()
+            ->pluck('paciente_id');
+
+        Paciente::query()
+            ->whereIn('codigo', $pacienteIds)
+            ->get(['codigo', 'etiquetas_motivo'])
+            ->each(function (Paciente $paciente) use (&$alumnosEtiquetaIdeas): void {
+                $tags = $paciente->etiquetas_motivo;
+                if (is_array($tags) && in_array('Ideas Suicidas', $tags, true)) {
+                    $alumnosEtiquetaIdeas++;
+                }
+            });
+
+        $porIndicador = [];
+        foreach ($indicatorCounts as $key => $count) {
+            $porIndicador[] = [
+                'key' => $key,
+                'label' => $this->labelForTendenciaIndicador($key),
+                'count' => $count,
+            ];
+        }
+
+        return [
+            'alumnos_con_indicador' => count($patientsWithIndicator),
+            'alumnos_con_alerta' => $alumnosConAlerta,
+            'alumnos_etiqueta_ideas' => $alumnosEtiquetaIdeas,
+            'por_indicador' => $porIndicador,
+        ];
+    }
+
+    private function labelForTendenciaIndicador(string $key): string
+    {
+        return match ($key) {
+            'ideas_suicidas' => 'Ideas suicidas',
+            'planificacion' => 'Planificación',
+            'intentos_previos' => 'Intentos previos',
+            'autolesion' => 'Autolesión',
+            default => $key,
+        };
     }
 
     /**

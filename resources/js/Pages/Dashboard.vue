@@ -48,6 +48,13 @@ const props = defineProps({
             por_estado: [],
             por_senal: [],
             urgentes: [],
+            por_etiqueta: [],
+            tendencia_suicida: {
+                alumnos_con_indicador: 0,
+                alumnos_con_alerta: 0,
+                alumnos_etiqueta_ideas: 0,
+                por_indicador: [],
+            },
         })
     }
 });
@@ -60,10 +67,22 @@ const ESTADO_COLORS = {
 };
 
 const SENAL_COLORS = {
-    crisis_psicologica: 'var(--aurora-orange, #D08770)',
+    crisis_psicologica: 'var(--aurora-orange)',
     ausencia_cita: 'var(--frost4)',
     tendencia_suicida: 'var(--aurora-red)',
 };
+
+const ETIQUETA_PALETTE = [
+    'var(--frost4)',
+    'var(--nord10)',
+    'var(--aurora-orange)',
+    'var(--aurora-green)',
+    'var(--frost3)',
+    'var(--aurora-red)',
+    'var(--nord9)',
+    'var(--nord8)',
+    'var(--nord7)',
+];
 
 const getAreaName = (areaId) => {
     const area = props.areasDisponibles.find(a => a.id === areaId);
@@ -83,6 +102,27 @@ const showAlertCharts = computed(() => Boolean(props.alertOverview?.visible));
 
 const maxSenalCount = computed(() => {
     const counts = (props.alertOverview?.por_senal || []).map((row) => row.count);
+    return Math.max(1, ...counts, 0);
+});
+
+const etiquetasConDatos = computed(() =>
+    (props.alertOverview?.por_etiqueta || []).filter((row) => row.count > 0)
+);
+
+const maxEtiquetaCount = computed(() => {
+    const counts = etiquetasConDatos.value.map((row) => row.count);
+    return Math.max(1, ...counts, 0);
+});
+
+const tendencia = computed(() => props.alertOverview?.tendencia_suicida ?? {
+    alumnos_con_indicador: 0,
+    alumnos_con_alerta: 0,
+    alumnos_etiqueta_ideas: 0,
+    por_indicador: [],
+});
+
+const maxTendenciaIndicador = computed(() => {
+    const counts = (tendencia.value.por_indicador || []).map((row) => row.count);
     return Math.max(1, ...counts, 0);
 });
 
@@ -326,6 +366,83 @@ const donutSegments = computed(() => {
                     <p v-else class="rounded-xl border border-dashed border-[var(--nord4)] bg-[var(--surface-subtle)] px-4 py-6 text-center text-sm text-[var(--nord3)]">
                         No hay alertas activas pendientes.
                     </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tipología de casos + tendencia suicida -->
+        <section
+            v-if="showAlertCharts"
+            aria-labelledby="dashboard-casos-title"
+            class="grid grid-cols-1 gap-4 lg:grid-cols-2"
+        >
+            <div class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden">
+                <div class="px-6 py-4 border-b border-[var(--nord4)]">
+                    <h2 id="dashboard-casos-title" class="text-base font-semibold text-[var(--nord0)]">Tipos de caso por etiqueta</h2>
+                    <p class="mt-1 text-sm text-[var(--nord3)]">Conteo de estudiantes del área según etiquetas de motivo (agregado).</p>
+                </div>
+                <div class="p-6">
+                    <ul v-if="etiquetasConDatos.length" class="space-y-3" role="list">
+                        <li v-for="(row, idx) in etiquetasConDatos" :key="row.key">
+                            <div class="mb-1 flex items-center justify-between gap-2 text-sm">
+                                <span class="truncate text-[var(--nord1)]">{{ row.label }}</span>
+                                <span class="shrink-0 font-semibold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
+                            </div>
+                            <div class="h-2.5 overflow-hidden rounded-full bg-[var(--nord5)]">
+                                <div
+                                    class="h-full rounded-full transition-all duration-700 ease-out"
+                                    :style="{
+                                        width: `${(row.count / maxEtiquetaCount) * 100}%`,
+                                        background: ETIQUETA_PALETTE[idx % ETIQUETA_PALETTE.length],
+                                    }"
+                                />
+                            </div>
+                        </li>
+                    </ul>
+                    <p v-else class="text-sm text-[var(--nord3)]">Aún no hay etiquetas registradas en expedientes del área.</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-[var(--aurora-red)]/25 overflow-hidden">
+                <div class="px-6 py-4 border-b border-[var(--nord4)] bg-[var(--aurora-red)]/[0.04]">
+                    <h2 class="text-base font-semibold text-[var(--nord0)] flex items-center gap-2">
+                        <span class="inline-flex h-2 w-2 rounded-full bg-[var(--aurora-red)]" aria-hidden="true" />
+                        Tendencia suicida
+                    </h2>
+                    <p class="mt-1 text-sm text-[var(--nord3)]">Prioridad clínica: alumnos con indicadores o alerta preventiva.</p>
+                </div>
+                <div class="p-6 space-y-5">
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="rounded-xl border border-[var(--nord4)] bg-[var(--surface-subtle)] p-3 text-center">
+                            <p class="text-2xl font-bold tabular-nums text-[var(--aurora-red)]">{{ tendencia.alumnos_con_indicador }}</p>
+                            <p class="mt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--nord3)] leading-tight">Con indicador en consulta</p>
+                        </div>
+                        <div class="rounded-xl border border-[var(--nord4)] bg-[var(--surface-subtle)] p-3 text-center">
+                            <p class="text-2xl font-bold tabular-nums text-[var(--nord0)]">{{ tendencia.alumnos_con_alerta }}</p>
+                            <p class="mt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--nord3)] leading-tight">Con alerta abierta</p>
+                        </div>
+                        <div class="rounded-xl border border-[var(--nord4)] bg-[var(--surface-subtle)] p-3 text-center">
+                            <p class="text-2xl font-bold tabular-nums text-[var(--nord10)]">{{ tendencia.alumnos_etiqueta_ideas }}</p>
+                            <p class="mt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--nord3)] leading-tight">Etiqueta Ideas Suicidas</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--nord3)]">Indicadores registrados</h3>
+                        <ul class="space-y-2.5" role="list">
+                            <li v-for="row in tendencia.por_indicador" :key="row.key">
+                                <div class="mb-1 flex items-center justify-between gap-2 text-sm">
+                                    <span class="text-[var(--nord1)]">{{ row.label }}</span>
+                                    <span class="font-semibold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
+                                </div>
+                                <div class="h-2 overflow-hidden rounded-full bg-[var(--nord5)]">
+                                    <div
+                                        class="h-full rounded-full bg-[var(--aurora-red)] transition-all duration-700 ease-out"
+                                        :style="{ width: `${(row.count / maxTendenciaIndicador) * 100}%` }"
+                                    />
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </section>
