@@ -14,6 +14,7 @@ class EncryptedFieldCast implements CastsAttributes
             return null;
         }
         $encKey = app(EncryptionContextService::class)->getKey();
+
         return $this->decryptField($value, $encKey);
     }
 
@@ -23,29 +24,32 @@ class EncryptedFieldCast implements CastsAttributes
             return null;
         }
         $encKey = app(EncryptionContextService::class)->getKey();
+
         return $this->encryptField($value, $encKey);
     }
 
     private function encryptField(string $plaintext, string $encKey): string
     {
-        $nonce      = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+        $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
         $ciphertext = sodium_crypto_secretbox($plaintext, $nonce, $encKey);
-        return base64_encode($nonce . $ciphertext);
+
+        return base64_encode($nonce.$ciphertext);
     }
 
     private function decryptField(string $encoded, string $encKey): string
     {
         $decoded = base64_decode($encoded, strict: true);
         if ($decoded === false) {
-            throw new DecryptionException("El valor cifrado del campo está malformado (base64 inválido).");
+            throw new DecryptionException('El valor cifrado del campo está malformado (base64 inválido).');
         }
-        $nonce      = substr($decoded, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+        $nonce = substr($decoded, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
         $ciphertext = substr($decoded, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
-        
-        $plaintext  = sodium_crypto_secretbox_open($ciphertext, $nonce, $encKey);
+
+        $plaintext = sodium_crypto_secretbox_open($ciphertext, $nonce, $encKey);
         if ($plaintext === false) {
-            throw new DecryptionException("No se pudo descifrar el campo. Posible corrupción o clave incorrecta.");
+            throw new DecryptionException('No se pudo descifrar el campo. Posible corrupción o clave incorrecta.');
         }
+
         return $plaintext;
     }
 }

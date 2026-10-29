@@ -2,13 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePacienteRequest;
 use App\Http\Requests\UpdatePacienteRequest;
-use App\Models\Carrera;
+use App\Http\Resources\CitaResource;
+use App\Http\Resources\PacienteResource;
+use App\Models\Area;
+use App\Models\Cita;
+use App\Models\Consulta;
+use App\Models\ContactoPaciente;
+use App\Models\Expediente;
 use App\Models\Facultad;
 use App\Models\Paciente;
-use App\Models\ContactoPaciente;
+use App\Models\Scopes\AreaScope;
+use App\Services\AlertasPreventivasService;
+use App\Services\ClinicalAccessAuditor;
 use App\Services\PacienteDatosCorreccionService;
 use App\Services\SolicitudCorreccionExpedienteService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -19,7 +29,7 @@ class PacienteController extends Controller
     /**
      * Display the search interface and handle search requests.
      */
-    public function index(Request $request): Response|\Illuminate\Http\RedirectResponse
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = auth()->user();
 
@@ -33,7 +43,7 @@ class PacienteController extends Controller
 
         if ($request->has('carnet')) {
             $validated = $request->validate([
-                'carnet' => 'required|string|size:7'
+                'carnet' => 'required|string|size:7',
             ]);
 
             // Blind index search: Exact match on non-encrypted field
@@ -41,7 +51,7 @@ class PacienteController extends Controller
 
             if ($user->hasRole('psychosocial_referent')) {
                 $query->where('creado_por_profesional_id', $user->profesional->id);
-            } elseif (!($user->hasRole('specialist') || $user->hasRole('area_coordinator'))) {
+            } elseif (! ($user->hasRole('specialist') || $user->hasRole('area_coordinator'))) {
                 $query->whereRaw('1 = 0');
             }
 
@@ -58,7 +68,7 @@ class PacienteController extends Controller
             }
 
             return redirect()->route('pacientes.index')->withErrors([
-                'carnet' => 'Expediente no encontrado o no tienes permisos para acceder a él.'
+                'carnet' => 'Expediente no encontrado o no tienes permisos para acceder a él.',
             ]);
         }
 
@@ -74,14 +84,14 @@ class PacienteController extends Controller
 
         return Inertia::render('Pacientes/Create', [
             'facultades' => $facultades,
-            'etiquetasValidas' => \App\Http\Requests\StorePacienteRequest::ETIQUETAS_VALIDAS
+            'etiquetasValidas' => StorePacienteRequest::ETIQUETAS_VALIDAS,
         ]);
     }
 
     /**
      * Store a newly created patient.
      */
-    public function store(\App\Http\Requests\StorePacienteRequest $request)
+    public function store(StorePacienteRequest $request)
     {
         $validated = $request->validated();
 
@@ -105,7 +115,7 @@ class PacienteController extends Controller
             ]);
 
             // Crear Padre
-            if (!empty($validated['padre_nombre'])) {
+            if (! empty($validated['padre_nombre'])) {
                 $esResponsable = ($validated['responsable_parentesco'] === 'Padre');
                 ContactoPaciente::create([
                     'paciente_id' => $paciente->codigo,
@@ -118,7 +128,7 @@ class PacienteController extends Controller
             }
 
             // Crear Madre
-            if (!empty($validated['madre_nombre'])) {
+            if (! empty($validated['madre_nombre'])) {
                 $esResponsable = ($validated['responsable_parentesco'] === 'Madre');
                 ContactoPaciente::create([
                     'paciente_id' => $paciente->codigo,
@@ -131,7 +141,7 @@ class PacienteController extends Controller
             }
 
             // Crear Otro Responsable
-            if ($validated['responsable_parentesco'] === 'Otro' && !empty($validated['responsable_nombre'])) {
+            if ($validated['responsable_parentesco'] === 'Otro' && ! empty($validated['responsable_nombre'])) {
                 ContactoPaciente::create([
                     'paciente_id' => $paciente->codigo,
                     'nombre_completo' => $validated['responsable_nombre'],
@@ -161,24 +171,24 @@ class PacienteController extends Controller
             $pacienteQuery->with(['expedientes' => function ($q) {
                 // Bypass seguro (ESTANDARES.md Sec 4): columnas de trazabilidad de derivación
                 // (incluye motivo cifrado; el cast descifra solo en lectura autorizada del referente).
-                $q->withoutGlobalScope(\App\Models\Scopes\AreaScope::class)
-                  ->with(['citas.citaOrigen', 'area:id,nombre'])
-                  ->select(
-                      'id',
-                      'paciente_id',
-                      'area_id',
-                      'estado',
-                      'fecha_derivacion',
-                      'motivo_derivacion',
-                      'motivo_consulta',
-                      'notas_clinicas',
-                      'diagnostico',
-                      'resultado_final',
-                      'motivo_cierre',
-                      'fecha_cierre',
-                      'created_at',
-                      'updated_at'
-                  );
+                $q->withoutGlobalScope(AreaScope::class)
+                    ->with(['citas.citaOrigen', 'area:id,nombre'])
+                    ->select(
+                        'id',
+                        'paciente_id',
+                        'area_id',
+                        'estado',
+                        'fecha_derivacion',
+                        'motivo_derivacion',
+                        'motivo_consulta',
+                        'notas_clinicas',
+                        'diagnostico',
+                        'resultado_final',
+                        'motivo_cierre',
+                        'fecha_cierre',
+                        'created_at',
+                        'updated_at'
+                    );
             }]);
         } else {
             $pacienteQuery->with(['expedientes' => function ($q) {
@@ -191,7 +201,7 @@ class PacienteController extends Controller
         // Aplicamos la política IDOR
         $this->authorize('view', $paciente);
 
-        $auditor = app(\App\Services\ClinicalAccessAuditor::class);
+        $auditor = app(ClinicalAccessAuditor::class);
         $auditor->record($user, $paciente, 'view_patient');
 
         // RP-06: auditar cada expediente efectivamente entregado en la vista.
@@ -201,7 +211,7 @@ class PacienteController extends Controller
 
         $areasDisponibles = [];
         if ($user->hasRole('psychosocial_referent')) {
-            $areasDisponibles = \App\Models\Area::select('id', 'nombre')->orderBy('nombre')->get();
+            $areasDisponibles = Area::select('id', 'nombre')->orderBy('nombre')->get();
         } else {
             $areasDisponibles = $user->areas()
                 ->get(['areas.id', 'areas.nombre'])
@@ -209,7 +219,7 @@ class PacienteController extends Controller
                 ->values();
         }
 
-        $hasAnyExpediente = \App\Models\Expediente::withoutGlobalScopes()
+        $hasAnyExpediente = Expediente::withoutGlobalScopes()
             ->where('paciente_id', $paciente->codigo)
             ->exists();
 
@@ -229,7 +239,7 @@ class PacienteController extends Controller
         $alertaPreventiva = ['activa' => false, 'total' => 0, 'umbral' => null, 'ventana_dias' => null, 'modo_calculo' => null, 'mensaje' => null];
         if ($user->hasRole('specialist') || $user->hasRole('area_coordinator')) {
             $areaExpediente = $expedienteActivo ?? $expedienteCerrado;
-            $alertaPreventiva = app(\App\Services\AlertasPreventivasService::class)
+            $alertaPreventiva = app(AlertasPreventivasService::class)
                 ->alertaPaciente(
                     $user,
                     $paciente->codigo,
@@ -250,8 +260,8 @@ class PacienteController extends Controller
         $canUpdateExpediente = $canUpdateExpedientePolicy
             && ($estadoActualizacionClinica['puede_editar'] ?? false);
         // Visible para todas las áreas autorizadas; el modal exige consulta activa para enviar.
-        $canAssignCita = $expedienteActivo ? $user->can('create', [\App\Models\Cita::class, $expedienteActivo]) : false;
-        $canCreateConsulta = $expedienteActivo ? $user->can('create', [\App\Models\Consulta::class, $expedienteActivo]) : false;
+        $canAssignCita = $expedienteActivo ? $user->can('create', [Cita::class, $expedienteActivo]) : false;
+        $canCreateConsulta = $expedienteActivo ? $user->can('create', [Consulta::class, $expedienteActivo]) : false;
 
         $citasPendientes = [];
         $canUpdateCita = false;
@@ -267,16 +277,16 @@ class PacienteController extends Controller
                 $cita->setRelation('expediente', $expedienteActivo);
             });
 
-            $citasPendientes = \App\Http\Resources\CitaResource::collection($pendientes)->resolve();
+            $citasPendientes = CitaResource::collection($pendientes)->resolve();
             $canUpdateCita = $pendientes->contains(
                 fn ($cita) => $user->can('update', $cita) || $user->can('reprogramar', $cita)
             );
 
-            $consultaActivaId = \App\Models\Consulta::activaParaExpediente($expedienteActivo)?->id;
+            $consultaActivaId = Consulta::activaParaExpediente($expedienteActivo)?->id;
         }
 
         return Inertia::render('Pacientes/Show', [
-            'paciente' => (new \App\Http\Resources\PacienteResource($paciente))->resolve(),
+            'paciente' => (new PacienteResource($paciente))->resolve(),
             'hasAnyExpediente' => $hasAnyExpediente,
             'areasDisponibles' => $areasDisponibles,
             'expedientesActivos' => $expedientesActivos->map(fn ($exp) => [
@@ -298,7 +308,7 @@ class PacienteController extends Controller
                 'assignCita' => $canAssignCita,
                 'updateCita' => $canUpdateCita,
                 'createConsulta' => $canCreateConsulta,
-                'derivar' => $user->can('derivar', [\App\Models\Expediente::class, $paciente]),
+                'derivar' => $user->can('derivar', [Expediente::class, $paciente]),
                 'updatePaciente' => $estadoCorreccionDatos['puede_editar'],
                 'solicitarCorreccionDatos' => $estadoCorreccionDatos['necesita_permiso'],
                 'solicitarActualizacionClinica' => (bool) ($estadoActualizacionClinica['necesita_permiso'] ?? false),

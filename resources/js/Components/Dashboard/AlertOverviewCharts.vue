@@ -60,6 +60,8 @@ function formatDate(dateStr) {
     return formatLocalDate(dateStr, { year: 'numeric', month: 'short', day: 'numeric' }, 'es-ES', '-');
 }
 
+const countLabel = (count) => count === null ? 'Protegido' : count;
+
 const visible = computed(() => Boolean(props.overview?.visible));
 const revealCarnets = computed(() => Boolean(props.overview?.reveal_carnets));
 const scopeLabel = computed(() =>
@@ -112,7 +114,7 @@ const niceAxisMax = (value) => {
 };
 
 const facultad3dChart = computed(() => {
-    const rows = tendencia.value.por_facultad || [];
+    const rows = (tendencia.value.por_facultad || []).filter((row) => row.count !== null);
     const plotLeft = 36;
     const plotRight = 16;
     const plotTop = 28;
@@ -222,6 +224,7 @@ const donutSegments = computed(() => {
 
 <template>
     <div v-if="visible" class="space-y-6">
+        <p v-if="overview.privacidad_protegida" role="status" class="text-sm text-[var(--nord3)]">Los desgloses con grupos pequeños y sus totales relacionados se protegen para evitar la identificación de personas.</p>
         <section
             aria-labelledby="dashboard-alertas-title"
             class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden animate-fade-in"
@@ -235,7 +238,7 @@ const donutSegments = computed(() => {
                         Alertas preventivas
                     </h2>
                     <p class="mt-1 text-sm text-[var(--nord3)]">
-                        Resumen {{ scopeLabel }} · {{ overview.abiertas }} abiertas de {{ overview.total }} registradas
+                        Resumen {{ scopeLabel }} · {{ countLabel(overview.abiertas) }} abiertas de {{ countLabel(overview.total) }} registradas
                         <span v-if="!revealCarnets" class="text-[var(--nord3)]"> · sin carnets</span>
                     </p>
                 </div>
@@ -252,7 +255,7 @@ const donutSegments = computed(() => {
             <div class="grid grid-cols-1 gap-6 p-6 lg:grid-cols-3">
                 <div class="flex flex-col items-center gap-4 sm:flex-row sm:items-start lg:flex-col lg:items-center">
                     <div class="relative h-40 w-40 shrink-0">
-                        <svg viewBox="0 0 100 100" class="h-full w-full -rotate-90" role="img" :aria-label="`Distribución por estado: ${overview.total} alertas`">
+                        <svg viewBox="0 0 100 100" class="h-full w-full -rotate-90" role="img" :aria-label="`Distribución por estado: ${countLabel(overview.total)} alertas`">
                             <circle cx="50" cy="50" r="40" fill="none" stroke="var(--nord5)" stroke-width="12" />
                             <circle
                                 v-for="segment in donutSegments"
@@ -269,7 +272,7 @@ const donutSegments = computed(() => {
                             />
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <span class="text-2xl font-bold tabular-nums text-[var(--nord0)]">{{ overview.total }}</span>
+                            <span class="text-2xl font-bold tabular-nums text-[var(--nord0)]">{{ countLabel(overview.total) }}</span>
                             <span class="text-[10px] uppercase tracking-wide text-[var(--nord3)]">Total</span>
                         </div>
                     </div>
@@ -279,7 +282,7 @@ const donutSegments = computed(() => {
                                 <span class="h-2.5 w-2.5 rounded-full shrink-0" :style="{ background: ESTADO_COLORS[row.key] || 'var(--nord10)' }" />
                                 {{ row.label }}
                             </span>
-                            <span class="font-semibold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
+                            <span class="font-semibold tabular-nums text-[var(--nord0)]">{{ countLabel(row.count) }}</span>
                         </li>
                     </ul>
                 </div>
@@ -290,7 +293,7 @@ const donutSegments = computed(() => {
                         <li v-for="row in overview.por_senal" :key="row.key">
                             <div class="mb-1 flex items-center justify-between gap-2 text-sm">
                                 <span class="truncate text-[var(--nord1)]">{{ row.label }}</span>
-                                <span class="shrink-0 font-semibold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
+                                <span class="shrink-0 font-semibold tabular-nums text-[var(--nord0)]">{{ countLabel(row.count) }}</span>
                             </div>
                             <div class="h-2 overflow-hidden rounded-full bg-[var(--nord5)]" role="presentation">
                                 <div
@@ -338,7 +341,7 @@ const donutSegments = computed(() => {
                         </li>
                     </ul>
                     <p v-else class="rounded-xl border border-dashed border-[var(--nord4)] bg-[var(--surface-subtle)] px-4 py-6 text-center text-sm text-[var(--nord3)]">
-                        No hay alertas activas pendientes.
+                        {{ !revealCarnets ? 'El detalle individual está reservado al personal clínico autorizado.' : 'No hay alertas activas pendientes.' }}
                     </p>
                 </div>
             </div>
@@ -357,7 +360,7 @@ const donutSegments = computed(() => {
                     <li v-for="(row, idx) in etiquetasConDatos" :key="row.key">
                         <div class="mb-1 flex items-center justify-between gap-2 text-sm">
                             <span class="truncate text-[var(--nord1)]">{{ row.label }}</span>
-                            <span class="shrink-0 font-semibold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
+                            <span class="shrink-0 font-semibold tabular-nums text-[var(--nord0)]">{{ countLabel(row.count) }}</span>
                         </div>
                         <div class="h-2.5 overflow-hidden rounded-full bg-[var(--nord5)]">
                             <div
@@ -370,7 +373,7 @@ const donutSegments = computed(() => {
                         </div>
                     </li>
                 </ul>
-                <p v-else class="text-sm text-[var(--nord3)]">Aún no hay etiquetas registradas en expedientes.</p>
+                <p v-else class="text-sm text-[var(--nord3)]">{{ overview.por_etiqueta?.some((row) => row.count === null) ? 'Desglose protegido por privacidad.' : 'Aún no hay etiquetas registradas en expedientes.' }}</p>
             </div>
         </section>
 
@@ -389,7 +392,7 @@ const donutSegments = computed(() => {
                     </p>
                 </div>
                 <div class="flex items-baseline gap-2 rounded-2xl border border-[var(--nord4)] bg-[var(--surface-subtle)] px-5 py-3">
-                    <span class="text-3xl font-bold tabular-nums text-[var(--nord0)]">{{ tendencia.total_alumnos }}</span>
+                    <span class="text-3xl font-bold tabular-nums text-[var(--nord0)]">{{ countLabel(tendencia.total_alumnos) }}</span>
                     <span class="text-xs font-medium text-[var(--nord3)]">alumnos</span>
                 </div>
             </div>
@@ -501,7 +504,7 @@ const donutSegments = computed(() => {
                         </div>
                     </div>
                     <p v-else class="rounded-xl border border-dashed border-[var(--nord4)] px-4 py-10 text-center text-sm text-[var(--nord3)]">
-                        Sin casos de tendencia suicida.
+                        {{ tendencia.total_alumnos === null ? 'Desglose protegido por privacidad.' : 'Sin casos de tendencia suicida.' }}
                     </p>
                 </div>
 
@@ -522,12 +525,12 @@ const donutSegments = computed(() => {
                                     <p class="text-sm font-medium leading-snug text-[var(--nord0)]">{{ row.label }}</p>
                                     <p class="mt-0.5 text-[11px] leading-snug text-[var(--nord3)]">{{ row.facultad_label }}</p>
                                 </div>
-                                <span class="shrink-0 text-sm font-bold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
+                                <span class="shrink-0 text-sm font-bold tabular-nums text-[var(--nord0)]">{{ countLabel(row.count) }}</span>
                             </div>
                             <div class="h-1.5 overflow-hidden rounded-full bg-[var(--nord5)]">
                                 <div
                                     class="h-full rounded-full bg-[var(--frost3)] transition-all duration-700 ease-out"
-                                    :style="{ width: `${Math.max(8, (row.count / maxCarreraCount) * 100)}%` }"
+                                    :style="{ width: `${row.count === null ? 0 : Math.max(8, (row.count / maxCarreraCount) * 100)}%` }"
                                 />
                             </div>
                         </li>

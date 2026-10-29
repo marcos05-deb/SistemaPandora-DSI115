@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Area;
+use Illuminate\Database\Seeder;
 
 class AreaSeeder extends Seeder
 {

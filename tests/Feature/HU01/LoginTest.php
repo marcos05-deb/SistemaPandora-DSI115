@@ -2,9 +2,7 @@
 
 use App\Models\Especialista;
 use App\Services\Crypto\KeyDerivationService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 
 /**
  * Tests de HU-01: Autenticación JWT y Criptografía Base.
@@ -19,16 +17,15 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
  * - Tras 3 intentos fallidos, el 4° intento bloquea la cuenta.
  * - Login exitoso resetea el contador de intentos fallidos.
  */
-
 beforeEach(function () {
-    $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
-    
-    $this->kdfService = new KeyDerivationService();
+    $this->withoutMiddleware(PreventRequestForgery::class);
+
+    $this->kdfService = new KeyDerivationService;
     $this->testPassword = 'P@ssw0rd_Segura14';
     $this->testSalt = $this->kdfService->generateSalt();
 
     $this->especialista = Especialista::create([
-        'email'    => 'dr.martinez@clinica.org',
+        'email' => 'dr.martinez@clinica.org',
         'password' => $this->testPassword,
         'kdf_salt' => $this->testSalt,
     ]);
@@ -36,7 +33,7 @@ beforeEach(function () {
 
 it('permite_login_con_credenciales_validas', function () {
     $response = $this->post('/login', [
-        'email'    => 'dr.martinez@clinica.org',
+        'email' => 'dr.martinez@clinica.org',
         'password' => $this->testPassword,
     ]);
 
@@ -46,7 +43,7 @@ it('permite_login_con_credenciales_validas', function () {
 
 it('emite_cookie_jwt_tras_login_exitoso', function () {
     $response = $this->post('/login', [
-        'email'    => 'dr.martinez@clinica.org',
+        'email' => 'dr.martinez@clinica.org',
         'password' => $this->testPassword,
     ]);
 
@@ -57,7 +54,7 @@ it('emite_cookie_jwt_tras_login_exitoso', function () {
 
 it('cookie_jwt_tiene_expiracion_de_8_horas', function () {
     $response = $this->post('/login', [
-        'email'    => 'dr.martinez@clinica.org',
+        'email' => 'dr.martinez@clinica.org',
         'password' => $this->testPassword,
     ]);
 
@@ -72,7 +69,7 @@ it('cookie_jwt_tiene_expiracion_de_8_horas', function () {
 
 it('almacena_sym_key_en_sesion_tras_login', function () {
     $this->post('/login', [
-        'email'    => 'dr.martinez@clinica.org',
+        'email' => 'dr.martinez@clinica.org',
         'password' => $this->testPassword,
     ]);
 
@@ -85,7 +82,7 @@ it('almacena_sym_key_en_sesion_tras_login', function () {
 
 it('clave_derivada_tiene_32_bytes', function () {
     $this->post('/login', [
-        'email'    => 'dr.martinez@clinica.org',
+        'email' => 'dr.martinez@clinica.org',
         'password' => $this->testPassword,
     ]);
 
@@ -98,7 +95,7 @@ it('clave_derivada_tiene_32_bytes', function () {
 
 it('retorna_error_con_credenciales_invalidas', function () {
     $response = $this->post('/login', [
-        'email'    => 'dr.martinez@clinica.org',
+        'email' => 'dr.martinez@clinica.org',
         'password' => 'contraseña_incorrecta',
     ]);
 
@@ -108,7 +105,7 @@ it('retorna_error_con_credenciales_invalidas', function () {
 
 it('no_revela_si_email_existe_con_credenciales_invalidas', function () {
     $response = $this->post('/login', [
-        'email'    => 'noexiste@clinica.org',
+        'email' => 'noexiste@clinica.org',
         'password' => 'cualquier_cosa',
     ]);
 
@@ -118,7 +115,7 @@ it('no_revela_si_email_existe_con_credenciales_invalidas', function () {
 
 it('valida_campos_requeridos', function () {
     $response = $this->post('/login', [
-        'email'    => '',
+        'email' => '',
         'password' => '',
     ]);
 
@@ -128,7 +125,7 @@ it('valida_campos_requeridos', function () {
 it('bloquea_cuenta_tras_3_intentos_fallidos', function () {
     for ($i = 0; $i < 3; $i++) {
         $this->post('/login', [
-            'email'    => 'dr.martinez@clinica.org',
+            'email' => 'dr.martinez@clinica.org',
             'password' => 'contraseña_incorrecta',
         ]);
     }
@@ -138,7 +135,7 @@ it('bloquea_cuenta_tras_3_intentos_fallidos', function () {
 
     $response = $this->withHeaders(['Referer' => '/login'])
         ->post('/login', [
-            'email'    => 'dr.martinez@clinica.org',
+            'email' => 'dr.martinez@clinica.org',
             'password' => $this->testPassword,
         ]);
 
@@ -149,7 +146,7 @@ it('bloquea_cuenta_tras_3_intentos_fallidos', function () {
 
 it('login_exitoso_resetea_intentos_fallidos', function () {
     $this->post('/login', [
-        'email'    => 'dr.martinez@clinica.org',
+        'email' => 'dr.martinez@clinica.org',
         'password' => 'contraseña_incorrecta',
     ]);
 
@@ -157,7 +154,7 @@ it('login_exitoso_resetea_intentos_fallidos', function () {
     expect($this->especialista->failed_login_attempts)->toBe(1);
 
     $this->post('/login', [
-        'email'    => 'dr.martinez@clinica.org',
+        'email' => 'dr.martinez@clinica.org',
         'password' => $this->testPassword,
     ]);
 
@@ -168,13 +165,13 @@ it('login_exitoso_resetea_intentos_fallidos', function () {
 
 it('genera_kdf_salt_si_especialista_no_tiene', function () {
     $especialista = Especialista::create([
-        'email'    => 'nuevo@clinica.org',
+        'email' => 'nuevo@clinica.org',
         'password' => $this->testPassword,
         'kdf_salt' => null,
     ]);
 
     $this->post('/login', [
-        'email'    => 'nuevo@clinica.org',
+        'email' => 'nuevo@clinica.org',
         'password' => $this->testPassword,
     ]);
 

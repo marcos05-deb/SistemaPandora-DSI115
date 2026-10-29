@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Especialista;
-use App\Models\Role;
 use App\Models\Area;
+use App\Models\Especialista;
 use App\Models\Profesional;
+use App\Models\Role;
+use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Administrador', 'password' => 'password_segura', 'must_change_password' => false]
         );
         $sysadminRole = Role::where('slug', 'sysadmin')->first();
-        if ($sysadminRole && !$admin->roles()->where('role_id', $sysadminRole->id)->exists()) {
+        if ($sysadminRole && ! $admin->roles()->where('role_id', $sysadminRole->id)->exists()) {
             $admin->roles()->attach($sysadminRole);
         }
 
@@ -103,7 +103,7 @@ class DatabaseSeeder extends Seeder
         );
 
         $role = Role::where('slug', $roleSlug)->first();
-        if ($role && !$user->roles()->where('role_id', $role->id)->exists()) {
+        if ($role && ! $user->roles()->where('role_id', $role->id)->exists()) {
             $user->roles()->attach($role);
         }
 

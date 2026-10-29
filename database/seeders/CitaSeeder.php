@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Cita;
 use App\Models\Consulta;
 use App\Models\Expediente;
 use App\Models\Profesional;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class CitaSeeder extends Seeder
 {
@@ -17,19 +17,21 @@ class CitaSeeder extends Seeder
         $expedientes = Expediente::all();
         if ($expedientes->count() < 3) {
             $this->command->warn('No hay suficientes expedientes activos. Asegúrese de correr ExpedienteSeeder primero.');
+
             return;
         }
 
         // 2. Obtener Profesionales para probar aislamiento
         // Coordinador (Psicología)
-        $coord = Profesional::whereHas('especialista', fn($q) => $q->where('email', 'coordinador@pandora.com'))->first();
+        $coord = Profesional::whereHas('especialista', fn ($q) => $q->where('email', 'coordinador@pandora.com'))->first();
         // Especialista (Psicología)
-        $espPsi1 = Profesional::whereHas('especialista', fn($q) => $q->where('email', 'especialista-psi@pandora.com'))->first();
+        $espPsi1 = Profesional::whereHas('especialista', fn ($q) => $q->where('email', 'especialista-psi@pandora.com'))->first();
         // Especialista de otra área (Medicina General)
-        $espMed = Profesional::whereHas('especialista', fn($q) => $q->where('email', 'especialista@pandora.com'))->first();
+        $espMed = Profesional::whereHas('especialista', fn ($q) => $q->where('email', 'especialista@pandora.com'))->first();
 
-        if (!$coord || !$espPsi1 || !$espMed) {
+        if (! $coord || ! $espPsi1 || ! $espMed) {
             $this->command->warn('Faltan profesionales en la base de datos.');
+
             return;
         }
 
@@ -39,6 +41,7 @@ class CitaSeeder extends Seeder
 
         if ($expPsi->count() < 2 || $expMed->count() < 2) {
             $this->command->warn('No hay suficientes expedientes en las áreas específicas.');
+
             return;
         }
 
@@ -81,7 +84,7 @@ class CitaSeeder extends Seeder
 
     private function crearCita($expediente, $profesional, $estado, $fecha, $motivo, $registrarAsistencia = false, $crearConsulta = false)
     {
-        $cita = new Cita();
+        $cita = new Cita;
         $cita->expediente_id = $expediente->id;
         $cita->profesional_id = $profesional->id;
         $cita->profesional_user_id = $profesional->user_id;

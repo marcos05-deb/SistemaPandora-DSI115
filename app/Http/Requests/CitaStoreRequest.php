@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Models\Cita;
 use App\Models\Consulta;
 use App\Models\Expediente;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -20,7 +21,7 @@ class CitaStoreRequest extends FormRequest
             return false;
         }
 
-        return $this->user()->can('create', [\App\Models\Cita::class, $expediente]);
+        return $this->user()->can('create', [Cita::class, $expediente]);
     }
 
     /**

@@ -12,7 +12,7 @@ class AreaFactory extends Factory
     public function definition(): array
     {
         return [
-            'nombre' => $this->faker->unique()->word() . ' Clínica',
+            'nombre' => $this->faker->unique()->word().' Clínica',
             'requiere_aprobacion_estricta' => false,
         ];
     }

@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\IndexCitasRequest;
 use App\Http\Requests\CitasPorDiaRequest;
+use App\Http\Requests\IndexCitasRequest;
 use App\Http\Resources\AdminCitaResource;
 use App\Http\Resources\CitaGridResource;
 use App\Models\Cita;
+use App\Models\Scopes\AreaScope;
 use Carbon\CarbonImmutable;
 use Inertia\Inertia;
 
@@ -17,9 +18,9 @@ class CitaController extends Controller
     {
         // Si no vienen parámetros, por defecto mandamos mes actual +/- padding
         // Pero lo normal es que Vue mande start y end. Si no vienen, Vue los pedirá inmediatamente.
-        if (!$request->has('start') || !$request->has('end')) {
+        if (! $request->has('start') || ! $request->has('end')) {
             return Inertia::render('Admin/Citas/Index', [
-                'citasBase' => []
+                'citasBase' => [],
             ]);
         }
 
@@ -31,12 +32,12 @@ class CitaController extends Controller
             ->endOfDay()
             ->setTimezone('UTC');
 
-        $citas = Cita::withoutGlobalScope(\App\Models\Scopes\AreaScope::class)
+        $citas = Cita::withoutGlobalScope(AreaScope::class)
             ->whereBetween('fecha_hora', [$start, $end])
             ->get();
 
         return Inertia::render('Admin/Citas/Index', [
-            'citasBase' => CitaGridResource::collection($citas)->resolve()
+            'citasBase' => CitaGridResource::collection($citas)->resolve(),
         ]);
     }
 
@@ -50,7 +51,7 @@ class CitaController extends Controller
             ->endOfDay()
             ->setTimezone('UTC');
 
-        $citas = Cita::withoutGlobalScope(\App\Models\Scopes\AreaScope::class)
+        $citas = Cita::withoutGlobalScope(AreaScope::class)
             ->with(['expediente.paciente.carrera.facultad', 'profesional.especialista', 'area'])
             ->whereBetween('fecha_hora', [$start, $end])
             ->orderBy('fecha_hora')

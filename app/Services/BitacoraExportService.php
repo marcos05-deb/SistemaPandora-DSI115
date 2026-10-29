@@ -77,21 +77,24 @@ final class BitacoraExportService
                 'accion', 'objeto_tipo', 'objeto_id', 'ip', 'ruta', 'campos',
             ]);
 
-            foreach ($this->bitacora->mapear($this->bitacora->consulta($filtros, $corteEn)->get()) as $row) {
-                fputcsv($handle, [
-                    $this->csvCell((string) $row['id']),
-                    $this->csvCell((string) $row['fecha']),
-                    $this->csvCell((string) ($row['usuario']['id'] ?? '')),
-                    $this->csvCell((string) ($row['usuario']['nombre'] ?? '')),
-                    $this->csvCell((string) ($row['usuario']['rol'] ?? '')),
-                    $this->csvCell((string) $row['accion']),
-                    $this->csvCell((string) $row['objeto_tipo']),
-                    $this->csvCell((string) $row['objeto_id']),
-                    $this->csvCell((string) ($row['ip'] ?? '')),
-                    $this->csvCell((string) ($row['ruta'] ?? '')),
-                    $this->csvCell(implode('|', $row['campos'])),
-                ]);
-            }
+            // Keep HU-22's stable (created_at, id) order; map users per bounded page.
+            $this->bitacora->consulta($filtros, $corteEn)->chunk(500, function ($eventos) use ($handle): void {
+                foreach ($this->bitacora->mapear($eventos) as $row) {
+                    fputcsv($handle, [
+                        $this->csvCell((string) $row['id']),
+                        $this->csvCell((string) $row['fecha']),
+                        $this->csvCell((string) ($row['usuario']['id'] ?? '')),
+                        $this->csvCell((string) ($row['usuario']['nombre'] ?? '')),
+                        $this->csvCell((string) ($row['usuario']['rol'] ?? '')),
+                        $this->csvCell((string) $row['accion']),
+                        $this->csvCell((string) $row['objeto_tipo']),
+                        $this->csvCell((string) $row['objeto_id']),
+                        $this->csvCell((string) ($row['ip'] ?? '')),
+                        $this->csvCell((string) ($row['ruta'] ?? '')),
+                        $this->csvCell(implode('|', $row['campos'])),
+                    ]);
+                }
+            });
 
             fclose($handle);
             $handle = null;

@@ -21,17 +21,17 @@ class AuthenticateJwt
         }
 
         $token = $request->cookie('pandora_token');
-        if (!$token) {
+        if (! $token) {
             return redirect()->route('login');
         }
 
         $userId = $this->jwt->validate($token);
-        if (!$userId) {
+        if (! $userId) {
             return $this->clearAndRedirect();
         }
 
         $user = Especialista::find($userId);
-        if (!$user || !$user->is_active) {
+        if (! $user || ! $user->is_active) {
             return $this->clearAndRedirect();
         }
 

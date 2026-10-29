@@ -1,15 +1,15 @@
 <?php
 
 use App\Services\Crypto\KeyDerivationService;
+use Tests\TestCase;
 
-uses(Tests\TestCase::class);
+uses(TestCase::class);
 
 /**
  * Tests unitarios del KeyDerivationService — HU-01.
  */
-
 it('genera_sal_de_longitud_correcta', function () {
-    $service = new KeyDerivationService();
+    $service = new KeyDerivationService;
     $saltBase64 = $service->generateSalt();
     $salt = base64_decode($saltBase64, strict: true);
 
@@ -18,7 +18,7 @@ it('genera_sal_de_longitud_correcta', function () {
 });
 
 it('deriva_clave_de_32_bytes', function () {
-    $service = new KeyDerivationService();
+    $service = new KeyDerivationService;
     $salt = random_bytes(SODIUM_CRYPTO_PWHASH_SALTBYTES);
     $key = $service->derive('password_segura_14', $salt);
 
@@ -26,7 +26,7 @@ it('deriva_clave_de_32_bytes', function () {
 });
 
 it('misma_password_y_sal_producen_misma_clave', function () {
-    $service = new KeyDerivationService();
+    $service = new KeyDerivationService;
     $salt = random_bytes(SODIUM_CRYPTO_PWHASH_SALTBYTES);
     $password = 'password_consistente';
 
@@ -37,7 +37,7 @@ it('misma_password_y_sal_producen_misma_clave', function () {
 });
 
 it('distinta_sal_produce_distinta_clave', function () {
-    $service = new KeyDerivationService();
+    $service = new KeyDerivationService;
     $password = 'misma_password';
 
     $salt1 = random_bytes(SODIUM_CRYPTO_PWHASH_SALTBYTES);

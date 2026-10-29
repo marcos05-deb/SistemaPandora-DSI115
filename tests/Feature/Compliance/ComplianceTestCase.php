@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Compliance;
 
-use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 abstract class ComplianceTestCase extends TestCase
 {

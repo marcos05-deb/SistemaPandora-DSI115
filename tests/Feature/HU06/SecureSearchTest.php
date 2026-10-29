@@ -2,31 +2,39 @@
 
 namespace Tests\Feature\HU06;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Models\Especialista;
-use App\Models\Role;
 use App\Models\Area;
-use App\Models\Expediente;
+use App\Models\Especialista;
 use App\Models\Paciente;
+use App\Models\Role;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Tests\TestCase;
 
 class SecureSearchTest extends TestCase
 {
     use RefreshDatabase;
 
     private Area $areaPsico;
+
     private Area $areaMed;
+
     private Especialista $especialistaPsico;
+
     private Especialista $especialistaMed;
+
     private Especialista $referent;
+
     private Paciente $pacienteEnPsico;
+
     private Paciente $pacienteEnMed;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Match the authenticated session shape used by LoginController and the real field casts.
+        $this->withSession(['_sym_key' => base64_encode(str_repeat('s', SODIUM_CRYPTO_SECRETBOX_KEYBYTES))]);
 
         // Areas
         $this->areaPsico = Area::forceCreate(['id' => 1, 'nombre' => 'Psicologia', 'requiere_aprobacion_estricta' => false]);
@@ -93,10 +101,10 @@ class SecureSearchTest extends TestCase
             'numero_registro' => 'TS-001',
         ]);
 
-        $uuidPsico = Str::uuid();
-        $uuidMed = Str::uuid();
+        $uuidPsico = (string) Str::uuid();
+        $uuidMed = (string) Str::uuid();
 
-        DB::table('pacientes')->insert([
+        $this->pacienteEnPsico = Paciente::forceCreate([
             'codigo' => $uuidPsico,
             'carnet' => 'AB12345',
             'carrera_id' => 1,
@@ -106,7 +114,7 @@ class SecureSearchTest extends TestCase
             'fecha_nacimiento' => '2000-01-01',
         ]);
 
-        DB::table('pacientes')->insert([
+        $this->pacienteEnMed = Paciente::forceCreate([
             'codigo' => $uuidMed,
             'carnet' => 'XY67890',
             'carrera_id' => 1,
@@ -128,8 +136,6 @@ class SecureSearchTest extends TestCase
             'area_id' => $this->areaMed->id,
         ]);
 
-        $this->pacienteEnPsico = Paciente::find($uuidPsico);
-        $this->pacienteEnMed = Paciente::find($uuidMed);
     }
 
     protected function migrateFreshUsing()
@@ -144,32 +150,31 @@ class SecureSearchTest extends TestCase
     public function test_secure_search_page_renders_for_specialist(): void
     {
         $this->actingAs($this->especialistaPsico)
-             ->get('/busqueda-segura')
-             ->assertStatus(200)
-             ->assertInertia(fn ($page) => $page->component('SecureSearch/Index'));
+            ->get('/busqueda-segura')
+            ->assertStatus(200)
+            ->assertInertia(fn ($page) => $page->component('SecureSearch/Index'));
     }
 
     public function test_specialist_finds_patient_in_own_area_by_uuid(): void
     {
         $this->actingAs($this->especialistaPsico)
-             ->post('/busqueda-segura', [
-                 'code' => $this->pacienteEnPsico->codigo,
-             ])
-             ->assertStatus(200)
-             ->assertInertia(fn ($page) => 
-                 $page->where('results.found', true)
-                      ->where('results.code', $this->pacienteEnPsico->codigo)
-             );
+            ->post('/busqueda-segura', [
+                'code' => $this->pacienteEnPsico->codigo,
+            ])
+            ->assertStatus(200)
+            ->assertInertia(fn ($page) => $page->where('results.found', true)
+                ->where('results.code', $this->pacienteEnPsico->codigo)
+            );
     }
 
     public function test_specialist_cannot_find_patient_outside_area(): void
     {
         $this->actingAs($this->especialistaPsico)
-             ->post('/busqueda-segura', [
-                 'code' => $this->pacienteEnMed->codigo,
-             ])
-             ->assertRedirect()
-             ->assertSessionHasErrors('code');
+            ->post('/busqueda-segura', [
+                'code' => $this->pacienteEnMed->codigo,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('code');
     }
 
     public function test_specialist_cannot_find_nonexistent_uuid(): void
@@ -177,35 +182,38 @@ class SecureSearchTest extends TestCase
         $uuid = Str::uuid();
 
         $this->actingAs($this->especialistaPsico)
-             ->post('/busqueda-segura', [
-                 'code' => $uuid,
-             ])
-             ->assertRedirect()
-             ->assertSessionHasErrors('code');
+            ->post('/busqueda-segura', [
+                'code' => $uuid,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('code');
     }
 
     public function test_invalid_uuid_format_returns_validation_error(): void
     {
         $this->actingAs($this->especialistaPsico)
-             ->post('/busqueda-segura', [
-                 'code' => 'not-a-valid-uuid',
-             ])
-             ->assertRedirect()
-             ->assertSessionHasErrors('code');
+            ->post('/busqueda-segura', [
+                'code' => 'not-a-valid-uuid',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('code');
     }
 
     public function test_specialist_can_view_patient_details_in_own_area(): void
     {
+        expect(DB::table('pacientes')->where('codigo', $this->pacienteEnPsico->codigo)->value('fecha_nacimiento'))
+            ->not->toBe('2000-01-01');
+
         $this->actingAs($this->especialistaPsico)
-             ->get('/pacientes/' . $this->pacienteEnPsico->carnet)
-             ->assertStatus(200);
+            ->get('/pacientes/'.$this->pacienteEnPsico->carnet)
+            ->assertStatus(200);
     }
 
     public function test_specialist_cannot_view_patient_details_outside_area(): void
     {
         $this->actingAs($this->especialistaPsico)
-             ->get('/pacientes/' . $this->pacienteEnMed->carnet)
-             ->assertStatus(403);
+            ->get('/pacientes/'.$this->pacienteEnMed->carnet)
+            ->assertStatus(403);
     }
 
     public function test_referent_can_find_patients_by_uuid(): void
@@ -215,12 +223,11 @@ class SecureSearchTest extends TestCase
         ]);
 
         $this->actingAs($this->referent)
-             ->post('/busqueda-segura', [
-                 'code' => $this->pacienteEnPsico->codigo,
-             ])
-             ->assertStatus(200)
-             ->assertInertia(fn ($page) => 
-                 $page->where('results.found', true)
-             );
+            ->post('/busqueda-segura', [
+                'code' => $this->pacienteEnPsico->codigo,
+            ])
+            ->assertStatus(200)
+            ->assertInertia(fn ($page) => $page->where('results.found', true)
+            );
     }
 }

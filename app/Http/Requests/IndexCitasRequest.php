@@ -2,8 +2,9 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
 
 class IndexCitasRequest extends FormRequest
 {
@@ -18,7 +19,7 @@ class IndexCitasRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -34,7 +35,7 @@ class IndexCitasRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            if (!$validator->failed() && $this->has('start') && $this->has('end')) {
+            if (! $validator->failed() && $this->has('start') && $this->has('end')) {
                 $start = CarbonImmutable::createFromFormat('Y-m-d', $this->start);
                 $end = CarbonImmutable::createFromFormat('Y-m-d', $this->end);
 

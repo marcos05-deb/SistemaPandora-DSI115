@@ -2,13 +2,9 @@
 
 namespace Tests\Feature\HU05;
 
-use App\Models\Especialista;
-use App\Models\Paciente;
-use App\Models\ContactoPaciente;
-use App\Models\Expediente;
-use App\Models\Area;
-use App\Services\Crypto\EncryptionContextService;
 use App\Exceptions\DecryptionException;
+use App\Models\Area;
+use App\Models\Paciente;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -20,7 +16,7 @@ class EncryptionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
         $this->artisan('db:seed', ['--class' => 'AreaSeeder']);
     }
@@ -28,7 +24,7 @@ class EncryptionTest extends TestCase
     public function test_encrypted_field_cast_encrypts_and_decrypts_data()
     {
         $area = Area::first();
-        
+
         $userId = DB::table('users')->insertGetId([
             'name' => 'Test User',
             'email' => 'test@example.com',
@@ -52,7 +48,7 @@ class EncryptionTest extends TestCase
             'facultad_id' => $facultadId,
             'nombre' => 'Test Carrera',
         ]);
-        
+
         // Mock session key
         $key = random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
         session()->put('_sym_key', base64_encode($key));
@@ -76,7 +72,7 @@ class EncryptionTest extends TestCase
 
         // Verify decryption throws exception if session key is missing
         session()->forget('_sym_key');
-        
+
         $this->expectException(DecryptionException::class);
         $paciente->refresh();
         $dummy = $paciente->fecha_nacimiento;

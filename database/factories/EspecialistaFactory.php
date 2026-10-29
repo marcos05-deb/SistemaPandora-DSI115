@@ -8,7 +8,6 @@ use App\Models\Profesional;
 use App\Models\Role;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class EspecialistaFactory extends Factory
 {
@@ -32,11 +31,11 @@ class EspecialistaFactory extends Factory
      * Crea el perfil profesional asociado al Especialista.
      * Si no se proporciona un Área, crea una genérica.
      */
-    public function withProfesional(Area $area = null): self
+    public function withProfesional(?Area $area = null): self
     {
         return $this->afterCreating(function (Especialista $especialista) use ($area) {
             $areaToAssign = $area ?? Area::factory()->create();
-            
+
             Profesional::factory()->create([
                 'user_id' => $especialista->id,
                 'area_id' => $areaToAssign->id,
@@ -58,7 +57,7 @@ class EspecialistaFactory extends Factory
                     ['nombre' => ucfirst(str_replace('_', ' ', $roleOrSlug)), 'nivel' => 10]
                 );
             }
-            
+
             $especialista->roles()->syncWithoutDetaching([$role->id]);
         });
     }

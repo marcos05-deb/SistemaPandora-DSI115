@@ -16,10 +16,10 @@ return [
     ],
 
     'argon' => [
-        'memory'  => env('HASH_ARGON_MEMORY', 65536), // 64 MB
+        'memory' => env('HASH_ARGON_MEMORY', 65536), // 64 MB
         'threads' => env('HASH_ARGON_THREADS', 1),
-        'time'    => env('HASH_ARGON_TIME', 4),
-        'verify'  => true,
+        'time' => env('HASH_ARGON_TIME', 4),
+        'verify' => true,
     ],
 
     'kdf' => [

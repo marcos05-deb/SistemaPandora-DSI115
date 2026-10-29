@@ -1,6 +1,12 @@
 <?php
 
 use App\Exceptions\DecryptionException;
+use App\Http\Middleware\EnforceAreaScope;
+use App\Http\Middleware\EnsureIsSysadmin;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequirePasswordChange;
+use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\SecurityHeadersMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,16 +26,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
 
         $middleware->web(append: [
-            \App\Http\Middleware\SecurityHeadersMiddleware::class,
-            \App\Http\Middleware\HandleInertiaRequests::class,
+            SecurityHeadersMiddleware::class,
+            HandleInertiaRequests::class,
         ]);
 
         // Alias para uso en rutas
         $middleware->alias([
-            'enforce_area_scope' => \App\Http\Middleware\EnforceAreaScope::class,
-            'sysadmin' => \App\Http\Middleware\EnsureIsSysadmin::class,
-            'require_password_change' => \App\Http\Middleware\RequirePasswordChange::class,
-            'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'enforce_area_scope' => EnforceAreaScope::class,
+            'sysadmin' => EnsureIsSysadmin::class,
+            'require_password_change' => RequirePasswordChange::class,
+            'role' => RoleMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -45,7 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
             ]);
         });
 
-        $exceptions->respond(function (Response $response, \Throwable $exception, Request $request) {
+        $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
             $status = $response->getStatusCode();
             $handled = [403, 404, 419, 429, 500, 503];
 

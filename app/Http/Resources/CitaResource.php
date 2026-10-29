@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Exceptions\DecryptionException;
+use App\Models\Paciente;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -89,7 +90,7 @@ class CitaResource extends JsonResource
         ];
     }
 
-    private function decryptPacienteNombre(?\App\Models\Paciente $paciente): ?string
+    private function decryptPacienteNombre(?Paciente $paciente): ?string
     {
         if (! $paciente) {
             return null;

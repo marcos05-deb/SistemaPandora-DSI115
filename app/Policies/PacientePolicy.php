@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Especialista;
 use App\Models\Paciente;
-use Illuminate\Auth\Access\Response;
 
 class PacientePolicy
 {
@@ -13,8 +12,8 @@ class PacientePolicy
      */
     public function viewAny(Especialista $especialista): bool
     {
-        return $especialista->hasRole('psychosocial_referent') || 
-               $especialista->hasRole('specialist') || 
+        return $especialista->hasRole('psychosocial_referent') ||
+               $especialista->hasRole('specialist') ||
                $especialista->hasRole('area_coordinator');
     }
 

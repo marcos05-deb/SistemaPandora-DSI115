@@ -30,7 +30,7 @@ class DerivacionService
                     ]);
                 }
 
-                $expediente = new Expediente();
+                $expediente = new Expediente;
                 $expediente->paciente_id = $paciente->codigo;
                 // area_id debe asignarse antes de motivo_derivacion (cifrado por área).
                 $expediente->area_id = $areaId;

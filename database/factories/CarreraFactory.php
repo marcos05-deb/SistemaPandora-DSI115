@@ -13,7 +13,7 @@ class CarreraFactory extends Factory
     public function definition(): array
     {
         return [
-            'nombre' => 'Carrera de ' . $this->faker->jobTitle(),
+            'nombre' => 'Carrera de '.$this->faker->jobTitle(),
             'facultad_id' => Facultad::factory(),
         ];
     }

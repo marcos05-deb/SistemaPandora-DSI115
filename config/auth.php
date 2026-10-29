@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Especialista;
+
 /**
  * Configuración de Autenticación.
  *
@@ -12,13 +14,13 @@
  */
 return [
     'defaults' => [
-        'guard'     => 'web',
+        'guard' => 'web',
         'passwords' => 'users',
     ],
 
     'guards' => [
         'web' => [
-            'driver'   => 'session',
+            'driver' => 'session',
             'provider' => 'users',
         ],
     ],
@@ -26,16 +28,16 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model'  => App\Models\Especialista::class,
+            'model' => Especialista::class,
         ],
     ],
 
     'passwords' => [
         'users' => [
-            'provider'  => 'users',
-            'table'     => 'password_reset_tokens',
-            'expire'    => 60,
-            'throttle'  => 60,
+            'provider' => 'users',
+            'table' => 'password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
         ],
     ],
 

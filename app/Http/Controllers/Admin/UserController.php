@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Area;
 use App\Models\Especialista;
 use App\Models\Profesional;
 use App\Models\Role;
-use App\Models\Area;
+use App\Notifications\UserCreatedNotification;
 use App\Services\Crypto\KeyDerivationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,8 +40,8 @@ class UserController extends Controller
 
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'ilike', '%' . $search . '%')
-                  ->orWhere('email', 'ilike', '%' . $search . '%');
+                $q->where('name', 'ilike', '%'.$search.'%')
+                    ->orWhere('email', 'ilike', '%'.$search.'%');
             });
         }
 
@@ -58,10 +60,10 @@ class UserController extends Controller
             'total' => Especialista::count(),
             'active' => Especialista::where('is_active', true)->count(),
             'inactive' => Especialista::onlyTrashed()->count(),
-            'coordinators_ratio' => Especialista::whereHas('roles', function($q) {
+            'coordinators_ratio' => Especialista::whereHas('roles', function ($q) {
                 $q->where('slug', 'area_coordinator');
-            })->count() . ' / ' . Area::count(),
-            'psychosocial_referents' => Especialista::whereHas('roles', function($q) {
+            })->count().' / '.Area::count(),
+            'psychosocial_referents' => Especialista::whereHas('roles', function ($q) {
                 $q->where('slug', 'psychosocial_referent');
             })->count(),
         ];
@@ -75,7 +77,7 @@ class UserController extends Controller
                 'search' => $search,
                 'role' => $roleFilter,
                 'trashed' => $trashed,
-            ]
+            ],
         ]);
     }
 
@@ -105,7 +107,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'phone' => 'nullable|string|max:20',
             'is_active' => 'boolean',
-            'role_id' => ['required', 'exists:roles,id', 'not_in:' . ($sysadminRole->id ?? 0)],
+            'role_id' => ['required', 'exists:roles,id', 'not_in:'.($sysadminRole->id ?? 0)],
             // Datos del profesional (obligatorios)
             'area_id' => [
                 'required',
@@ -113,7 +115,7 @@ class UserController extends Controller
                 function ($attribute, $value, $fail) use ($request) {
                     $role = Role::find($request->role_id);
                     if ($role && $role->slug === 'area_coordinator') {
-                        $exists = \App\Models\Profesional::where('area_id', $value)
+                        $exists = Profesional::where('area_id', $value)
                             ->whereHas('especialista.roles', function ($q) {
                                 $q->where('slug', 'area_coordinator');
                             })->exists();
@@ -121,7 +123,7 @@ class UserController extends Controller
                             $fail('Ya existe un coordinador activo asignado a esta área clínica.');
                         }
                     }
-                }
+                },
             ],
             'especialidad' => 'required|string|max:255',
             'numero_registro' => 'required|string|max:255',
@@ -156,13 +158,13 @@ class UserController extends Controller
             ]);
         });
 
-        $signedUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+        $signedUrl = URL::temporarySignedRoute(
             'password.setup',
             now()->addHours(24),
             ['user' => $user->id]
         );
 
-        $user->notify(new \App\Notifications\UserCreatedNotification($signedUrl));
+        $user->notify(new UserCreatedNotification($signedUrl));
 
         return redirect()->route('admin.users.index')
             ->with('message', 'Usuario creado. Se ha enviado el enlace de configuración al correo del usuario.')
@@ -196,7 +198,7 @@ class UserController extends Controller
         if ($user->hasRole('sysadmin')) {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+                'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
                 'phone' => 'nullable|string|max:20',
                 'is_active' => 'boolean',
             ]);
@@ -215,10 +217,10 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'phone' => 'nullable|string|max:20',
             'is_active' => 'boolean',
-            'role_id' => ['required', 'exists:roles,id', 'not_in:' . ($sysadminRole->id ?? 0)],
+            'role_id' => ['required', 'exists:roles,id', 'not_in:'.($sysadminRole->id ?? 0)],
             // Datos del profesional (obligatorios)
             'area_id' => [
                 'required',
@@ -226,7 +228,7 @@ class UserController extends Controller
                 function ($attribute, $value, $fail) use ($request, $user) {
                     $role = Role::find($request->role_id);
                     if ($role && $role->slug === 'area_coordinator') {
-                        $exists = \App\Models\Profesional::where('area_id', $value)
+                        $exists = Profesional::where('area_id', $value)
                             ->where('user_id', '!=', $user->id)
                             ->whereHas('especialista.roles', function ($q) {
                                 $q->where('slug', 'area_coordinator');
@@ -235,7 +237,7 @@ class UserController extends Controller
                             $fail('Ya existe un coordinador activo asignado a esta área clínica.');
                         }
                     }
-                }
+                },
             ],
             'especialidad' => 'required|string|max:255',
             'numero_registro' => 'required|string|max:255',
@@ -282,7 +284,7 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = Especialista::findOrFail($id);
-        
+
         // Prevent deleting oneself
         if ($user->id === auth()->id()) {
             return redirect()->back()->withErrors(['error' => 'No puedes desactivar tu propia cuenta.']);

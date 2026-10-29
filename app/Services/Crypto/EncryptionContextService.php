@@ -30,7 +30,7 @@ class EncryptionContextService
      */
     public function getKey(): string
     {
-        if (!app()->runningInConsole() || app()->runningUnitTests()) {
+        if (! app()->runningInConsole() || app()->runningUnitTests()) {
             if (empty(session('_sym_key'))) {
                 throw new DecryptionException(
                     'Clave de sesión no disponible. La sesión puede haber expirado.'

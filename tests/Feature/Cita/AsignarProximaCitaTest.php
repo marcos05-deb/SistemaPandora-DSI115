@@ -171,6 +171,20 @@ it('rejects scheduling on closed expediente', function () {
     expect(Cita::count())->toBe(0);
 });
 
+it('returns validation errors without creating a cita for a closed expediente JSON request', function (): void {
+    $this->expediente->update(['estado' => Expediente::ESTADO_CERRADO]);
+    $response = $this->actingAs($this->userSpecialist)->postJson(route('citas.store', $this->expediente->id), [
+        'consulta_id' => $this->consulta->id,
+        'fecha_hora' => now()->addDays(2)->format('Y-m-d H:i:s'),
+        'motivo' => 'Closed expediente regression',
+        'acordada_con_paciente' => true,
+    ]);
+
+    expect($response->getStatusCode())->toBe(422)
+        ->and($response->json('errors.expediente'))->not->toBeEmpty()
+        ->and(Cita::query()->count())->toBe(0);
+});
+
 it('rejects conflicting horario for the same specialist', function () {
     $this->actingAs($this->userSpecialist);
     $fechaHora = now()->addDays(2)->format('Y-m-d H:i:00');

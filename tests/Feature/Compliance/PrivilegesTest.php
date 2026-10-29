@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Compliance;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 
 #[Group('iso27001')]
@@ -13,7 +13,7 @@ class PrivilegesTest extends ComplianceTestCase
     {
         $connection = DB::connection('pgsql');
         $dbUser = config('database.connections.pgsql.username');
-        
+
         $this->assertNotEquals($dbUser, config('database.connections.pgsql_admin.username'));
 
         // 1. SELECT debe funcionar

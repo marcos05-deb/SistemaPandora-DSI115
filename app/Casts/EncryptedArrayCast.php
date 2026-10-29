@@ -26,10 +26,10 @@ final readonly class EncryptedArrayCast implements CastsAttributes
         $encryptionService = app(AreaEncryptionService::class);
 
         $decrypted = $encryptionService->decrypt((string) $value, $areaId);
-        
+
         $decoded = json_decode($decrypted, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new RuntimeException("Error al decodificar JSON descifrado: " . json_last_error_msg());
+            throw new RuntimeException('Error al decodificar JSON descifrado: '.json_last_error_msg());
         }
 
         return $decoded;
@@ -44,13 +44,13 @@ final readonly class EncryptedArrayCast implements CastsAttributes
             return null;
         }
 
-        if (!is_array($value) && !is_object($value)) {
-            throw new RuntimeException("EncryptedArrayCast espera un array u objeto para serializar.");
+        if (! is_array($value) && ! is_object($value)) {
+            throw new RuntimeException('EncryptedArrayCast espera un array u objeto para serializar.');
         }
 
         $encoded = json_encode($value);
         if ($encoded === false) {
-            throw new RuntimeException("Error al codificar a JSON: " . json_last_error_msg());
+            throw new RuntimeException('Error al codificar a JSON: '.json_last_error_msg());
         }
 
         $areaId = $this->resolveAreaId($model);

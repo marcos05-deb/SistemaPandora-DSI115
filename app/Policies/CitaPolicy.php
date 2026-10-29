@@ -2,18 +2,14 @@
 
 namespace App\Policies;
 
+use App\Models\Cita;
 use App\Models\Especialista;
 use App\Models\Expediente;
-use App\Models\Cita;
 
 class CitaPolicy
 {
     public function create(Especialista $user, Expediente $expediente): bool
     {
-        if ($expediente->estado === Expediente::ESTADO_CERRADO) {
-            return false;
-        }
-
         $hasValidRole = $user->hasRole('specialist')
             || $user->hasRole('area_coordinator');
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\RubricaInmutableException;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Area;
 use App\Models\Audit;
@@ -11,6 +12,7 @@ use App\Models\Paciente;
 use App\Services\BitacoraExportService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
@@ -18,7 +20,7 @@ use Tests\TestCase;
 
 beforeEach(function (): void {
     $this->withoutMiddleware(PreventRequestForgery::class);
-    $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
+    $this->withoutMiddleware(ThrottleRequests::class);
     Carbon::setTestNow(Carbon::parse('2026-10-22 15:30:00', config('app.timezone')));
     $this->withSession(['_sym_key' => base64_encode(str_repeat('r', SODIUM_CRYPTO_SECRETBOX_KEYBYTES))]);
 
@@ -40,7 +42,7 @@ beforeEach(function (): void {
         'old' => ['telefono' => '1'],
         'new' => ['telefono' => '2'],
     ]);
-    hu23Seed($this->actor->id, 'accessed', Paciente::class, "=cmd|danger", CarbonImmutable::parse('2026-10-19 09:00:00', config('app.timezone')));
+    hu23Seed($this->actor->id, 'accessed', Paciente::class, '=cmd|danger', CarbonImmutable::parse('2026-10-19 09:00:00', config('app.timezone')));
 
     $this->actingAs($this->sysadmin);
 });
@@ -234,6 +236,15 @@ test('HU23-E09 should_omit_phi_sentinels_and_neutralize_formula_cells', function
         ->and($body)->not->toContain($this->carnet)
         ->and($body)->toContain('/pacientes/{carnet}')
         ->and($body)->toContain("'=cmd|danger");
+
+    if (getenv('PANDORA_WRITE_QA_EVIDENCE') === '1') {
+        $directory = base_path('docs/evidencia/HU-23');
+        if (! is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+        file_put_contents($directory.'/synthetic-audit.csv', $body);
+        file_put_contents($directory.'/synthetic-audit.sha256', hash('sha256', $body)."\n");
+    }
 });
 
 test('HU23-E10 should_not_persist_export_when_generation_fails', function (): void {
@@ -252,7 +263,7 @@ test('HU23-E11 should_keep_exportacion_auditoria_append_only', function (): void
     hu23Export($this);
     $row = ExportacionAuditoria::query()->first();
 
-    expect(fn () => $row->update(['sha256' => 'x']))->toThrow(\App\Exceptions\RubricaInmutableException::class);
+    expect(fn () => $row->update(['sha256' => 'x']))->toThrow(RubricaInmutableException::class);
 
     $appUser = (string) config('database.connections.pgsql.username');
     $adminUser = (string) config('database.connections.pgsql_admin.username');
@@ -260,7 +271,7 @@ test('HU23-E11 should_keep_exportacion_auditoria_append_only', function (): void
         $sqlFailed = false;
         try {
             DB::table('exportaciones_auditoria')->where('id', $row->id)->update(['sha256' => 'y']);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $sqlFailed = str_contains($e->getMessage(), '42501')
                 || str_contains(strtolower($e->getMessage()), 'permission');
         }
@@ -295,4 +306,24 @@ test('HU23-E13 should_expose_exportarBitacora_only_to_authorized_roles', functio
     } else {
         expect(data_get($deniedProps, 'can.exportarBitacora') ?? false)->toBeFalse();
     }
+});
+
+test('HU23-E01 should_page_events_without_changing_order_or_losing_rows', function (): void {
+    foreach (range(1, 501) as $index) {
+        hu23Seed($this->actor->id, 'accessed', Paciente::class, 'chunk-'.$index,
+            CarbonImmutable::parse('2026-10-20 12:00:00', config('app.timezone')));
+    }
+    $expected = Audit::query()->where('event', 'accessed')->where('tags', 'hu23')
+        ->orderByDesc('created_at')->orderByDesc('id')->pluck('id')->map(fn ($id): int => (int) $id)->all();
+    $queries = [];
+    DB::listen(static function ($query) use (&$queries): void {
+        if (str_contains($query->sql, '"audits"') && str_contains($query->sql, 'order by')) {
+            $queries[] = $query->sql;
+        }
+    });
+    $response = hu23Export($this, ['accion' => 'accessed']);
+    expect($response->getStatusCode())->toBe(200)
+        ->and(hu23CsvIds($response->getContent()))->toBe($expected)
+        ->and(collect($queries)->contains(fn (string $sql): bool => str_contains($sql, 'limit 500 offset 500')))->toBeTrue()
+        ->and(collect($queries)->every(fn (string $sql): bool => str_contains($sql, 'limit 500')))->toBeTrue();
 });

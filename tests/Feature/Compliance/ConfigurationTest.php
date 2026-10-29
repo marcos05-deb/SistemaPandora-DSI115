@@ -40,11 +40,11 @@ class ConfigurationTest extends ComplianceTestCase
         config()->set('app.env', 'production');
 
         $response = $this->get('/login');
-        
+
         $cspHeader = $response->headers->get('Content-Security-Policy');
         $this->assertNotNull($cspHeader, 'Falta el encabezado Content-Security-Policy');
 
-        $this->assertStringNotContainsString("unsafe-inline", $cspHeader, 'La política CSP en producción contiene unsafe-inline.');
+        $this->assertStringNotContainsString('unsafe-inline', $cspHeader, 'La política CSP en producción contiene unsafe-inline.');
         $this->assertStringContainsString("object-src 'none'", $cspHeader, 'Falta restricción estricta object-src.');
         $this->assertStringContainsString("frame-ancestors 'none'", $cspHeader, 'Falta protección contra clickjacking (frame-ancestors).');
     }
@@ -62,11 +62,10 @@ class ConfigurationTest extends ComplianceTestCase
         ]);
 
         // Verificamos que la petición tuvo éxito (sea 201 o 302 redirección)
-        $this->assertTrue(in_array($response->status(), [201, 302]), 'El endpoint devolvió un error (falso positivo). Status: ' . $response->status());
+        $this->assertTrue(in_array($response->status(), [201, 302]), 'El endpoint devolvió un error (falso positivo). Status: '.$response->status());
 
         // Verificar explícitamente que no se filtran secretos en sesión
         $this->assertFalse(session()->has('generated_password'));
         $this->assertFalse(session()->has('password'));
     }
-
 }

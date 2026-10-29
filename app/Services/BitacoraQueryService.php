@@ -11,6 +11,7 @@ use App\Models\Audit;
 use App\Models\Especialista;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -26,9 +27,9 @@ final class BitacoraQueryService
     /**
      * Misma consulta de listado (HU-22), reutilizada por exportación (HU-23).
      *
-     * @return \Illuminate\Database\Eloquent\Builder<Audit>
+     * @return Builder<Audit>
      */
-    public function consulta(FiltrosBitacora $filtros, ?CarbonImmutable $corteEn = null): \Illuminate\Database\Eloquent\Builder
+    public function consulta(FiltrosBitacora $filtros, ?CarbonImmutable $corteEn = null): Builder
     {
         $tz = (string) config('app.timezone');
         $desde = CarbonImmutable::parse($filtros->desde, $tz)->startOfDay()->utc();

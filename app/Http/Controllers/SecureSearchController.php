@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Paciente;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -12,7 +13,7 @@ class SecureSearchController extends Controller
     /**
      * Display the secure search interface.
      */
-    public function index(): Response|\Illuminate\Http\RedirectResponse
+    public function index(): Response|RedirectResponse
     {
         return Inertia::render('SecureSearch/Index', [
             'searchCode' => '',
@@ -23,7 +24,7 @@ class SecureSearchController extends Controller
     /**
      * Handle the secure search request.
      */
-    public function search(Request $request): Response|\Illuminate\Http\RedirectResponse
+    public function search(Request $request): Response|RedirectResponse
     {
         $validated = $request->validate([
             'code' => ['required', 'string', 'regex:/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i'],
@@ -43,7 +44,7 @@ class SecureSearchController extends Controller
             $query->whereHas('expedientes', function ($q) use ($areaIds) {
                 $q->whereIn('area_id', $areaIds);
             });
-        } elseif (!$user->hasRole('area_coordinator') && !$user->hasRole('sysadmin')) {
+        } elseif (! $user->hasRole('area_coordinator') && ! $user->hasRole('sysadmin')) {
             return redirect()->route('busqueda-segura')->withErrors([
                 'code' => 'No tienes permisos para realizar busquedas.',
             ]);
@@ -51,7 +52,7 @@ class SecureSearchController extends Controller
 
         $paciente = $query->first();
 
-        if (!$paciente) {
+        if (! $paciente) {
             return redirect()->route('busqueda-segura')->withErrors([
                 'code' => 'No se encontraron registros para el codigo ingresado.',
             ]);

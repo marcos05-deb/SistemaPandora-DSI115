@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\DTO\FiltrosBitacora;
 use App\Enums\AccionBitacora;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Area;
@@ -253,7 +254,7 @@ test('HU22-E09 should_use_index_for_large_audit_set_with_stable_query_count', fu
         DB::table('audits')->insert($rows);
     }
 
-    $filtros = new \App\DTO\FiltrosBitacora(
+    $filtros = new FiltrosBitacora(
         desde: '2026-10-10',
         hasta: '2026-10-22',
         usuarioId: $this->actor->id,

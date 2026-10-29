@@ -17,26 +17,29 @@ use Illuminate\Support\Facades\Gate;
 
 /**
  * Resumen agregado del panel (alertas + tipología + tendencia).
- * Sysadmin: mismas gráficas institucionales, sin carnets.
+ * Sysadmin: agregados protegidos, sin alertas individuales.
  * Coordinador/especialista: carnet solo en la lista de alertas urgentes.
  */
 final class DashboardAlertOverviewService
 {
+    public function __construct(private readonly ClinicalAccessAuditor $auditor) {}
+
     /**
      * @return array{
      *     visible: bool,
      *     reveal_carnets: bool,
      *     scope: 'institucional'|'area'|null,
-     *     total: int,
-     *     abiertas: int,
-     *     por_estado: list<array{key: string, label: string, count: int}>,
-     *     por_senal: list<array{key: string, label: string, count: int}>,
+     *     total: int|null,
+     *     abiertas: int|null,
+     *     privacidad_protegida?: bool,
+     *     por_estado: list<array{key: string, label: string, count: int|null}>,
+     *     por_senal: list<array{key: string, label: string, count: int|null}>,
      *     urgentes: list<array{id: string, senal: string, senal_label: string, estado: string, estado_label: string, generada_en: string|null, paciente_carnet?: string|null}>,
-     *     por_etiqueta: list<array{key: string, label: string, count: int}>,
+     *     por_etiqueta: list<array{key: string, label: string, count: int|null}>,
      *     tendencia_suicida: array{
-     *         total_alumnos: int,
-     *         por_facultad: list<array{id: int, label: string, count: int}>,
-     *         por_carrera: list<array{id: int, label: string, facultad_id: int, facultad_label: string, count: int}>
+     *         total_alumnos: int|null,
+     *         por_facultad: list<array{id: int, label: string, count: int|null}>,
+     *         por_carrera: list<array{id: int, label: string, facultad_id: int, facultad_label: string, count: int|null}>
      *     }
      * }
      */
@@ -52,6 +55,7 @@ final class DashboardAlertOverviewService
             'visible' => false,
             'reveal_carnets' => false,
             'scope' => null,
+            'privacidad_protegida' => false,
             'total' => 0,
             'abiertas' => 0,
             'por_estado' => [],
@@ -81,7 +85,7 @@ final class DashboardAlertOverviewService
             $revealCarnets = $user->hasRole('area_coordinator') || $user->hasRole('specialist');
         }
 
-        $base = AlertaPreventiva::query();
+        $base = AlertaPreventiva::query()->whereIn('area_id', $areaIds);
 
         $porEstadoRaw = (clone $base)
             ->selectRaw('estado, COUNT(*) as aggregate')
@@ -125,7 +129,7 @@ final class DashboardAlertOverviewService
             $urgentesQuery->with(['paciente:codigo,carnet']);
         }
 
-        $urgentes = $urgentesQuery
+        $urgentes = ! $revealCarnets ? [] : $urgentesQuery
             ->get()
             ->map(static function (AlertaPreventiva $alerta) use ($revealCarnets): array {
                 $row = [
@@ -150,18 +154,63 @@ final class DashboardAlertOverviewService
             ->values()
             ->all();
 
+        $etiquetas = $this->aggregateEtiquetas($areaIds);
+        $tendencia = $this->aggregateTendenciaSuicida($areaIds);
+        $protectedAlerts = ! $revealCarnets && $this->hasSmallCounts(array_merge($porEstado, $porSenal));
+        if ($protectedAlerts) {
+            $porEstado = $this->hideCounts($porEstado);
+            $porSenal = $this->hideCounts($porSenal);
+        }
+        $protectedTags = $this->hasSmallCounts($etiquetas);
+        if ($protectedTags) {
+            $etiquetas = $this->hideCounts($etiquetas);
+        }
+        $protectedTrend = $this->hasSmallCounts(array_merge($tendencia['por_facultad'], $tendencia['por_carrera']));
+        if ($protectedTrend) {
+            // Hide both hierarchies and their total to prevent reconstruction by difference.
+            $tendencia['por_facultad'] = $this->hideCounts($tendencia['por_facultad']);
+            $tendencia['por_carrera'] = $this->hideCounts($tendencia['por_carrera']);
+            $tendencia['total_alumnos'] = null;
+        }
+
+        $filters = ['scope' => $scope, 'areas' => $areaIds];
+        $this->auditor->recordAggregate($user, 'view_dashboard_overview', $filters);
+        if ($revealCarnets) {
+            $this->auditor->recordListing($user, AlertaPreventiva::class, $filters);
+        }
+
         return [
             'visible' => true,
             'reveal_carnets' => $revealCarnets,
             'scope' => $scope,
-            'total' => $total,
-            'abiertas' => $abiertas,
+            'total' => $protectedAlerts ? null : $total,
+            'abiertas' => $protectedAlerts ? null : $abiertas,
+            'privacidad_protegida' => $protectedAlerts || $protectedTags || $protectedTrend,
             'por_estado' => $porEstado,
             'por_senal' => $porSenal,
             'urgentes' => $urgentes,
-            'por_etiqueta' => $this->aggregateEtiquetas($areaIds),
-            'tendencia_suicida' => $this->aggregateTendenciaSuicida($areaIds),
+            'por_etiqueta' => $etiquetas,
+            'tendencia_suicida' => $tendencia,
         ];
+    }
+
+    /** @param list<array<string, mixed>> $rows */
+    private function hasSmallCounts(array $rows): bool
+    {
+        $minimum = max(2, (int) config('indicadores.min_celda', 5));
+
+        return collect($rows)->contains(static fn (array $row): bool => $row['count'] > 0 && $row['count'] < $minimum);
+    }
+
+    /**
+     * Suppress the whole related breakdown rather than expose complementary totals.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     * @return list<array<string, mixed>>
+     */
+    private function hideCounts(array $rows): array
+    {
+        return array_map(static fn (array $row): array => array_merge($row, ['count' => null]), $rows);
     }
 
     /**
@@ -308,6 +357,7 @@ final class DashboardAlertOverviewService
         }
 
         AlertaPreventiva::query()
+            ->whereIn('area_id', $areaIds)
             ->where('senal', 'tendencia_suicida')
             ->pluck('paciente_id')
             ->each(static function (mixed $pacienteId) use (&$ids): void {

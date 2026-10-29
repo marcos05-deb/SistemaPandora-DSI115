@@ -40,6 +40,7 @@ class JwtService
     {
         try {
             $payload = JWT::decode($token, new Key($this->secret, $this->algorithm));
+
             return (int) $payload->sub;
         } catch (\Exception) {
             return null;

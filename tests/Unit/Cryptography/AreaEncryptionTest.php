@@ -6,13 +6,14 @@ use App\Casts\AreaEncryptedFieldCast;
 use App\Services\AreaEncryptionService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
+use Tests\TestCase;
 
-uses(Tests\TestCase::class);
+uses(TestCase::class);
 
 test('el cifrado es determinista y descifrable para la misma area', function () {
     // Arrange
     Config::set('app.area_key_secret', 'secreto-maestro-super-seguro');
-    $service = new AreaEncryptionService();
+    $service = new AreaEncryptionService;
     $areaId = 'area-cardiologia-uuid';
     $plaintext = 'datos_protegidos_phi';
 
@@ -28,11 +29,11 @@ test('el cifrado es determinista y descifrable para la misma area', function () 
 test('dos especialistas distintos pueden descifrar un modelo si pertenecen a la misma area', function () {
     // Arrange
     Config::set('app.area_key_secret', 'secreto-maestro-super-seguro');
-    $service = new AreaEncryptionService();
-    
+    $service = new AreaEncryptionService;
+
     $areaId = 'area-cardiologia-uuid';
     $plaintext = 'diagnostico_paciente_confidencial';
-    
+
     // Especialista A (Sistema) cifra el dato
     $encryptedBySpecialistA = $service->encrypt($plaintext, $areaId);
 
@@ -47,12 +48,12 @@ test('dos especialistas distintos pueden descifrar un modelo si pertenecen a la 
 test('falla si se intenta usar la clave de un area distinta', function () {
     // Arrange
     Config::set('app.area_key_secret', 'secreto-maestro-super-seguro');
-    $service = new AreaEncryptionService();
-    
+    $service = new AreaEncryptionService;
+
     $areaCardiologiaId = 'area-cardiologia-uuid';
     $areaPediatriaId = 'area-pediatria-uuid';
     $plaintext = 'datos_protegidos_phi';
-    
+
     $encryptedInCardiologia = $service->encrypt($plaintext, $areaCardiologiaId);
 
     // Act & Assert
@@ -63,11 +64,12 @@ test('falla si se intenta usar la clave de un area distinta', function () {
 test('AreaEncryptedFieldCast resuelve area_id e inyecta el servicio correctamente', function () {
     // Arrange
     Config::set('app.area_key_secret', 'secreto-maestro-super-seguro');
-    
-    $model = new class extends Model {
+
+    $model = new class extends Model
+    {
         public int $area_id = 42;
     };
-    
+
     $cast = app(AreaEncryptedFieldCast::class);
     $plaintext = 'informacion_sensible';
 

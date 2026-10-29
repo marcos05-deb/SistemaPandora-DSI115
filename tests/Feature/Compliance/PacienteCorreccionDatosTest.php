@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Compliance;
 
+use App\Http\Middleware\RequirePasswordChange;
 use App\Models\Area;
 use App\Models\ContactoPaciente;
 use App\Models\Especialista;
@@ -11,6 +12,8 @@ use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\PacienteCorreccionAuditoria;
 use App\Models\Role;
+use App\Models\SolicitudCorreccionExpediente;
+use App\Services\Crypto\EncryptionContextService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -32,9 +35,9 @@ class PacienteCorreccionDatosTest extends ComplianceTestCase
     {
         parent::setUp();
 
-        $this->withoutMiddleware([\App\Http\Middleware\RequirePasswordChange::class]);
+        $this->withoutMiddleware([RequirePasswordChange::class]);
 
-        $this->app->instance(\App\Services\Crypto\EncryptionContextService::class, new class extends \App\Services\Crypto\EncryptionContextService
+        $this->app->instance(EncryptionContextService::class, new class extends EncryptionContextService
         {
             public function getKey(): string
             {
@@ -157,7 +160,7 @@ class PacienteCorreccionDatosTest extends ComplianceTestCase
             'motivo' => 'Necesito corregir el nombre por error de tipeo documentado en acta.',
         ])->assertRedirect();
 
-        $solicitud = \App\Models\SolicitudCorreccionExpediente::query()->first();
+        $solicitud = SolicitudCorreccionExpediente::query()->first();
         $this->assertNotNull($solicitud);
         $this->assertSame('pendiente', $solicitud->estado);
 

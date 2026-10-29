@@ -4,24 +4,21 @@ declare(strict_types=1);
 
 use App\Models\Area;
 use App\Models\Consulta;
+use App\Models\Especialista;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Profesional;
 use App\Models\Role;
-use App\Models\Especialista;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
-
-
 
 beforeEach(function () {
     // Session is needed for decryption
     session(['_sym_key' => str_repeat('a', 32)]);
-    
+
     $this->area = Area::factory()->create(['nombre' => 'Psicología']);
     $this->otraArea = Area::factory()->create(['nombre' => 'Odontología']);
-    
+
     // Create roles
     $this->roleSpecialist = Role::create([
         'nombre' => 'Specialist',
@@ -45,7 +42,7 @@ beforeEach(function () {
         'is_active' => true,
     ]);
     $this->userSpecialist->roles()->attach($this->roleSpecialist->id);
-    
+
     $this->profesionalSpecialist = Profesional::factory()->create([
         'user_id' => $this->userSpecialist->id,
         'area_id' => $this->area->id,
@@ -58,7 +55,7 @@ beforeEach(function () {
         'is_active' => true,
     ]);
     $this->otraAreaSpecialist->roles()->attach($this->roleSpecialist->id);
-    
+
     $this->profesionalOtraArea = Profesional::factory()->create([
         'user_id' => $this->otraAreaSpecialist->id,
         'area_id' => $this->otraArea->id,
@@ -71,7 +68,7 @@ beforeEach(function () {
         'is_active' => true,
     ]);
     $this->userCoordinator->roles()->attach($this->roleCoordinator->id);
-    
+
     // Coordinador necesita su perfil profesional en ambas áreas para que el AreaScope lo reconozca
     Profesional::factory()->create([
         'user_id' => $this->userCoordinator->id,
@@ -93,7 +90,7 @@ beforeEach(function () {
 
     // Create patient
     $this->paciente = Paciente::factory()->create();
-    
+
     // Create expediente in Psicología
     $this->expedientePsi = Expediente::create([
         'paciente_id' => $this->paciente->codigo,
@@ -101,7 +98,7 @@ beforeEach(function () {
         'estado' => 'cerrado',
         'fecha_derivacion' => now()->subMonths(2),
     ]);
-    
+
     // Create consulta in Psicología
     $this->consultaPsi = Consulta::create([
         'expediente_id' => $this->expedientePsi->id,
@@ -119,7 +116,7 @@ beforeEach(function () {
         'estado' => 'abierto',
         'fecha_derivacion' => now()->subDays(10),
     ]);
-    
+
     // Create consulta in Odontología
     $this->consultaOdo = Consulta::create([
         'expediente_id' => $this->expedienteOdo->id,
@@ -133,7 +130,7 @@ beforeEach(function () {
 
 it('prevents sysadmin from accessing medical history', function () {
     $this->actingAs($this->userSysadmin);
-    
+
     $response = $this->withSession(['_sym_key' => str_repeat('a', 32)])
         ->get(route('pacientes.historial', $this->paciente->codigo));
 
@@ -142,12 +139,12 @@ it('prevents sysadmin from accessing medical history', function () {
 
 it('allows specialist to see only history from their authorized areas', function () {
     $this->actingAs($this->userSpecialist);
-    
+
     $response = $this->withSession(['_sym_key' => str_repeat('a', 32)])
         ->get(route('pacientes.historial', $this->paciente->codigo));
 
     $response->assertOk();
-    
+
     $response->assertInertia(fn (Assert $page) => $page
         ->component('Historial/Show')
         ->has('historial.data', 1)
@@ -158,12 +155,12 @@ it('allows specialist to see only history from their authorized areas', function
 
 it('allows coordinator to see history from all their authorized areas', function () {
     $this->actingAs($this->userCoordinator);
-    
+
     $response = $this->withSession(['_sym_key' => str_repeat('a', 32)])
         ->get(route('pacientes.historial', $this->paciente->codigo));
 
     $response->assertOk();
-    
+
     $response->assertInertia(fn (Assert $page) => $page
         ->component('Historial/Show')
         ->has('historial.data', 2)

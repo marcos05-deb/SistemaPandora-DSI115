@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Facultad;
 use App\Models\Carrera;
+use App\Models\Facultad;
+use Illuminate\Database\Seeder;
 
 class FacultadCarreraSeeder extends Seeder
 {
@@ -216,7 +216,7 @@ class FacultadCarreraSeeder extends Seeder
         foreach ($carreras as $facultadNombre => $nombresCarreras) {
             $facultad = Facultad::where('nombre', $facultadNombre)->first();
 
-            if (!$facultad) {
+            if (! $facultad) {
                 continue;
             }
 

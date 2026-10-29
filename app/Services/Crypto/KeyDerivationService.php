@@ -17,8 +17,8 @@ class KeyDerivationService
     /**
      * Deriva una clave simétrica de 32 bytes a partir de la contraseña y la sal.
      *
-     * @param string $password Contraseña en texto plano (se limpia después de usar).
-     * @param string $salt     Sal de 16 bytes (SODIUM_CRYPTO_PWHASH_SALTBYTES), almacenada en Base64 en la DB.
+     * @param  string  $password  Contraseña en texto plano (se limpia después de usar).
+     * @param  string  $salt  Sal de 16 bytes (SODIUM_CRYPTO_PWHASH_SALTBYTES), almacenada en Base64 en la DB.
      * @return string Clave derivada de 32 bytes (SODIUM_CRYPTO_SECRETBOX_KEYBYTES).
      */
     public function derive(string $password, string $salt): string

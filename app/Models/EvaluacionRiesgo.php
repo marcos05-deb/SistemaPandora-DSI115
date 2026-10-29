@@ -47,7 +47,7 @@ class EvaluacionRiesgo extends Model implements AuditableContract
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new AreaScope());
+        static::addGlobalScope(new AreaScope);
     }
 
     /**
@@ -81,5 +81,4 @@ class EvaluacionRiesgo extends Model implements AuditableContract
     {
         return $this->belongsTo(Area::class, 'area_id');
     }
-
 }

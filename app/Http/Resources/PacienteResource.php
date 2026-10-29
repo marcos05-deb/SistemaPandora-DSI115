@@ -49,9 +49,9 @@ class PacienteResource extends JsonResource
             'etiquetas_motivo' => $this->decryptArray('etiquetas_motivo'),
             'created_at' => $this->created_at?->format('Y-m-d H:i'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i'),
-            
+
             'creator' => [
-                'name' => $this->whenLoaded('creator', fn() => $this->creator->name ?? 'Desconocido')
+                'name' => $this->whenLoaded('creator', fn () => $this->creator->name ?? 'Desconocido'),
             ],
             'contactos' => $this->whenLoaded('contactos'),
             'carrera' => $this->whenLoaded('carrera', function () {

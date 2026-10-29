@@ -10,7 +10,7 @@ class EncryptedJsonFieldCast implements CastsAttributes
 
     public function __construct()
     {
-        $this->encryptedFieldCast = new EncryptedFieldCast();
+        $this->encryptedFieldCast = new EncryptedFieldCast;
     }
 
     public function get($model, string $key, $value, $attributes): mixed
@@ -20,7 +20,7 @@ class EncryptedJsonFieldCast implements CastsAttributes
         }
 
         $decrypted = $this->encryptedFieldCast->get($model, $key, $value, $attributes);
-        
+
         if (is_null($decrypted)) {
             return null;
         }

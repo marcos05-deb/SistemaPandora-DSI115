@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class UpdatePacienteRequest extends FormRequest
@@ -48,7 +49,7 @@ class UpdatePacienteRequest extends FormRequest
                 'before_or_equal:today',
                 'after_or_equal:'.StorePacienteRequest::FECHA_NACIMIENTO_MINIMA,
                 $paciente?->fecha_primera_consulta
-                    ? 'before_or_equal:'.\Illuminate\Support\Carbon::parse($paciente->fecha_primera_consulta)->toDateString()
+                    ? 'before_or_equal:'.Carbon::parse($paciente->fecha_primera_consulta)->toDateString()
                     : null,
             ]),
             'profesion_ocupacion' => 'nullable|string|max:255',

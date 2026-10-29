@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Compliance;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\QueryException;
 use PHPUnit\Framework\Attributes\Group;
 
 #[Group('iso27001')]

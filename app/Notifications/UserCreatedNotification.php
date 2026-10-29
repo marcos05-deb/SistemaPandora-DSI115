@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -36,7 +35,7 @@ class UserCreatedNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Bienvenido a Sistema PANDORA - Configuración de Acceso')
-            ->greeting('Hola ' . $notifiable->name . ',')
+            ->greeting('Hola '.$notifiable->name.',')
             ->line('Tu cuenta en el Sistema PANDORA ha sido creada exitosamente.')
             ->line('Para completar la configuración de tu cuenta y establecer tu contraseña definitiva, por favor haz clic en el siguiente enlace:')
             ->action('Configurar Contraseña', $this->signedUrl)

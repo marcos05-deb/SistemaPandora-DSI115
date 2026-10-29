@@ -13,11 +13,11 @@ final readonly class AreaEncryptionService
     public function __construct()
     {
         $secret = config('app.area_key_secret');
-        
+
         if (! is_string($secret) || $secret === '') {
             throw new RuntimeException('La variable AREA_KEY_SECRET no está configurada o es inválida.');
         }
-        
+
         $this->areaKeySecret = $secret;
     }
 
@@ -33,7 +33,7 @@ final readonly class AreaEncryptionService
             $key
         );
 
-        return base64_encode($nonce . $ciphertext);
+        return base64_encode($nonce.$ciphertext);
     }
 
     public function decrypt(string $encryptedPayload, string|int $areaId): string
@@ -46,7 +46,7 @@ final readonly class AreaEncryptionService
         }
 
         $nonceLength = SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES;
-        
+
         if (strlen($decoded) < $nonceLength) {
             throw new RuntimeException('El payload es demasiado corto para contener un nonce.');
         }
@@ -71,8 +71,8 @@ final readonly class AreaEncryptionService
     private function deriveKey(string $areaId): string
     {
         return sodium_crypto_generichash(
-            $areaId, 
-            $this->areaKeySecret, 
+            $areaId,
+            $this->areaKeySecret,
             SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES
         );
     }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Models\Especialista;
-use App\Models\Rubrica;
 
 class RubricaPolicy
 {

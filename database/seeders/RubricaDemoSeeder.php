@@ -6,15 +6,15 @@ namespace Database\Seeders;
 
 use App\Models\AlertaPreventiva;
 use App\Models\Area;
-use App\Models\Cita;
 use App\Models\Carrera;
+use App\Models\Cita;
 use App\Models\Consulta;
+use App\Models\Especialista;
 use App\Models\EstadisticaPreventivaAusencia;
 use App\Models\EvaluacionRiesgo;
-use App\Models\Especialista;
 use App\Models\Expediente;
-use App\Models\Profesional;
 use App\Models\Paciente;
+use App\Models\Profesional;
 use App\Models\Rubrica;
 use App\Models\RubricaVersion;
 use App\Models\SeguimientoPreventivo;
@@ -389,7 +389,7 @@ class RubricaDemoSeeder extends Seeder
             return $existingEvaluation;
         }
 
-        $evaluacion = new EvaluacionRiesgo();
+        $evaluacion = new EvaluacionRiesgo;
         $evaluacion->area_id = $areaId;
         $evaluacion->paciente_id = $pacienteId;
         $evaluacion->rubrica_version_id = $version->id;
@@ -719,7 +719,7 @@ class RubricaDemoSeeder extends Seeder
             return $cita;
         }
 
-        $cita = new Cita();
+        $cita = new Cita;
         $cita->id = $citaId;
         $cita->expediente_id = $expediente->id;
         $cita->profesional_id = $profesional->id;
@@ -761,7 +761,7 @@ class RubricaDemoSeeder extends Seeder
             return $consulta;
         }
 
-        $consulta = new Consulta();
+        $consulta = new Consulta;
         $consulta->id = self::DEMO_CONSULTA_SENALES_ID;
         $consulta->expediente_id = $expediente->id;
         $consulta->profesional_id = $profesional->id;
@@ -800,7 +800,7 @@ class RubricaDemoSeeder extends Seeder
         }
 
         if ($alerta === null) {
-            $alerta = new AlertaPreventiva();
+            $alerta = new AlertaPreventiva;
             $alerta->paciente_id = $evaluacion->paciente_id;
             $alerta->area_id = $evaluacion->area_id;
             $alerta->evaluacion_riesgo_id = $evaluacion->id;

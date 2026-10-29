@@ -33,14 +33,14 @@ test('paciente show no filtra expedientes cross area y evita data leak', functio
         'paciente_id' => $paciente->codigo,
         'area_id' => $areaA->id,
         'estado' => 'abierto',
-        'motivo_consulta' => 'Secreto Area A'
+        'motivo_consulta' => 'Secreto Area A',
     ]);
 
     $expedienteB = Expediente::factory()->create([
         'paciente_id' => $paciente->codigo,
         'area_id' => $areaB->id,
         'estado' => 'abierto',
-        'motivo_consulta' => 'Secreto Area B'
+        'motivo_consulta' => 'Secreto Area B',
     ]);
 
     // Act

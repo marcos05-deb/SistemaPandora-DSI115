@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StorePacienteRequest extends FormRequest
 {
@@ -31,7 +33,7 @@ class StorePacienteRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -50,7 +52,7 @@ class StorePacienteRequest extends FormRequest
             'llevado_por' => 'nullable|string|max:255',
             'motivo_consulta' => 'required|string',
             'etiquetas_motivo' => ['nullable', 'array'],
-            'etiquetas_motivo.*' => ['string', \Illuminate\Validation\Rule::in(self::ETIQUETAS_VALIDAS)],
+            'etiquetas_motivo.*' => ['string', Rule::in(self::ETIQUETAS_VALIDAS)],
 
             // Padre / Madre
             'padre_nombre' => 'required_if:responsable_parentesco,Padre|nullable|string|max:255',

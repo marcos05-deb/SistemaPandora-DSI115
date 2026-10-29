@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Compliance;
 
+use App\Http\Middleware\RequirePasswordChange;
 use App\Models\Area;
 use App\Models\ContactoPaciente;
 use App\Models\Especialista;
 use App\Models\Paciente;
 use App\Models\Role;
+use App\Services\Crypto\EncryptionContextService;
 use PHPUnit\Framework\Attributes\Group;
 
 #[Group('owasp-v11')]
@@ -20,9 +22,9 @@ class ValidacionFechasTest extends ComplianceTestCase
     {
         parent::setUp();
 
-        $this->withoutMiddleware([\App\Http\Middleware\RequirePasswordChange::class]);
+        $this->withoutMiddleware([RequirePasswordChange::class]);
 
-        $this->app->instance(\App\Services\Crypto\EncryptionContextService::class, new class extends \App\Services\Crypto\EncryptionContextService
+        $this->app->instance(EncryptionContextService::class, new class extends EncryptionContextService
         {
             public function getKey(): string
             {

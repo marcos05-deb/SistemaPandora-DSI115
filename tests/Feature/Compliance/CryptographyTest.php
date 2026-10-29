@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Compliance;
 
+use App\Exceptions\DecryptionException;
 use App\Models\Especialista;
 use App\Models\Paciente;
-use App\Exceptions\DecryptionException;
 use Illuminate\Support\Facades\DB;
-use PHPUnit\Framework\Attributes\Group;
 use Illuminate\Support\Facades\Session;
+use PHPUnit\Framework\Attributes\Group;
 
 #[Group('hipaa')]
 #[Group('owasp-v6')]
@@ -20,7 +20,7 @@ class CryptographyTest extends ComplianceTestCase
         parent::setUp();
         // Creamos especialista con password 'password_segura' (definido en factory)
         $this->especialista = Especialista::factory()->withProfesional()->create([
-            'must_change_password' => false
+            'must_change_password' => false,
         ]);
     }
 
@@ -31,9 +31,9 @@ class CryptographyTest extends ComplianceTestCase
             'email' => $this->especialista->email,
             'password' => 'password_segura',
         ]);
-        
+
         $response->assertRedirect('/dashboard');
-        
+
         $this->assertTrue(session()->has('_sym_key'));
         $sessionId = Session::getId();
 
@@ -46,7 +46,7 @@ class CryptographyTest extends ComplianceTestCase
 
         // Hacemos Logout
         $this->post('/logout');
-        
+
         $this->assertFalse(session()->has('_sym_key'));
 
         // Verificamos que el registro de sesión fue purgado/invalidado en DB
@@ -55,7 +55,7 @@ class CryptographyTest extends ComplianceTestCase
 
         // Intentamos leer el paciente desencriptándolo sin llave
         $pacienteRefresh = Paciente::query()->where('codigo', $paciente->codigo)->first();
-        
+
         try {
             $nombre = $pacienteRefresh->nombre_completo; // Esta propiedad dispara el Cast
             $this->fail('La propiedad nombre_completo debió arrojar DecryptionException al no haber llave.');
@@ -75,7 +75,7 @@ class CryptographyTest extends ComplianceTestCase
 
         $this->assertNotEquals('Juan Perez', $rawData->nombre_completo);
         $this->assertStringNotContainsString('Juan Perez', $rawData->nombre_completo);
-        
+
         // Verificación estructural Sodium (Base64 válido + longitud mayor a Nonce de 24 bytes)
         $decoded = base64_decode($rawData->nombre_completo, true);
         $this->assertNotFalse($decoded, 'El payload no es Base64 estricto válido.');
@@ -103,7 +103,7 @@ class CryptographyTest extends ComplianceTestCase
 
         // Intentar consumir un endpoint clínico
         $response = $this->get('/pacientes');
-        
+
         $response->assertStatus(302);
         $this->assertStringContainsString('password', $response->headers->get('Location') ?? '');
     }

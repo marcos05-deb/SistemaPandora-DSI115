@@ -3,9 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\Cita;
-use App\Models\Expediente;
-use App\Models\Profesional;
-use App\Models\Area;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class CitaFactory extends Factory

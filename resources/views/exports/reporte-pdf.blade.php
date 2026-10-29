@@ -24,6 +24,26 @@
         <p><strong>Agrupación:</strong> {{ implode(', ', $report->parametrosAplicados['agrupar_por']) }}</p>
     </div>
 
+    <h2>Totales</h2>
+    <table>
+        <thead><tr><th>Indicador</th><th>Total</th></tr></thead>
+        <tbody>
+            @foreach ($report->totales as $indicador => $valor)
+                <tr>
+                    <td>{{ $indicador }}</td>
+                    <td>
+                        @if (!empty($valor['suprimido']))
+                            {{ ($valor['supresion'] ?? '') === 'primaria' ? '<5' : 'Protegido' }}
+                        @else
+                            {{ $valor['valor'] ?? 0 }}{{ ($valor['unidad'] ?? null) === 'porcentaje' ? '%' : '' }}
+                        @endif
+                    </td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <h2>Detalle</h2>
     <table>
         <thead>
             <tr>

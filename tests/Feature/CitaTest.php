@@ -5,29 +5,30 @@ namespace Tests\Feature;
 use App\Models\Area;
 use App\Models\Cita;
 use App\Models\Consulta;
+use App\Models\Especialista;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Role;
-use App\Models\Especialista;
-use App\Models\Profesional;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class CitaTest extends TestCase
 {
     private $specialist;
+
     private $otherSpecialist;
+
     private $expediente;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         session(['_sym_key' => base64_encode(random_bytes(32))]);
 
         // Setup base data
         $role = Role::create(['nombre' => 'Specialist', 'slug' => 'specialist', 'descripcion' => 'Especialista']);
-        
+
         $area = Area::create(['nombre' => 'Psicología', 'descripcion' => 'Área de Psicología']);
         $otherArea = Area::create(['nombre' => 'Fisioterapia', 'descripcion' => 'Área de Fisioterapia']);
 
@@ -66,7 +67,7 @@ class CitaTest extends TestCase
         ]);
 
         $fechaHora = now()->addDays(2)->format('Y-m-d H:i:s');
-        
+
         $response = $this->actingAs($this->specialist)->post("/expedientes/{$this->expediente->id}/citas", [
             'consulta_id' => $consulta->id,
             'fecha_hora' => $fechaHora,
@@ -104,7 +105,7 @@ class CitaTest extends TestCase
         ]);
 
         $fechaHora = now()->addDays(2)->format('Y-m-d H:i:00');
-        
+
         Cita::create([
             'expediente_id' => $this->expediente->id,
             'consulta_id' => $consulta->id,
@@ -112,7 +113,7 @@ class CitaTest extends TestCase
             'area_id' => $this->expediente->area_id,
             'fecha_hora' => $fechaHora,
             'motivo' => 'First try',
-            'estado' => 'programada'
+            'estado' => 'programada',
         ]);
 
         $response = $this->actingAs($this->specialist)->post("/expedientes/{$this->expediente->id}/citas", [
@@ -128,10 +129,10 @@ class CitaTest extends TestCase
         $count = Cita::where('profesional_id', $this->specialist->profesional->id)
             ->where('fecha_hora', $fechaHora)
             ->count();
-            
+
         $this->assertEquals(1, $count);
     }
-    
+
     public function test_cannot_schedule_cita_for_closed_expediente()
     {
         $consulta = Consulta::create([
@@ -146,9 +147,9 @@ class CitaTest extends TestCase
         ]);
 
         $this->expediente->update(['estado' => 'cerrado']);
-        
+
         $fechaHora = now()->addDays(2)->format('Y-m-d H:i:s');
-        
+
         $response = $this->actingAs($this->specialist)->post("/expedientes/{$this->expediente->id}/citas", [
             'consulta_id' => $consulta->id,
             'fecha_hora' => $fechaHora,

@@ -3,12 +3,13 @@
 namespace Tests\Feature\Compliance;
 
 use App\Models\Area;
+use App\Models\ContactoPaciente;
 use App\Models\Especialista;
 use App\Models\Paciente;
-use App\Models\ContactoPaciente;
+use App\Services\Crypto\EncryptionContextService;
 use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\Group;
-use Illuminate\Support\Str;
 
 #[Group('owasp-v11')]
 class BusinessLogicTest extends ComplianceTestCase
@@ -18,9 +19,11 @@ class BusinessLogicTest extends ComplianceTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
-        $this->app->instance(\App\Services\Crypto\EncryptionContextService::class, new class extends \App\Services\Crypto\EncryptionContextService {
-            public function getKey(): string {
+
+        $this->app->instance(EncryptionContextService::class, new class extends EncryptionContextService
+        {
+            public function getKey(): string
+            {
                 return str_repeat('B', SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
             }
         });
@@ -63,9 +66,9 @@ class BusinessLogicTest extends ComplianceTestCase
         // 4. Criterio de Éxito: El rollback activo eliminó el paciente parcialmente creado.
         $finalCount = Paciente::count();
         $this->assertEquals($initialCount, $finalCount, 'La transacción no se revirtió. Quedó un paciente huérfano.');
-        
+
         $this->assertDatabaseMissing('pacientes', [
-            'carnet' => $payload['carnet']
+            'carnet' => $payload['carnet'],
         ]);
     }
 
@@ -86,7 +89,7 @@ class BusinessLogicTest extends ComplianceTestCase
             dump(session('errors')->getBag('default')->getMessages());
         }
         $response->assertStatus(302); // Redirección de éxito
-        
+
         $this->assertDatabaseHas('pacientes', ['carnet' => 'BC99999']);
     }
 
@@ -102,7 +105,7 @@ class BusinessLogicTest extends ComplianceTestCase
 
         // Asegurarnos de que el carnet no está encriptado (Blind Index exacto) pero el nombre sí
         $rawData = DB::selectOne('SELECT carnet, nombre_completo FROM pacientes WHERE codigo = ?', [$paciente->codigo]);
-        
+
         $this->assertEquals('ZZ11111', $rawData->carnet);
         $this->assertNotEquals('Nombre Sensible', $rawData->nombre_completo);
     }
@@ -120,7 +123,7 @@ class BusinessLogicTest extends ComplianceTestCase
         $response->assertStatus(200);
 
         // Validar estructura de Inertia
-        $response->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+        $response->assertInertia(fn (AssertableInertia $page) => $page
             ->where('results.carnet', 'XY22222')
             ->where('results.found', true)
         );
@@ -145,7 +148,7 @@ class BusinessLogicTest extends ComplianceTestCase
         // Validar que el paciente existe
         $paciente = Paciente::where('carnet', 'MM77777')->first();
         $this->assertNotNull($paciente);
-        
+
         // Atributo protegido inexistente no crashea ni inyecta
         $this->assertFalse(isset($paciente->is_admin));
     }
@@ -160,11 +163,11 @@ class BusinessLogicTest extends ComplianceTestCase
             'responsable_parentesco' => 'Otro',
             'responsable_nombre' => "' OR 1=1 --", // Vector SQLi (Aceptado como string por el request, pero blindado por PDO en Eloquent)
             'responsable_telefono' => "1234' OR '1'='1", // Vector SQLi en telefono
-            'responsable_direccion' => "1234",
+            'responsable_direccion' => '1234',
         ]);
 
         $response = $this->post('/pacientes', $payload);
-        
+
         // Debería ser rechazado por las validaciones (regex de telefono)
         // Retorna 302 con errores en sesión (comportamiento web estándar en Laravel)
         $response->assertStatus(302);

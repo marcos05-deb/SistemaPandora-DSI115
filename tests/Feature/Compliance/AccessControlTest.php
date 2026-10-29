@@ -4,9 +4,10 @@ namespace Tests\Feature\Compliance;
 
 use App\Models\Area;
 use App\Models\Especialista;
-use App\Models\Role;
-use App\Models\Paciente;
 use App\Models\Expediente;
+use App\Models\Paciente;
+use App\Models\Role;
+use App\Services\Crypto\EncryptionContextService;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Group;
 
@@ -15,14 +16,17 @@ use PHPUnit\Framework\Attributes\Group;
 class AccessControlTest extends ComplianceTestCase
 {
     private $areaPsico;
+
     private $areaOdon;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->app->instance(\App\Services\Crypto\EncryptionContextService::class, new class extends \App\Services\Crypto\EncryptionContextService {
-            public function getKey(): string {
+        $this->app->instance(EncryptionContextService::class, new class extends EncryptionContextService
+        {
+            public function getKey(): string
+            {
                 return str_repeat('A', SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
             }
         });
@@ -44,11 +48,11 @@ class AccessControlTest extends ComplianceTestCase
 
         // Cobertura Espejo (Positiva)
         $this->actingAs($odonSpecialist);
-        $responsePositiva = $this->get('/pacientes/' . $pacienteOdon->carnet);
+        $responsePositiva = $this->get('/pacientes/'.$pacienteOdon->carnet);
         $responsePositiva->assertStatus(200);
 
         // Cobertura Negativa (403 + sin PHI clínico en props)
-        $responseNegativa = $this->get('/pacientes/' . $pacientePsico->carnet);
+        $responseNegativa = $this->get('/pacientes/'.$pacientePsico->carnet);
         $responseNegativa->assertStatus(403);
         $responseNegativa->assertInertia(fn (Assert $page) => $page
             ->component('Error')
@@ -69,12 +73,12 @@ class AccessControlTest extends ComplianceTestCase
 
         // Cobertura Espejo (Referente B puede ver, editar a su paciente)
         $this->actingAs($refB);
-        $this->get('/pacientes/' . $pacienteB->carnet)->assertStatus(200);
+        $this->get('/pacientes/'.$pacienteB->carnet)->assertStatus(200);
 
         // Cobertura Negativa (Referente A no puede ver al paciente de B)
         $this->actingAs($refA);
-        
-        $responseGet = $this->get('/pacientes/' . $pacienteB->carnet);
+
+        $responseGet = $this->get('/pacientes/'.$pacienteB->carnet);
         $responseGet->assertStatus(403);
         $responseGet->assertInertia(fn (Assert $page) => $page
             ->component('Error')
@@ -84,10 +88,10 @@ class AccessControlTest extends ComplianceTestCase
         $responseGet->assertDontSee((string) $pacienteB->codigo);
 
         // Vectores de mutación IDOR
-        $responsePut = $this->put('/pacientes/' . $pacienteB->carnet, ['nombre_completo' => 'Hack']);
+        $responsePut = $this->put('/pacientes/'.$pacienteB->carnet, ['nombre_completo' => 'Hack']);
         $this->assertTrue(in_array($responsePut->status(), [403, 404, 405]));
 
-        $responseDelete = $this->delete('/pacientes/' . $pacienteB->carnet);
+        $responseDelete = $this->delete('/pacientes/'.$pacienteB->carnet);
         $this->assertTrue(in_array($responseDelete->status(), [403, 404, 405]));
     }
 
@@ -96,7 +100,7 @@ class AccessControlTest extends ComplianceTestCase
         $admin = Especialista::factory()->withRole('sysadmin')->create();
 
         $this->actingAs($admin);
-        
+
         // Sysadmin intenta acceder a ruta clínica
         $response = $this->get('/pacientes');
         $response->assertStatus(403);
@@ -119,7 +123,7 @@ class AccessControlTest extends ComplianceTestCase
 
         // Cobertura Negativa (Especialista no puede crear)
         $this->actingAs($specialist);
-        
+
         $pacienteData['carnet'] = 'ZZ99999';
         $response = $this->post('/pacientes', $pacienteData);
         $response->assertStatus(403);
@@ -136,14 +140,14 @@ class AccessControlTest extends ComplianceTestCase
         // Cobertura Espejo: Se puede asignar coordinador a Odontología (vacío)
         $spec3 = Especialista::factory()->create();
         $roleCoordinator = Role::where('slug', 'area_coordinator')->first();
-        
+
         $responseExito = $this->put("/admin/users/{$spec3->id}", [
             'name' => 'Spec3',
             'email' => 'spec3@test.com',
             'role_id' => $roleCoordinator->id,
             'area_id' => $this->areaOdon->id,
             'especialidad' => 'Odontología',
-            'numero_registro' => '777'
+            'numero_registro' => '777',
         ]);
         $responseExito->assertStatus(302);
         $responseExito->assertSessionHasNoErrors();
@@ -155,7 +159,7 @@ class AccessControlTest extends ComplianceTestCase
             'role_id' => $roleCoordinator->id,
             'area_id' => $this->areaPsico->id,
             'especialidad' => 'Psicología',
-            'numero_registro' => '666'
+            'numero_registro' => '666',
         ]);
 
         $responseFallo->assertStatus(302);

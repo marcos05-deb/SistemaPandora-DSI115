@@ -3,13 +3,16 @@
 declare(strict_types=1);
 
 use App\Models\Area;
+use App\Models\AutorizacionPaciente;
 use App\Models\Especialista;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Profesional;
 use App\Models\Role;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use OwenIt\Auditing\Models\Audit;
 
 beforeEach(function () {
     session(['_sym_key' => str_repeat('a', 32)]);
@@ -211,7 +214,7 @@ it('unique index prevents a second active expediente at database level', functio
         'derivado_por_profesional_id' => $this->profesionalReferent->id,
         'fecha_derivacion' => now(),
         'motivo_derivacion' => 'Segundo intento de expediente activo concurrente.',
-    ]))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+    ]))->toThrow(UniqueConstraintViolationException::class);
 });
 
 it('forbids non psychosocial_referent to derivar', function () {
@@ -258,7 +261,7 @@ it('permite derivar con autorización vigente aunque no sea el creador', functio
         'user_id' => $otroReferente->id,
     ]);
 
-    \App\Models\AutorizacionPaciente::create([
+    AutorizacionPaciente::create([
         'paciente_id' => $this->paciente->codigo,
         'profesional_id' => $otroProfesional->id,
         'otorgada_por_profesional_id' => $this->profesionalReferent->id,
@@ -289,7 +292,7 @@ it('rechaza derivar si la autorización ya venció', function () {
         'user_id' => $otroReferente->id,
     ]);
 
-    \App\Models\AutorizacionPaciente::create([
+    AutorizacionPaciente::create([
         'paciente_id' => $this->paciente->codigo,
         'profesional_id' => $otroProfesional->id,
         'otorgada_por_profesional_id' => $this->profesionalReferent->id,
@@ -320,7 +323,7 @@ it('audits the derivacion with author patient area date and masked motivo', func
     $expediente = Expediente::withoutGlobalScopes()->first();
     expect($expediente)->not->toBeNull();
 
-    $audit = \OwenIt\Auditing\Models\Audit::query()
+    $audit = Audit::query()
         ->where('auditable_type', Expediente::class)
         ->where('auditable_id', $expediente->id)
         ->where('event', 'created')

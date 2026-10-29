@@ -2,28 +2,36 @@
 
 namespace Tests\Feature\HU03;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Models\Especialista;
-use App\Models\Role;
 use App\Models\Area;
+use App\Models\Especialista;
 use App\Models\Expediente;
-use Illuminate\Support\Facades\Route;
+use App\Models\Role;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Tests\TestCase;
 
 class AreaScopeTest extends TestCase
 {
     use RefreshDatabase;
 
     private $areaPsico;
+
     private $areaMed;
+
     private $sysadmin;
+
     private $especialistaPsico;
+
     private $especialistaMulti;
+
     private $expPsico;
+
     private $expMed;
+
     private $profPsicoId;
+
     private $profMultiPsicoId;
 
     protected function setUp(): void
@@ -60,7 +68,7 @@ class AreaScopeTest extends TestCase
             'user_id' => $this->especialistaPsico->id,
             'area_id' => $this->areaPsico->id,
             'especialidad' => 'Psicología',
-            'numero_registro' => '123'
+            'numero_registro' => '123',
         ]);
 
         $this->especialistaMulti = Especialista::forceCreate([
@@ -74,14 +82,14 @@ class AreaScopeTest extends TestCase
             'user_id' => $this->especialistaMulti->id,
             'area_id' => $this->areaPsico->id,
             'especialidad' => 'Psicología',
-            'numero_registro' => '124'
+            'numero_registro' => '124',
         ]);
         DB::table('profesionales')->insert([
             'id' => Str::uuid(),
             'user_id' => $this->especialistaMulti->id,
             'area_id' => $this->areaMed->id,
             'especialidad' => 'Medicina',
-            'numero_registro' => '125'
+            'numero_registro' => '125',
         ]);
 
         $pacienteId = Str::uuid();
@@ -92,7 +100,7 @@ class AreaScopeTest extends TestCase
             'creado_por_profesional_id' => $this->profPsicoId,
             'sexo' => 'M',
             'estado_civil' => 'Soltero',
-            'fecha_nacimiento' => '1990-01-01'
+            'fecha_nacimiento' => '1990-01-01',
         ]);
 
         $this->expPsico = Expediente::forceCreate([
@@ -125,31 +133,31 @@ class AreaScopeTest extends TestCase
     public function test_sysadmin_cannot_access_clinical_routes()
     {
         $this->actingAs($this->sysadmin)
-             ->get('/test-expedientes/' . $this->expPsico->id)
-             ->assertStatus(403);
+            ->get('/test-expedientes/'.$this->expPsico->id)
+            ->assertStatus(403);
     }
 
     public function test_specialist_can_access_own_area_expediente()
     {
         $this->actingAs($this->especialistaPsico)
-             ->get('/test-expedientes/' . $this->expPsico->id)
-             ->assertStatus(200)
-             ->assertJson(['id' => $this->expPsico->id]);
+            ->get('/test-expedientes/'.$this->expPsico->id)
+            ->assertStatus(200)
+            ->assertJson(['id' => $this->expPsico->id]);
     }
 
     public function test_specialist_cannot_access_other_area_expediente()
     {
         $this->actingAs($this->especialistaPsico)
-             ->get('/test-expedientes/' . $this->expMed->id)
-             ->assertStatus(404);
+            ->get('/test-expedientes/'.$this->expMed->id)
+            ->assertStatus(404);
     }
 
     public function test_multi_area_specialist_can_access_both()
     {
         $this->actingAs($this->especialistaMulti);
 
-        $this->get('/test-expedientes/' . $this->expPsico->id)->assertStatus(200);
-        $this->get('/test-expedientes/' . $this->expMed->id)->assertStatus(200);
+        $this->get('/test-expedientes/'.$this->expPsico->id)->assertStatus(200);
+        $this->get('/test-expedientes/'.$this->expMed->id)->assertStatus(200);
     }
 
     public function test_global_scope_filters_queries()

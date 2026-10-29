@@ -8,6 +8,7 @@ use App\Http\Requests\HistorialFilterRequest;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Scopes\AreaScope;
+use App\Services\ClinicalAccessAuditor;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -28,7 +29,7 @@ class HistorialController extends Controller
         $tipo = $filtros['tipo_atencion'] ?? null;
 
         // RP-06: un evento agregado de acceso al historial (no una fila por consulta).
-        app(\App\Services\ClinicalAccessAuditor::class)
+        app(ClinicalAccessAuditor::class)
             ->record($user, $paciente, 'view_historial');
 
         $eventos = collect();

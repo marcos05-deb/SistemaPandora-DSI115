@@ -1,0 +1,21 @@
+﻿# PANDORA evidencia de bitácora
+# formato=bitacora-csv-v1
+# generado_por=HU23 Sysadmin (Sysadmin) #97
+# generado_en=2026-10-22T15:30:00-06:00
+# corte_en=2026-10-22T21:30:00+00:00
+# desde=2026-10-16
+# hasta=2026-10-22
+# usuario_filtro=
+# accion_filtro=
+# registro_filtro=
+# tipo_filtro=
+# total_eventos=8
+id,fecha,usuario_id,usuario_nombre,usuario_rol,accion,objeto_tipo,objeto_id,ip,ruta,campos
+708,2026-10-22T15:30:00-06:00,,,,created,Profesional,01a1882b-3eca-7345-a7e1-e8321566c19a,127.0.0.1,console,user_id|area_id|especialidad|numero_registro|id
+707,2026-10-22T15:30:00-06:00,,,,created,Especialista,99,127.0.0.1,console,name|email|phone|is_active|locked_until|id
+706,2026-10-22T15:30:00-06:00,,,,created,Profesional,01a1882b-3d9f-72c3-ae85-3564e6c55f75,127.0.0.1,console,user_id|area_id|especialidad|numero_registro|id
+705,2026-10-22T15:30:00-06:00,,,,created,Especialista,98,127.0.0.1,console,name|email|phone|is_active|locked_until|id
+704,2026-10-22T15:30:00-06:00,,,,created,Especialista,97,127.0.0.1,console,name|email|phone|is_active|locked_until|id
+710,2026-10-21T17:00:00-06:00,98,"HU23 Actor","Area coordinator",updated,Paciente,cccccccc-dddd-eeee-ffff-000000000001,10.0.0.23,https://pandora.test/admin/bitacora,telefono
+709,2026-10-20T16:00:00-06:00,98,"HU23 Actor","Area coordinator",created,Paciente,cccccccc-dddd-eeee-ffff-000000000001,10.0.0.23,https://pandora.test/pacientes/{carnet},nombre_completo|nota
+711,2026-10-19T15:00:00-06:00,98,"HU23 Actor","Area coordinator",accessed,Paciente,'=cmd|danger,10.0.0.23,https://pandora.test/admin/bitacora,action

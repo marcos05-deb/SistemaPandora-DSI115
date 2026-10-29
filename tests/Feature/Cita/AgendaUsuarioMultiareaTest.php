@@ -11,7 +11,6 @@ use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Profesional;
 use App\Models\Role;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Hash;
 
 beforeEach(function () {

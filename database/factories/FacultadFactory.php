@@ -12,7 +12,7 @@ class FacultadFactory extends Factory
     public function definition(): array
     {
         return [
-            'nombre' => 'Facultad de ' . $this->faker->jobTitle(),
+            'nombre' => 'Facultad de '.$this->faker->jobTitle(),
         ];
     }
 }

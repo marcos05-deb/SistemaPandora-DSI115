@@ -18,7 +18,7 @@ class ValidateSymmetricKey
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->session()->has('_sym_key')) {
+        if (! $request->session()->has('_sym_key')) {
             if ($request->wantsJson() || $request->inertia()) {
                 return response()->json([
                     'message' => 'Sesión expirada. Por favor, inicie sesión nuevamente.',

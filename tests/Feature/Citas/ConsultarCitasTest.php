@@ -1,12 +1,15 @@
 <?php
 
-use App\Models\Especialista;
 use App\Models\Area;
-use App\Models\Profesional;
-use App\Models\Paciente;
-use App\Models\Expediente;
 use App\Models\Cita;
-use function Pest\Laravel\{actingAs, get};
+use App\Models\Especialista;
+use App\Models\Expediente;
+use App\Models\Paciente;
+use App\Models\Profesional;
+use App\Models\Role;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
 
 beforeEach(function () {
     // Inyectar clave simétrica de sesión para que funcione el cifrado de DB (EncryptedFieldCast)
@@ -14,13 +17,13 @@ beforeEach(function () {
 
     // Área Psicología
     $this->areaPsicologia = Area::factory()->create(['nombre' => 'Psicología']);
-    
+
     // Área Médica
     $this->areaMedica = Area::factory()->create(['nombre' => 'Medicina']);
 
-    $roleCoordinator = \App\Models\Role::firstOrCreate(['slug' => 'area_coordinator'], ['nombre' => 'Coordinador', 'nivel_acceso' => 2]);
-    $roleSpecialist = \App\Models\Role::firstOrCreate(['slug' => 'specialist'], ['nombre' => 'Especialista', 'nivel_acceso' => 1]);
-    $roleSysadmin = \App\Models\Role::firstOrCreate(['slug' => 'sysadmin'], ['nombre' => 'Sysadmin', 'nivel_acceso' => 99]);
+    $roleCoordinator = Role::firstOrCreate(['slug' => 'area_coordinator'], ['nombre' => 'Coordinador', 'nivel_acceso' => 2]);
+    $roleSpecialist = Role::firstOrCreate(['slug' => 'specialist'], ['nombre' => 'Especialista', 'nivel_acceso' => 1]);
+    $roleSysadmin = Role::firstOrCreate(['slug' => 'sysadmin'], ['nombre' => 'Sysadmin', 'nivel_acceso' => 99]);
 
     // Coordinador de Psicología
     $this->coordinadorPsicologia = Especialista::factory()->create();
@@ -52,7 +55,7 @@ beforeEach(function () {
         'paciente_id' => $paciente->codigo,
         'area_id' => $this->areaPsicologia->id,
     ]);
-    
+
     $paciente2 = Paciente::factory()->create();
     $this->expedienteMedico = Expediente::factory()->create([
         'paciente_id' => $paciente2->codigo,
@@ -65,7 +68,7 @@ beforeEach(function () {
         'profesional_id' => $this->profesionalPsico1->id,
         'area_id' => $this->areaPsicologia->id,
         'fecha_hora' => now()->addHours(2),
-        'estado' => 'programada'
+        'estado' => 'programada',
     ]);
 
     // Citas para Psico 2 (Ayer)
@@ -74,17 +77,17 @@ beforeEach(function () {
         'profesional_id' => $this->profesionalPsico2->id,
         'area_id' => $this->areaPsicologia->id,
         'fecha_hora' => now()->subDay(),
-        'estado' => 'asistida'
+        'estado' => 'asistida',
     ]);
 
     // Cita Médica
     $this->citaMedica = Cita::factory()->create([
-            'expediente_id' => $this->expedienteMedico->id,
-            'profesional_id' => $this->profesionalMedico->id,
-            'area_id' => $this->areaMedica->id,
-            'fecha_hora' => now()->addHours(3),
-            'estado' => 'programada'
-        ]);
+        'expediente_id' => $this->expedienteMedico->id,
+        'profesional_id' => $this->profesionalMedico->id,
+        'area_id' => $this->areaMedica->id,
+        'fecha_hora' => now()->addHours(3),
+        'estado' => 'programada',
+    ]);
 });
 
 it('permite al especialista ver solo sus propias citas', function () {
@@ -93,7 +96,7 @@ it('permite al especialista ver solo sus propias citas', function () {
     $response = get(route('citas.index'));
 
     $response->assertOk();
-    
+
     // Verificamos que solo devuelva 1 cita (la suya)
     $citas = $response->viewData('page')['props']['citas']['data'];
     expect($citas)->toHaveCount(1)
@@ -153,7 +156,7 @@ it('bloquea al sysadmin de acceder a las citas', function () {
     actingAs($this->sysadmin);
 
     $response = get(route('citas.index'));
-    
+
     // Asumimos comportamiento estandar: redirección al admin dashboard o 403.
     $response->assertStatus(403);
 });
@@ -163,7 +166,7 @@ it('impide que filtros bypaseen el AreaScope', function () {
 
     // El coordinador de Psicologia intenta filtrar citas buscando al profesionalMedico (de otra área)
     $response = get(route('citas.index', ['especialista_id' => $this->profesionalMedico->id]));
-    
+
     $response->assertOk();
     $citas = $response->viewData('page')['props']['citas']['data'];
     expect($citas)->toHaveCount(0);
@@ -173,7 +176,7 @@ it('falla con validacion si el filtro de especialista no es un UUID valido', fun
     actingAs($this->coordinadorPsicologia);
 
     $response = get(route('citas.index', ['especialista_id' => 'no-es-un-uuid']));
-    
+
     $response->assertSessionHasErrors('especialista_id');
 });
 

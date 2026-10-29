@@ -7,6 +7,7 @@ use App\Enums\TipoIndicador;
 use App\Exceptions\RubricaInmutableException;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Area;
+use App\Models\Audit;
 use App\Models\Carrera;
 use App\Models\Consulta;
 use App\Models\Especialista;
@@ -19,6 +20,7 @@ use App\Services\ReporteParametrizadoService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 use Tests\TestCase;
@@ -188,7 +190,7 @@ function hu20PdfHtml(TestCase $test, array $parameters): string
 }
 
 test('HU20-E01 should_export_pdf_and_excel_with_same_totals_as_screen', function (): void {
-    $parameters = hu20ValidParameters($this->area->id);
+    $parameters = hu20ValidParameters($this->area->id, ['agrupar_por' => ['mes']]);
     $screen = $this->withHeaders(hu20InertiaHeaders())->get(route('reportes.generate', $parameters));
     $props = json_decode($screen->getContent(), true, flags: JSON_THROW_ON_ERROR)['props'];
     $total = (string) ($props['reporte']['totales'][TipoIndicador::ConsultasRegistradas->value]['valor'] ?? 0);
@@ -208,6 +210,16 @@ test('HU20-E01 should_export_pdf_and_excel_with_same_totals_as_screen', function
     $flat = collect($rows)->flatten()->implode(' ');
     expect($flat)->toContain($total)
         ->and($flat)->toContain('Consultas registradas');
+
+    expect($total)->toBe('13')
+        ->and($html)->toMatch('/Totales.*consultas_registradas.*13/s');
+    foreach ($props['reporte']['grupos'] as $group) {
+        expect($html)->toContain($group['dimensiones']['mes'])
+            ->and($rows)->toContain([
+                $group['dimensiones']['mes'],
+                (string) $group['valores'][TipoIndicador::ConsultasRegistradas->value]['valor'],
+            ]);
+    }
 });
 
 test('HU20-E02 should_include_active_filters_in_both_export_headers', function (): void {
@@ -346,4 +358,48 @@ test('HU20-E11 should_expose_export_capability_on_reportes_page', function (): v
         ->and($page['component'] ?? null)->toBe('Reportes/Index')
         ->and(data_get($page, 'props.can.exportar'))->toBeTrue()
         ->and(data_get($page, 'props.can.reportes'))->toBeTrue();
+});
+
+test('HU20-E11 should_reject_more_than_5000_rows_without_export_record', function (): void {
+    foreach (array_chunk(range(1, 5001), 500) as $chunk) {
+        DB::table('areas')->insert(array_map(
+            static fn (int $index): array => ['nombre' => 'HU20 Limit '.$index],
+            $chunk,
+        ));
+    }
+    $this->actingAs(Especialista::factory()->withRole('sysadmin')->create());
+    foreach (['pdf', 'excel'] as $format) {
+        $response = hu20Export($this, $format, hu20ValidParameters('todas', ['agrupar_por' => ['area']]));
+        expect($response->getStatusCode())->toBe(422)
+            ->and(ExportacionReporte::query()->count())->toBe(0);
+    }
+});
+
+test('HU20-E12 should_enforce_roles_and_audit_successful_exports', function (): void {
+    $this->actingAs($this->specialist);
+    expect(hu20Export($this, 'pdf', hu20ValidParameters($this->area->id))->getStatusCode())->toBe(403)
+        ->and(ExportacionReporte::query()->count())->toBe(0);
+
+    auth()->logout();
+    expect($this->get(route('reportes.export.pdf', hu20ValidParameters($this->area->id)))->getStatusCode())->toBe(302);
+
+    $this->actingAs($this->coordinator);
+    $response = hu20Export($this, 'excel', hu20ValidParameters($this->area->id));
+    $export = ExportacionReporte::query()->firstOrFail();
+    $audit = Audit::query()->where('auditable_type', ExportacionReporte::class)
+        ->where('auditable_id', $export->id)->where('event', 'created')->first();
+    expect($response->getStatusCode())->toBe(200)
+        ->and($audit)->not->toBeNull()
+        ->and((int) $audit->user_id)->toBe($this->coordinator->id)
+        ->and($export->sha256)->toBe(hash('sha256', $response->getContent()));
+});
+
+test('HU20-E10 should_send_download_headers_for_each_format', function (): void {
+    foreach (['pdf', 'excel'] as $format) {
+        $response = hu20Export($this, $format, hu20ValidParameters($this->area->id));
+        expect($response->getStatusCode())->toBe(200)
+            ->and($response->headers->get('content-disposition'))->toContain('attachment')
+            ->and($response->headers->get('content-disposition'))->toContain($format === 'pdf' ? '.pdf' : '.xlsx')
+            ->and($response->headers->get('cache-control'))->toContain('no-store');
+    }
 });

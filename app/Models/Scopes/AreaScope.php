@@ -2,6 +2,7 @@
 
 namespace App\Models\Scopes;
 
+use App\Models\Especialista;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
@@ -14,10 +15,10 @@ class AreaScope implements Scope
      */
     public function apply(Builder $builder, Model $model): void
     {
-        /** @var \App\Models\Especialista|null $especialista */
+        /** @var Especialista|null $especialista */
         $especialista = Auth::user();
-        
-        if ($especialista && !$especialista->hasRole('sysadmin')) {
+
+        if ($especialista && ! $especialista->hasRole('sysadmin')) {
             // whereIn para cubrir todas las áreas autorizadas del especialista
             $areaIds = $especialista->areas()->pluck('areas.id');
             $builder->whereIn('area_id', $areaIds);

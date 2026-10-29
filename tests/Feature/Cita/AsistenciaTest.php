@@ -7,12 +7,14 @@ use App\Events\CitaAusenciaRegistrada;
 use App\Models\Area;
 use App\Models\Cita;
 use App\Models\Especialista;
+use App\Models\EstadisticaPreventivaAusencia;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Profesional;
 use App\Models\Role;
 use App\Models\Rubrica;
 use App\Models\RubricaVersion;
+use App\Services\EstadisticasPreventivasService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use OwenIt\Auditing\Models\Audit;
@@ -252,7 +254,7 @@ it('alimenta estadísticas preventivas al registrar ausencia', function () {
         'estado' => EstadoCita::Programada->value,
     ]);
 
-    $service = app(\App\Services\EstadisticasPreventivasService::class);
+    $service = app(EstadisticasPreventivasService::class);
     expect($service->contarAusenciasPaciente($this->user, $this->paciente->codigo))->toBe(0);
 
     $this->actingAs($this->user)
@@ -262,12 +264,12 @@ it('alimenta estadísticas preventivas al registrar ausencia', function () {
         ])
         ->assertRedirect();
 
-    expect(\App\Models\EstadisticaPreventivaAusencia::count())->toBe(1)
+    expect(EstadisticaPreventivaAusencia::count())->toBe(1)
         ->and($service->contarAusenciasPaciente($this->user, $this->paciente->codigo))->toBe(1);
 
     // Idempotencia del listener ante reproceso del mismo evento.
     event(new CitaAusenciaRegistrada($cita->fresh()));
-    expect(\App\Models\EstadisticaPreventivaAusencia::count())->toBe(1);
+    expect(EstadisticaPreventivaAusencia::count())->toBe(1);
 });
 
 it('muestra alerta preventiva al registrar la segunda ausencia', function () {
@@ -282,7 +284,7 @@ it('muestra alerta preventiva al registrar la segunda ausencia', function () {
         'registrado_por_profesional_id' => $this->profesional->id,
     ]);
 
-    \Artisan::call('pandora:reconciliar-datos-lab2');
+    Artisan::call('pandora:reconciliar-datos-lab2');
 
     $cita = Cita::create([
         'expediente_id' => $this->expediente->id,
@@ -320,9 +322,9 @@ it('no incrementa ausencias al marcar asistida y aísla por área', function () 
         ])
         ->assertRedirect();
 
-    expect(\App\Models\EstadisticaPreventivaAusencia::count())->toBe(0);
+    expect(EstadisticaPreventivaAusencia::count())->toBe(0);
 
-    $otraArea = \App\Models\Area::factory()->create();
+    $otraArea = Area::factory()->create();
     $otroUser = Especialista::factory()->create();
     $otroUser->roles()->attach($this->user->roles->first()->id);
     Profesional::factory()->create([
@@ -330,6 +332,6 @@ it('no incrementa ausencias al marcar asistida y aísla por área', function () 
         'area_id' => $otraArea->id,
     ]);
 
-    $service = app(\App\Services\EstadisticasPreventivasService::class);
+    $service = app(EstadisticasPreventivasService::class);
     expect($service->contarAusenciasPaciente($otroUser, $this->paciente->codigo))->toBe(0);
 });

@@ -4,28 +4,29 @@ namespace Database\Seeders;
 
 use App\Models\Area;
 use App\Models\Carrera;
+use App\Models\Cita;
+use App\Models\Consulta;
 use App\Models\ContactoPaciente;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Profesional;
-use App\Models\Consulta;
 use Illuminate\Database\Seeder;
 
 class ExpedienteSeeder extends Seeder
 {
-
     public function run(): void
     {
         if (Expediente::count() > 0) {
             $this->command?->info('Expedientes ya existen. Saltando ExpedienteSeeder.');
+
             return;
         }
 
         $areas = [
-            'psicologia'       => Area::where('nombre', 'Psicología')->first(),
+            'psicologia' => Area::where('nombre', 'Psicología')->first(),
             'medicina_general' => Area::where('nombre', 'Medicina General')->first(),
-            'nutricion'        => Area::where('nombre', 'Nutrición')->first(),
-            'trabajo_social'   => Area::where('nombre', 'Trabajo Social')->first(),
+            'nutricion' => Area::where('nombre', 'Nutrición')->first(),
+            'trabajo_social' => Area::where('nombre', 'Trabajo Social')->first(),
         ];
 
         $profByEmail = [];
@@ -38,25 +39,26 @@ class ExpedienteSeeder extends Seeder
         $especialistaNutri = $profByEmail['especialista-nutri@pandora.com'] ?? null;
         $especialistaPsi = $profByEmail['especialista-psi@pandora.com'] ?? null;
 
-        if (!$psicosocial || !$especialista || !$especialistaNutri || !$especialistaPsi) {
+        if (! $psicosocial || ! $especialista || ! $especialistaNutri || ! $especialistaPsi) {
             $this->command?->warn('Faltan profesionales. Ejecute DatabaseSeeder primero.');
+
             return;
         }
 
         // Mapa: area_key => profesional creador del paciente
         $creadorPorArea = [
-            'psicologia'       => $psicosocial,
+            'psicologia' => $psicosocial,
             'medicina_general' => $especialista,
-            'nutricion'        => $especialistaNutri,
-            'trabajo_social'   => $psicosocial,
+            'nutricion' => $especialistaNutri,
+            'trabajo_social' => $psicosocial,
         ];
 
         // Mapa: area_key => profesional que atiende (especialista)
         $especialistaPorArea = [
-            'psicologia'       => $especialistaPsi,
+            'psicologia' => $especialistaPsi,
             'medicina_general' => $especialista,
-            'nutricion'        => $especialistaNutri,
-            'trabajo_social'   => null,
+            'nutricion' => $especialistaNutri,
+            'trabajo_social' => null,
         ];
 
         $pacientes = [
@@ -300,8 +302,9 @@ class ExpedienteSeeder extends Seeder
                     $q->where('nombre', $data['facultad_nombre']);
                 })->first();
 
-            if (!$carrera) {
+            if (! $carrera) {
                 $this->command?->warn("Carrera no encontrada: {$data['carrera_nombre']} en {$data['facultad_nombre']}");
+
                 continue;
             }
 
@@ -335,7 +338,7 @@ class ExpedienteSeeder extends Seeder
 
             // Actualizar paciente con las etiquetas para simular que se añadieron en su registro
             $paciente->update([
-                'etiquetas_motivo' => ['Violencia Familiar', 'Problemas de Adaptación']
+                'etiquetas_motivo' => ['Violencia Familiar', 'Problemas de Adaptación'],
             ]);
 
             if ($index >= 6) {
@@ -359,8 +362,8 @@ class ExpedienteSeeder extends Seeder
                 }
 
                 $atendedor = $especialistaPorArea[$expData['area_key']];
-                
-                if (!$atendedor) {
+
+                if (! $atendedor) {
                     continue; // Si no hay especialista configurado para el área (ej. trabajo social no tiene especialista clínico), saltamos.
                 }
 
@@ -369,7 +372,7 @@ class ExpedienteSeeder extends Seeder
                     'expediente_id' => $expediente->id,
                     'profesional_id' => $atendedor->id,
                     'fecha_consulta' => $paciente->fecha_primera_consulta,
-                    'motivo_consulta' => 'Evaluación inicial: ' . $expData['motivo_consulta'],
+                    'motivo_consulta' => 'Evaluación inicial: '.$expData['motivo_consulta'],
                     'notas_clinicas' => $expData['notas_clinicas'],
                     'diagnostico' => $expData['diagnostico'],
                     'tecnica_utilizada' => 'Entrevista y Observación Clínica',
@@ -385,12 +388,12 @@ class ExpedienteSeeder extends Seeder
                         'pronostico' => 'Favorable',
                     ],
                 ]);
-                
+
                 // Generar Cita programada para pruebas de conflicto de horario (US-11)
                 // Se agenda para MT20045 con especialista-psi@pandora.com (Psicología)
                 if ($data['carnet'] === 'MT20045') {
                     $fechaCitaConflicto = now()->addDays(2)->setTime(10, 0)->format('Y-m-d H:i:s');
-                    \App\Models\Cita::create([
+                    Cita::create([
                         'expediente_id' => $expediente->id,
                         'profesional_id' => $atendedor->id,
                         'area_id' => $area->id,
@@ -398,16 +401,16 @@ class ExpedienteSeeder extends Seeder
                         'motivo' => 'Cita de seguimiento pre-agendada para test de conflicto',
                         'estado' => 'programada',
                     ]);
-                    $this->command?->info("==> CITA GENERADA PARA PRUEBAS US-11 <==");
+                    $this->command?->info('==> CITA GENERADA PARA PRUEBAS US-11 <==');
                     $this->command?->info("Paciente: {$data['nombre_completo']} ({$data['carnet']})");
                     $this->command?->info("Especialista: {$atendedor->especialista->email}");
                     $this->command?->info("Fecha y Hora ocupada: {$fechaCitaConflicto}");
-                    $this->command?->info("==========================================");
+                    $this->command?->info('==========================================');
                 }
 
                 if ($data['carnet'] === 'FL22067') {
                     // Cita pasada
-                    \App\Models\Cita::create([
+                    Cita::create([
                         'expediente_id' => $expediente->id,
                         'profesional_id' => $atendedor->id,
                         'area_id' => $area->id,
@@ -415,9 +418,9 @@ class ExpedienteSeeder extends Seeder
                         'motivo' => 'Cita de seguimiento atrasada (Pasada)',
                         'estado' => 'programada',
                     ]);
-                    
+
                     // Cita hoy (futura en horas)
-                    \App\Models\Cita::create([
+                    Cita::create([
                         'expediente_id' => $expediente->id,
                         'profesional_id' => $atendedor->id,
                         'area_id' => $area->id,
@@ -425,9 +428,9 @@ class ExpedienteSeeder extends Seeder
                         'motivo' => 'Cita para hoy más tarde (Límite Mismo Día)',
                         'estado' => 'programada',
                     ]);
-                    
+
                     // Cita futura en días
-                    \App\Models\Cita::create([
+                    Cita::create([
                         'expediente_id' => $expediente->id,
                         'profesional_id' => $atendedor->id,
                         'area_id' => $area->id,
@@ -435,17 +438,17 @@ class ExpedienteSeeder extends Seeder
                         'motivo' => 'Cita en días futuros (No accionable)',
                         'estado' => 'programada',
                     ]);
-                    
-                    $this->command?->info("==> CITAS GENERADAS PARA PRUEBAS US-12 <==");
+
+                    $this->command?->info('==> CITAS GENERADAS PARA PRUEBAS US-12 <==');
                     $this->command?->info("Paciente: {$data['nombre_completo']} ({$data['carnet']})");
                     $this->command?->info("Especialista: {$atendedor->especialista->email}");
-                    $this->command?->info("Variantes: Pasada, Hoy-Futura, Futura-en-días");
-                    $this->command?->info("==========================================");
+                    $this->command?->info('Variantes: Pasada, Hoy-Futura, Futura-en-días');
+                    $this->command?->info('==========================================');
                 }
 
                 if ($data['carnet'] === 'RM24033') {
                     // Cita para probar reprogramar
-                    \App\Models\Cita::create([
+                    Cita::create([
                         'expediente_id' => $expediente->id,
                         'profesional_id' => $atendedor->id,
                         'area_id' => $area->id,
@@ -453,9 +456,9 @@ class ExpedienteSeeder extends Seeder
                         'motivo' => 'Cita de control nutricional (Para reprogramar)',
                         'estado' => 'programada',
                     ]);
-                    
+
                     // Cita para probar cancelar
-                    \App\Models\Cita::create([
+                    Cita::create([
                         'expediente_id' => $expediente->id,
                         'profesional_id' => $atendedor->id,
                         'area_id' => $area->id,
@@ -463,11 +466,11 @@ class ExpedienteSeeder extends Seeder
                         'motivo' => 'Cita de seguimiento (Para cancelar)',
                         'estado' => 'programada',
                     ]);
-                    
-                    $this->command?->info("==> CITAS GENERADAS PARA PRUEBAS US-13 <==");
+
+                    $this->command?->info('==> CITAS GENERADAS PARA PRUEBAS US-13 <==');
                     $this->command?->info("Paciente: {$data['nombre_completo']} ({$data['carnet']})");
-                    $this->command?->info("Variantes: Para Reprogramar, Para Cancelar");
-                    $this->command?->info("==========================================");
+                    $this->command?->info('Variantes: Para Reprogramar, Para Cancelar');
+                    $this->command?->info('==========================================');
                 }
             }
         }

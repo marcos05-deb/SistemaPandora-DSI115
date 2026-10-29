@@ -2,11 +2,12 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Especialista;
+use App\Models\Expediente;
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
-use App\Models\Expediente;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class EnforceAreaScope
 {
@@ -15,10 +16,10 @@ class EnforceAreaScope
      */
     public function handle(Request $request, Closure $next): Response
     {
-        /** @var \App\Models\Especialista|null $especialista */
+        /** @var Especialista|null $especialista */
         $especialista = Auth::user();
 
-        if (!$especialista) {
+        if (! $especialista) {
             return abort(401);
         }
 
@@ -30,15 +31,15 @@ class EnforceAreaScope
 
         if ($expedienteId) {
             $areaIds = $especialista->areas()->pluck('areas.id')->toArray();
-            
+
             if ($expedienteId instanceof Expediente) {
-                if (!in_array($expedienteId->area_id, $areaIds)) {
+                if (! in_array($expedienteId->area_id, $areaIds)) {
                     return abort(403, 'Acceso denegado a este expediente clínico.');
                 }
             } else {
                 $expediente = Expediente::withoutGlobalScopes()->find($expedienteId);
-                
-                if ($expediente && !in_array($expediente->area_id, $areaIds)) {
+
+                if ($expediente && ! in_array($expediente->area_id, $areaIds)) {
                     return abort(403, 'Acceso denegado a este expediente clínico.');
                 }
             }

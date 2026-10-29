@@ -14,7 +14,7 @@ use App\Models\Paciente;
 use App\Models\Profesional;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Process\Process;
 use Tests\TestCase;
@@ -196,7 +196,7 @@ class ConcurrentExclusionTest extends TestCase
             @rmdir($barrier);
 
             // Evitar que datos confirmados (sin transacción) contaminen el resto de la suite.
-            \Illuminate\Foundation\Testing\RefreshDatabaseState::$migrated = false;
+            RefreshDatabaseState::$migrated = false;
         }
     }
 

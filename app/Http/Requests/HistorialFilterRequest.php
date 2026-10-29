@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -53,8 +54,8 @@ class HistorialFilterRequest extends FormRequest
             $hasta = $this->input('fecha_hasta');
 
             if ($desde && $hasta) {
-                $dias = \Illuminate\Support\Carbon::parse($desde)
-                    ->diffInDays(\Illuminate\Support\Carbon::parse($hasta));
+                $dias = Carbon::parse($desde)
+                    ->diffInDays(Carbon::parse($hasta));
 
                 if ($dias > self::RANGO_MAXIMO_DIAS) {
                     $validator->errors()->add(

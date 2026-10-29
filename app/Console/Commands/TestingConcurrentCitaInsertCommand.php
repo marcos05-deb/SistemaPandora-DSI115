@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
@@ -100,7 +101,7 @@ class TestingConcurrentCitaInsertCommand extends Command
                 // ignore
             }
 
-            $sqlState = $e instanceof \Illuminate\Database\QueryException
+            $sqlState = $e instanceof QueryException
                 ? ($e->errorInfo[0] ?? null)
                 : null;
 

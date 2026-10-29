@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 use App\Models\AlertaPreventiva;
 use App\Models\Area;
+use App\Models\Audit;
 use App\Models\Consulta;
 use App\Models\Especialista;
 use App\Models\EvaluacionRiesgo;
+use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Rubrica;
 use App\Models\RubricaVersion;
+use App\Services\DashboardAlertOverviewService;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -103,7 +106,7 @@ it('oculta el resumen de alertas al referente psicosocial', function (): void {
         );
 });
 
-it('muestra las mismas gráficas al admin sin carnets', function (): void {
+it('protege conteos pequeños y omite alertas individuales del admin', function (): void {
     $admin = Especialista::factory()->withRole('sysadmin')->create();
 
     $rubrica = Rubrica::query()->where('codigo', Rubrica::CODIGO_RIESGO_PREVENTIVO)->firstOrFail();
@@ -157,9 +160,54 @@ it('muestra las mismas gráficas al admin sin carnets', function (): void {
             ->where('alertOverview.visible', true)
             ->where('alertOverview.reveal_carnets', false)
             ->where('alertOverview.scope', 'institucional')
-            ->where('alertOverview.total', 1)
-            ->has('alertOverview.urgentes', 1)
-            ->missing('alertOverview.urgentes.0.paciente_carnet')
+            ->where('alertOverview.total', null)
+            ->where('alertOverview.abiertas', null)
+            ->where('alertOverview.privacidad_protegida', true)
+            ->where('alertOverview.por_estado.0.count', null)
+            ->where('alertOverview.por_senal.0.count', null)
+            ->has('alertOverview.urgentes', 0)
             ->has('alertOverview.tendencia_suicida')
         );
+
+    $audit = Audit::query()->where('user_id', $admin->id)->where('event', 'accessed')
+        ->where('tags', 'aggregate_access')->get()->first(
+            fn (Audit $row): bool => ($row->new_values['action'] ?? null) === 'view_dashboard_overview'
+        );
+    expect($audit)->not->toBeNull()
+        ->and($audit->new_values['filters']['scope'])->toBe('institucional')
+        ->and(json_encode($audit->new_values))->not->toContain($paciente->codigo);
+});
+
+it('protege las dos jerarquías y el total de una cohorte sensible pequeña', function (): void {
+    $patient = Paciente::factory()->create([
+        'creado_por_profesional_id' => $this->coordinator->profesional->id,
+        'etiquetas_motivo' => ['Ideas Suicidas'],
+    ]);
+    Expediente::factory()->create([
+        'paciente_id' => $patient->codigo,
+        'area_id' => $this->area->id,
+        'derivado_por_profesional_id' => $this->coordinator->profesional->id,
+    ]);
+    $this->actingAs($this->coordinator);
+    $overview = app(DashboardAlertOverviewService::class)->forUser($this->coordinator);
+
+    expect($overview['tendencia_suicida']['total_alumnos'])->toBeNull()
+        ->and($overview['tendencia_suicida']['por_facultad'])->not->toBeEmpty()
+        ->and($overview['tendencia_suicida']['por_carrera'])->not->toBeEmpty();
+    foreach ([$overview['tendencia_suicida']['por_facultad'], $overview['tendencia_suicida']['por_carrera'], $overview['por_etiqueta']] as $rows) {
+        expect(collect($rows)->every(fn (array $row): bool => $row['count'] === null))->toBeTrue();
+    }
+
+    expect(Audit::query()->where('user_id', $this->coordinator->id)->where('tags', 'listing_access')
+        ->where('auditable_type', AlertaPreventiva::class)->where('event', 'accessed')->exists())->toBeTrue();
+});
+
+it('no registra accesos al resumen cuando la policy lo excluye', function (): void {
+    $referent = Especialista::factory()->withRole('psychosocial_referent')->withProfesional($this->area)->create();
+    $this->actingAs($referent);
+    $before = Audit::query()->where('user_id', $referent->id)->where('event', 'accessed')->count();
+    $overview = app(DashboardAlertOverviewService::class)->forUser($referent);
+
+    expect($overview['visible'])->toBeFalse()
+        ->and(Audit::query()->where('user_id', $referent->id)->where('event', 'accessed')->count())->toBe($before);
 });

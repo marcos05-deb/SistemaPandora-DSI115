@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Expediente;
 
+use App\Http\Middleware\RequirePasswordChange;
 use App\Models\Area;
+use App\Models\Cita;
 use App\Models\Especialista;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Profesional;
+use App\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -29,7 +32,7 @@ class CerrarExpedienteTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutMiddleware([\App\Http\Middleware\RequirePasswordChange::class]);
+        $this->withoutMiddleware([RequirePasswordChange::class]);
         \config(['audit.console' => true]);
 
         $area = Area::factory()->create();
@@ -37,7 +40,7 @@ class CerrarExpedienteTest extends TestCase
         $this->coordinador = Especialista::factory()->create([
             'password' => $this->testPassword,
         ]);
-        $this->coordinador->roles()->attach(\App\Models\Role::firstOrCreate(
+        $this->coordinador->roles()->attach(Role::firstOrCreate(
             ['slug' => 'area_coordinator'],
             ['nombre' => 'Coordinador de Área']
         ));
@@ -50,7 +53,7 @@ class CerrarExpedienteTest extends TestCase
         $this->especialista = Especialista::factory()->create([
             'password' => $this->testPassword,
         ]);
-        $this->especialista->roles()->attach(\App\Models\Role::firstOrCreate(
+        $this->especialista->roles()->attach(Role::firstOrCreate(
             ['slug' => 'specialist'],
             ['nombre' => 'Especialista']
         ));
@@ -190,7 +193,7 @@ class CerrarExpedienteTest extends TestCase
     public function test_cierre_cancela_citas_futuras_programadas(): void
     {
         $profesional = $this->especialista->profesional;
-        $citaFutura = \App\Models\Cita::factory()->create([
+        $citaFutura = Cita::factory()->create([
             'expediente_id' => $this->expediente->id,
             'profesional_id' => $profesional->id,
             'area_id' => $this->expediente->area_id,
@@ -198,7 +201,7 @@ class CerrarExpedienteTest extends TestCase
             'estado' => 'programada',
             'motivo' => 'Cita futura de prueba',
         ]);
-        $citaPasada = \App\Models\Cita::factory()->create([
+        $citaPasada = Cita::factory()->create([
             'expediente_id' => $this->expediente->id,
             'profesional_id' => $profesional->id,
             'area_id' => $this->expediente->area_id,
