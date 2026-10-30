@@ -1,3 +1,5 @@
+ARG PHP_VERSION=8.5-cli-bookworm
+
 # Stage 1: Build Frontend Assets
 FROM node:22-alpine AS frontend
 WORKDIR /app
@@ -9,7 +11,8 @@ COPY public/ public/
 RUN npm run build
 
 # Stage 2: Application
-FROM php:8.4-cli-bookworm
+FROM php:${PHP_VERSION}
+
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
