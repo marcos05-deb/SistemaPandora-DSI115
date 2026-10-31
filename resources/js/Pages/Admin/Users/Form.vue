@@ -131,7 +131,7 @@ function submitUser() {
                 <div class="flex gap-3 items-start">
                     <svg class="w-5 h-5 text-[var(--frost3)] mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                     <div>
-                        <h4 class="text-[12px] font-medium text-[var(--frost4)]">Seguridad criptográfica</h4>
+                        <h4 class="text-[12px] font-medium text-[var(--frost4)]">Contraseña temporal</h4>
                         <p class="text-[11px] text-[var(--frost4)] mt-1">Al guardar, se generará una contraseña temporal de 16 caracteres. Podrás copiarla en la siguiente pantalla.</p>
                     </div>
                 </div>
@@ -140,8 +140,8 @@ function submitUser() {
                 <div class="flex gap-3 items-start">
                     <svg class="w-5 h-5 text-[var(--nord3)] mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                     <div>
-                        <h4 class="text-[12px] font-medium text-[var(--nord3)]">Contraseña bloqueada</h4>
-                        <p class="text-[11px] text-[var(--nord3)] mt-1 opacity-80">El cambio de contraseña administrativa está deshabilitado temporalmente (Deuda técnica Sprint 3) para proteger la integridad de los datos cifrados.</p>
+                        <h4 class="text-[12px] font-medium text-[var(--nord3)]">Cambio de contraseña no disponible</h4>
+                        <p class="text-[11px] text-[var(--nord3)] mt-1 opacity-80">No puedes cambiar la contraseña de esta cuenta desde esta pantalla. Esta opción está deshabilitada para proteger los datos cifrados.</p>
                     </div>
                 </div>
             </div>

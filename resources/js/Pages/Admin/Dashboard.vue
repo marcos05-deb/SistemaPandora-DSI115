@@ -37,7 +37,7 @@ defineProps({
         <div>
             <h1 class="text-2xl font-bold text-[var(--nord0)] tracking-tight">Panel de Administración</h1>
             <p class="text-sm text-[var(--nord3)] mt-1">
-                Métricas agregadas del sistema. Sin carnets ni datos personales de pacientes.
+                Se muestran solo métricas agregadas; no se incluyen datos personales de pacientes.
             </p>
         </div>
 

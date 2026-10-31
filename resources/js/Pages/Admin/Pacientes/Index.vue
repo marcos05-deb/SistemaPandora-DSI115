@@ -71,8 +71,8 @@ function rechazar(id) {
             <div class="min-w-0">
                 <h2 class="text-[16px] font-medium text-[var(--nord0)] tracking-tight">Auditoría de Pacientes</h2>
                 <p class="text-[12px] text-[var(--nord3)] mt-0.5">
-                    Solo UUID, campos tocados, autor y motivo. Sin carnet, nombre ni valores clínicos.
-                    También autoriza nuevas correcciones tras la primera (permiso de un solo uso).
+                    Se muestran el código anónimo del paciente, los campos modificados, quién hizo el cambio y el motivo. No se muestran el carnet, el nombre ni los datos clínicos.
+                    Puedes aprobar o rechazar solicitudes para una corrección adicional. Si la apruebas, la persona solicitante podrá hacer una sola actualización de los campos autorizados.
                 </p>
             </div>
             <div class="text-[11px] text-[var(--nord3)] bg-[var(--surface-subtle)] px-3 py-1.5 rounded-full font-medium border border-[var(--nord4)] shrink-0 self-start">
@@ -135,26 +135,26 @@ function rechazar(id) {
 
         <div class="bg-white p-4 rounded-[10px] shadow-sm border border-[var(--nord4)] space-y-3">
             <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <input v-model="pacienteFiltro" type="text" placeholder="Buscar por UUID de paciente" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" @change="applyFilters" />
+                <input v-model="pacienteFiltro" type="text" placeholder="Buscar por código anónimo del paciente" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" @change="applyFilters" />
                 <select v-model="tipoEvento" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" @change="applyFilters">
-                    <option value="">Tipo de evento</option>
+                    <option value="">Tipo de cambio</option>
                     <option value="actualizacion_datos_paciente">Actualización de datos</option>
                     <option value="correccion_carnet_paciente">Corrección de carnet</option>
                 </select>
                 <select v-model="nivelEvento" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" @change="applyFilters">
-                    <option value="">Nivel</option>
+                    <option value="">Sensibilidad del cambio</option>
                     <option value="normal">Normal</option>
                     <option value="sensible">Sensible</option>
                 </select>
                 <select v-model="solicitudEstado" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" @change="applyFilters">
-                    <option value="">Solicitudes (todas)</option>
+                    <option value="">Todas las solicitudes</option>
                     <option value="pendiente">Pendientes</option>
                     <option value="aprobada">Aprobadas</option>
                     <option value="rechazada">Rechazadas</option>
                     <option value="consumida">Consumidas</option>
                 </select>
                 <input v-model="fechaDesde" type="date" :max="hoy" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" @change="applyFilters" />
-                <input v-model="search" type="text" placeholder="Buscar UUID pacientes…" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" />
+                <input v-model="search" type="text" placeholder="Buscar por código anónimo del paciente…" class="border border-[var(--nord4)] rounded-[8px] px-3 py-2 text-[13px]" />
             </div>
         </div>
 
@@ -167,8 +167,8 @@ function rechazar(id) {
                     <thead>
                         <tr class="bg-[var(--surface-header)] text-[var(--nord3)] font-medium text-[11px] uppercase tracking-[0.05em]">
                             <th class="py-[12px] px-[16px]">Paciente</th>
-                            <th class="py-[12px] px-[16px]">Tipo</th>
-                            <th class="py-[12px] px-[16px]">Campos</th>
+                            <th class="py-[12px] px-[16px]">Tipo de solicitud</th>
+                            <th class="py-[12px] px-[16px]">Campos solicitados</th>
                             <th class="py-[12px] px-[16px]">Solicitante</th>
                             <th class="py-[12px] px-[16px]">Estado</th>
                             <th class="py-[12px] px-[16px]">Fecha</th>
@@ -179,7 +179,7 @@ function rechazar(id) {
                     <tbody class="divide-y divide-[var(--nord5)]">
                         <tr v-for="s in (solicitudes.data || [])" :key="s.id" class="hover:bg-[var(--nord6)]">
                             <td class="py-[12px] px-[16px] font-mono text-[11px]">{{ s.paciente_id.substring(0, 8) }}…</td>
-                            <td class="py-[12px] px-[16px] text-[11px]">{{ s.tipo }}</td>
+                            <td class="py-[12px] px-[16px] text-[11px]">{{ s.tipo === 'clinico' ? 'Actualización clínica' : 'Corrección de datos' }}</td>
                             <td class="py-[12px] px-[16px] text-[11px] text-[var(--nord3)]">{{ (s.campos_solicitados || []).join(', ') }}</td>
                             <td class="py-[12px] px-[16px] text-[12px]">{{ s.solicitante }}</td>
                             <td class="py-[12px] px-[16px] text-[11px]">{{ s.estado }}</td>
@@ -193,7 +193,7 @@ function rechazar(id) {
                             </td>
                         </tr>
                         <tr v-if="!(solicitudes.data || []).length">
-                            <td colspan="8" class="py-10 text-center text-[13px] text-[var(--nord3)]">No hay solicitudes.</td>
+                            <td colspan="8" class="py-10 text-center text-[13px] text-[var(--nord3)]">No hay solicitudes de permiso.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -210,11 +210,11 @@ function rechazar(id) {
                     <thead>
                         <tr class="bg-[var(--surface-header)] text-[var(--nord3)] font-medium text-[11px] uppercase tracking-[0.05em]">
                             <th class="py-[12px] px-[16px]">Paciente</th>
-                            <th class="py-[12px] px-[16px]">Tipo</th>
-                            <th class="py-[12px] px-[16px]">Campos</th>
+                            <th class="py-[12px] px-[16px]">Tipo de cambio</th>
+                            <th class="py-[12px] px-[16px]">Campos modificados</th>
                             <th class="py-[12px] px-[16px]">Responsable</th>
                             <th class="py-[12px] px-[16px]">Fecha</th>
-                            <th class="py-[12px] px-[16px]">Nivel</th>
+                            <th class="py-[12px] px-[16px]">Sensibilidad</th>
                             <th class="py-[12px] px-[16px]">Motivo</th>
                             <th class="py-[12px] px-[16px]"></th>
                         </tr>
@@ -222,7 +222,7 @@ function rechazar(id) {
                     <tbody class="divide-y divide-[var(--nord5)]">
                         <tr v-for="c in correcciones.data" :key="c.id" class="hover:bg-[var(--nord6)]">
                             <td class="py-[12px] px-[16px] font-mono text-[11px]">{{ c.paciente_id.substring(0, 8) }}…</td>
-                            <td class="py-[12px] px-[16px] text-[11px]">{{ c.tipo_evento }}</td>
+                            <td class="py-[12px] px-[16px] text-[11px]">{{ c.tipo_evento === 'correccion_carnet_paciente' ? 'Corrección de carnet' : 'Actualización de datos' }}</td>
                             <td class="py-[12px] px-[16px] text-[11px] text-[var(--nord3)]">{{ (c.campos_modificados || []).join(', ') }}</td>
                             <td class="py-[12px] px-[16px] text-[12px]">{{ c.responsable }}</td>
                             <td class="py-[12px] px-[16px] text-[12px]">{{ formatDate(c.created_at) }}</td>
@@ -236,7 +236,7 @@ function rechazar(id) {
                             </td>
                             <td class="py-[12px] px-[16px] text-[11px] text-[var(--nord3)] max-w-[180px] truncate">{{ c.motivo }}</td>
                             <td class="py-[12px] px-[16px]">
-                                <Link :href="`/admin/pacientes/correcciones/${c.id}`" class="text-[12px] text-[var(--nord8)] font-medium">Detalle</Link>
+                                <Link :href="`/admin/pacientes/correcciones/${c.id}`" class="text-[12px] text-[var(--nord8)] font-medium">Ver detalle</Link>
                             </td>
                         </tr>
                         <tr v-if="!correcciones.data?.length">
@@ -257,11 +257,11 @@ function rechazar(id) {
                 <table class="w-full text-left">
                     <thead>
                         <tr class="bg-[var(--surface-header)] text-[var(--nord3)] font-medium text-[11px] uppercase tracking-[0.05em]">
-                            <th class="py-[12px] px-[16px]">UUID</th>
-                            <th class="py-[12px] px-[16px]">Fecha de Registro</th>
-                            <th class="py-[12px] px-[16px]">Última Actualización</th>
-                            <th class="py-[12px] px-[16px]">Última Acción</th>
-                            <th class="py-[12px] px-[16px]">Corregido</th>
+                            <th class="py-[12px] px-[16px]">Código anónimo</th>
+                            <th class="py-[12px] px-[16px]">Fecha de registro</th>
+                            <th class="py-[12px] px-[16px]">Última actualización</th>
+                            <th class="py-[12px] px-[16px]">Última acción</th>
+                            <th class="py-[12px] px-[16px]">Corrección inicial usada</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[var(--nord5)]">
@@ -272,7 +272,7 @@ function rechazar(id) {
                             <td class="py-[12px] px-[16px] text-[12px]">
                                 <span class="bg-[var(--surface-header)] px-2 py-1 rounded-md text-[11px] border border-[var(--nord4)]">{{ paciente.ultima_accion }}</span>
                             </td>
-                            <td class="py-[12px] px-[16px] text-[12px]">{{ paciente.datos_corregidos ? 'Sí (1ª usada)' : 'No' }}</td>
+                            <td class="py-[12px] px-[16px] text-[12px]">{{ paciente.datos_corregidos ? 'Sí' : 'No' }}</td>
                         </tr>
                     </tbody>
                 </table>

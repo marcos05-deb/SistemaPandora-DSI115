@@ -14,14 +14,15 @@
     </style>
 </head>
 <body>
-    <h1>Reporte parametrizado — PANDORA</h1>
+    <h1>Reporte personalizado — PANDORA</h1>
     <div class="meta">
         <p><strong>Generado en:</strong> {{ $generadoEn }}</p>
         <p><strong>Generado por:</strong> {{ $generadoPor }}</p>
         <p><strong>Período:</strong> {{ $report->parametrosAplicados['desde'] }} — {{ $report->parametrosAplicados['hasta'] }}</p>
         <p><strong>Área:</strong> {{ $areaEtiqueta }}</p>
-        <p><strong>Indicadores:</strong> {{ implode(', ', $report->parametrosAplicados['indicadores']) }}</p>
-        <p><strong>Agrupación:</strong> {{ implode(', ', $report->parametrosAplicados['agrupar_por']) }}</p>
+        <p><strong>Indicadores:</strong> {{ implode(', ', $indicadoresEtiquetas) }}</p>
+        <p><strong>Agrupado por:</strong> {{ implode(', ', $agrupacionesEtiquetas) }}</p>
+        <p>Por privacidad, se ocultan los grupos pequeños y los totales que permitirían deducir sus conteos.</p>
     </div>
 
     <h2>Totales</h2>
@@ -30,10 +31,10 @@
         <tbody>
             @foreach ($report->totales as $indicador => $valor)
                 <tr>
-                    <td>{{ $indicador }}</td>
+                    <td>{{ $valor['etiqueta'] ?? $indicador }}</td>
                     <td>
                         @if (!empty($valor['suprimido']))
-                            {{ ($valor['supresion'] ?? '') === 'primaria' ? '<5' : 'Protegido' }}
+                            Oculto por privacidad
                         @else
                             {{ $valor['valor'] ?? 0 }}{{ ($valor['unidad'] ?? null) === 'porcentaje' ? '%' : '' }}
                         @endif
@@ -47,8 +48,8 @@
     <table>
         <thead>
             <tr>
-                @foreach ($report->parametrosAplicados['agrupar_por'] as $dimension)
-                    <th>{{ $dimension }}</th>
+                @foreach ($agrupacionesEtiquetas as $etiqueta)
+                    <th>{{ $etiqueta }}</th>
                 @endforeach
                 @foreach ($report->columnas as $columna)
                     <th>{{ $columna['etiqueta'] }}</th>
@@ -68,7 +69,7 @@
                             @if (!$valor)
                                 0
                             @elseif (!empty($valor['suprimido']))
-                                {{ ($valor['supresion'] ?? '') === 'primaria' ? '<5' : 'Protegido' }}
+                                Oculto por privacidad
                             @else
                                 {{ $valor['valor'] ?? 0 }}{{ ($valor['unidad'] ?? null) === 'porcentaje' ? '%' : '' }}
                             @endif

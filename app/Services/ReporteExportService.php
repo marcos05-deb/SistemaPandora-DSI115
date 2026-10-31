@@ -23,6 +23,13 @@ final class ReporteExportService
 {
     public const MAX_FILAS = 5000;
 
+    private const AGRUPACION_LABELS = [
+        'indicador' => 'Indicador',
+        'area' => 'Área',
+        'mes' => 'Mes',
+        'semana' => 'Semana desde',
+    ];
+
     public function __construct(
         private readonly ReporteParametrizadoService $reportes,
         private readonly ReportePolicy $policy,
@@ -70,6 +77,8 @@ final class ReporteExportService
             'areaEtiqueta' => $areaEtiqueta,
             'generadoPor' => $this->etiquetaUsuario($user),
             'generadoEn' => Carbon::now(config('app.timezone'))->toIso8601String(),
+            'indicadoresEtiquetas' => array_column($report->columnas, 'etiqueta'),
+            'agrupacionesEtiquetas' => $this->etiquetasAgrupacion($report->parametrosAplicados['agrupar_por']),
         ])->render();
 
         return Pdf::loadHTML($html)
@@ -90,7 +99,7 @@ final class ReporteExportService
         $writer->openToFile($path);
 
         $writer->getCurrentSheet()->setName('Resumen');
-        $writer->addRow(Row::fromValues([$this->sanitizeCell('Reporte parametrizado PANDORA')]));
+        $writer->addRow(Row::fromValues([$this->sanitizeCell('Reporte personalizado PANDORA')]));
         $writer->addRow(Row::fromValues([
             $this->sanitizeCell('Generado en'),
             $this->sanitizeCell(Carbon::now(config('app.timezone'))->toIso8601String()),
@@ -109,24 +118,25 @@ final class ReporteExportService
         ]));
         $writer->addRow(Row::fromValues([
             $this->sanitizeCell('Indicadores'),
-            $this->sanitizeCell(implode(', ', $report->parametrosAplicados['indicadores'])),
+            $this->sanitizeCell(implode(', ', array_column($report->columnas, 'etiqueta'))),
         ]));
+        $agrupacionesEtiquetas = $this->etiquetasAgrupacion($report->parametrosAplicados['agrupar_por']);
         $writer->addRow(Row::fromValues([
-            $this->sanitizeCell('Agrupación'),
-            $this->sanitizeCell(implode(', ', $report->parametrosAplicados['agrupar_por'])),
+            $this->sanitizeCell('Agrupado por'),
+            $this->sanitizeCell(implode(', ', $agrupacionesEtiquetas)),
         ]));
         $writer->addRow(Row::fromValues([]));
         $writer->addRow(Row::fromValues([$this->sanitizeCell('Totales')]));
         foreach ($report->totales as $indicatorId => $valor) {
             $writer->addRow(Row::fromValues([
-                $this->sanitizeCell((string) $indicatorId),
+                $this->sanitizeCell((string) ($valor['etiqueta'] ?? $indicatorId)),
                 $this->sanitizeCell($this->formatValor($valor)),
             ]));
         }
 
         $writer->addNewSheetAndMakeItCurrent()->setName('Detalle');
         $headers = array_merge(
-            array_map(static fn (string $d): string => $d, $report->parametrosAplicados['agrupar_por']),
+            $agrupacionesEtiquetas,
             array_map(static fn (array $c): string => $c['etiqueta'], $report->columnas)
         );
         $writer->addRow(Row::fromValues(array_map(fn (string $h): string => $this->sanitizeCell($h), $headers)));
@@ -157,12 +167,23 @@ final class ReporteExportService
             return '0';
         }
         if (! empty($valor['suprimido'])) {
-            return ($valor['supresion'] ?? '') === 'primaria' ? '<5' : 'Protegido';
+            return 'Oculto por privacidad';
         }
 
         $number = (string) ($valor['valor'] ?? 0);
 
         return ($valor['unidad'] ?? null) === 'porcentaje' ? $number.'%' : $number;
+    }
+
+    /** @param list<string> $agrupaciones
+     *  @return list<string>
+     */
+    private function etiquetasAgrupacion(array $agrupaciones): array
+    {
+        return array_map(
+            static fn (string $agrupacion): string => self::AGRUPACION_LABELS[$agrupacion] ?? $agrupacion,
+            $agrupaciones,
+        );
     }
 
     private function sanitizeCell(string $value): string

@@ -19,6 +19,7 @@ test('HU20-E01 should_extract_real_pdf_and_match_excel_totals_and_monthly_rows',
     }
 
     $value = static fn (int $count): array => ['valor' => $count, 'suprimido' => false, 'unidad' => 'conteo'];
+    $total = $value(13) + ['etiqueta' => 'Consultas registradas'];
     $report = new ReporteGenerado(
         parametrosAplicados: ['desde' => '2026-09-01', 'hasta' => '2026-10-22', 'area' => 1,
             'indicadores' => ['consultas_registradas'], 'agrupar_por' => ['mes']],
@@ -28,7 +29,7 @@ test('HU20-E01 should_extract_real_pdf_and_match_excel_totals_and_monthly_rows',
             ['dimensiones' => ['mes' => '2026-09'], 'valores' => ['consultas_registradas' => $value(6)]],
             ['dimensiones' => ['mes' => '2026-10'], 'valores' => ['consultas_registradas' => $value(7)]],
         ],
-        totales: ['consultas_registradas' => $value(13)], sinDatos: false, minimoCelda: 5,
+        totales: ['consultas_registradas' => $total], sinDatos: false, minimoCelda: 5,
     );
     $user = Especialista::factory()->withRole('sysadmin')->create(['name' => 'QA Synthetic']);
     $service = app(ReporteExportService::class);
@@ -42,7 +43,7 @@ test('HU20-E01 should_extract_real_pdf_and_match_excel_totals_and_monthly_rows',
         $process = new Process([$binary, '-layout', $pdfPath, '-']);
         $process->mustRun();
         $text = $process->getOutput();
-        expect($text)->toMatch('/consultas_registradas\s+13/')
+        expect($text)->toMatch('/Consultas registradas\s+13/')
             ->and($text)->toMatch('/2026-09\s+6/')
             ->and($text)->toMatch('/2026-10\s+7/');
 
@@ -54,7 +55,7 @@ test('HU20-E01 should_extract_real_pdf_and_match_excel_totals_and_monthly_rows',
                 $rows[] = array_map(static fn ($cell): string => (string) $cell->getValue(), $row->getCells());
             }
         }
-        expect($rows)->toContain(['consultas_registradas', '13'])
+        expect($rows)->toContain(['Consultas registradas', '13'])
             ->and($rows)->toContain(['2026-09', '6'])
             ->and($rows)->toContain(['2026-10', '7']);
 

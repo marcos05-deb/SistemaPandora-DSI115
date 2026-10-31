@@ -54,7 +54,7 @@ function generateReport() {
         onHttpException: (response) => {
             pageError.value = response.status === 403
                 ? 'No tienes permiso para generar un reporte con esos parámetros.'
-                : 'No fue posible generar el reporte.';
+                : 'No se pudo generar el reporte. Inténtalo de nuevo.';
         },
         onNetworkError: () => {
             pageError.value = 'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.';
@@ -126,7 +126,7 @@ function resetForm() {
 function formatValue(value) {
     if (!value || value.suprimido) {
         if (!value) return '0';
-        return value.supresion === 'primaria' ? `< ${reporte.value?.minimo_celda ?? 5}` : 'Protegido';
+        return 'Oculto';
     }
 
     const formatted = formatter.format(value.valor ?? 0);
@@ -158,13 +158,13 @@ function dateLabel(value) {
 </script>
 
 <template>
-    <Head title="Reportes parametrizados" />
+    <Head title="Reportes personalizados" />
 
     <main class="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         <header class="space-y-1">
             <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--frost3)]">Analítica institucional</p>
-            <h1 class="text-2xl font-bold tracking-tight text-[var(--nord0)] sm:text-3xl">Reportes parametrizados</h1>
-            <p class="max-w-3xl text-sm leading-relaxed text-[var(--nord3)]">Genera comparaciones agregadas bajo demanda. Los parámetros quedan en la URL para reproducir el reporte.</p>
+            <h1 class="text-2xl font-bold tracking-tight text-[var(--nord0)] sm:text-3xl">Reportes personalizados</h1>
+            <p class="max-w-3xl text-sm leading-relaxed text-[var(--nord3)]">Crea reportes con los indicadores y grupos que selecciones. Puedes guardar la dirección de esta página para volver a consultar el mismo reporte.</p>
         </header>
 
         <section aria-labelledby="report-filters-title" class="rounded-2xl border border-[var(--nord4)] bg-white p-4 shadow-sm sm:p-6">
@@ -247,6 +247,7 @@ function dateLabel(value) {
                         Indicadores: {{ reporte.columnas.map((column) => column.etiqueta).join(', ') }} ·
                         Agrupar por: {{ reporte.parametros_aplicados.agrupar_por.map((group) => groupLabels[group]).join(' + ') }}
                     </p>
+                    <p class="mt-1 text-xs text-[var(--nord3)]">Por privacidad, los conteos de grupos pequeños y sus totales relacionados se ocultan.</p>
                 </div>
                 <div class="flex flex-col items-end gap-2">
                     <p class="text-xs text-[var(--nord3)]">Generado por {{ reporte.generado_por }} · {{ new Intl.DateTimeFormat('es-SV', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(reporte.generado_en)) }}</p>
@@ -265,7 +266,7 @@ function dateLabel(value) {
                 </div>
             </div>
 
-            <p v-if="reporte.sin_datos" class="rounded-xl border border-[var(--nord4)] bg-white p-5 text-sm text-[var(--nord2)]">Sin datos en el período; los totales son cero.</p>
+            <p v-if="reporte.sin_datos" class="rounded-xl border border-[var(--nord4)] bg-white p-5 text-sm text-[var(--nord2)]">No hay registros que coincidan con estos filtros. Por eso, los totales son 0.</p>
 
             <section aria-labelledby="report-totals-title" class="rounded-2xl border border-[var(--nord4)] bg-white p-4 shadow-sm">
                 <h3 id="report-totals-title" class="mb-3 text-base font-semibold text-[var(--nord0)]">Totales del período</h3>
@@ -280,7 +281,6 @@ function dateLabel(value) {
             <section class="overflow-hidden rounded-2xl border border-[var(--nord4)] bg-white shadow-sm">
                 <div class="border-b border-[var(--nord5)] px-4 py-3 sm:px-5">
                     <h3 class="font-semibold text-[var(--nord0)]">Grupos</h3>
-                    <p class="mt-0.5 text-xs text-[var(--nord3)]">Los conteos menores que {{ reporte.minimo_celda }} se suprimen igual que en HU-18.</p>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[650px] border-collapse text-left text-sm">
@@ -298,7 +298,7 @@ function dateLabel(value) {
                                 <td v-if="groupedByIndicator" class="px-4 py-3 text-right font-semibold tabular-nums text-[var(--nord0)]">{{ formatValue(group.valores[group.dimensiones.indicador]) }}</td>
                                 <td v-else v-for="column in reportColumns" :key="column.id" class="px-4 py-3 text-right font-semibold tabular-nums text-[var(--nord0)]">{{ formatValue(group.valores[column.id]) }}</td>
                             </tr>
-                            <tr v-if="reporte.grupos.length === 0"><td :colspan="tableDimensions.length + reportColumns.length" class="px-4 py-8 text-center text-sm text-[var(--nord3)]">No hay grupos para los parámetros seleccionados.</td></tr>
+                            <tr v-if="reporte.grupos.length === 0"><td :colspan="tableDimensions.length + reportColumns.length" class="px-4 py-8 text-center text-sm text-[var(--nord3)]">No hay resultados para esta combinación. Prueba con otros filtros.</td></tr>
                         </tbody>
                     </table>
                 </div>

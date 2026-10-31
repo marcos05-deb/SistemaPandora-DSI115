@@ -92,7 +92,7 @@ const submit = () => {
                             </h3>
                             <div class="mt-2">
                                 <p class="text-sm text-[var(--nord3)]">
-                                    Seleccione el área clínica y registre el motivo para derivar a
+                                    Selecciona el área clínica y escribe el motivo para derivar a
                                     <span v-if="paciente" class="font-semibold text-[var(--nord0)]">{{ paciente.nombre_completo }}</span>.
                                 </p>
                             </div>
@@ -109,7 +109,7 @@ const submit = () => {
                                         :class="{'border-[var(--aurora-red)] bg-red-50': form.errors.area_id, 'border-[var(--nord4)] bg-[var(--surface)]': !form.errors.area_id}"
                                         :disabled="isSubmitting"
                                     >
-                                        <option value="" disabled>Seleccione un área...</option>
+                                        <option value="" disabled>Selecciona un área...</option>
                                         <option v-for="area in areas" :key="area.id" :value="area.id">
                                             {{ area.nombre }}
                                         </option>
@@ -128,7 +128,7 @@ const submit = () => {
                                         v-model="form.motivo_derivacion"
                                         rows="3"
                                         maxlength="1000"
-                                        placeholder="Describa el motivo clínico o psicosocial de la derivación (mín. 10 caracteres)"
+                                        placeholder="Describe el motivo clínico o psicosocial de la derivación (mínimo 10 caracteres)"
                                         class="block w-full border text-[var(--nord0)] text-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-[var(--nord8)] focus:border-[var(--nord8)] transition-colors duration-200 resize-none"
                                         :class="{'border-[var(--aurora-red)] bg-red-50': form.errors.motivo_derivacion, 'border-[var(--nord4)] bg-[var(--surface)]': !form.errors.motivo_derivacion}"
                                         :disabled="isSubmitting"

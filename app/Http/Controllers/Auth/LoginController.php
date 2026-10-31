@@ -63,7 +63,7 @@ class LoginController extends Controller
             $remaining = $existingUser->locked_until->diffInMinutes(now());
 
             return back()->withErrors([
-                'email' => "Cuenta bloqueada. Intente nuevamente en {$remaining} minutos.",
+                'email' => "Cuenta bloqueada. Intenta de nuevo en {$remaining} minutos.",
             ])->onlyInput('email');
         }
 
@@ -93,7 +93,7 @@ class LoginController extends Controller
                     $existingUser->save();
 
                     return back()->withErrors([
-                        'email' => 'Cuenta bloqueada por seguridad. Intente nuevamente en 15 minutos.',
+                        'email' => 'Cuenta bloqueada por seguridad. Intenta de nuevo en 15 minutos.',
                     ])->onlyInput('email');
                 }
             }

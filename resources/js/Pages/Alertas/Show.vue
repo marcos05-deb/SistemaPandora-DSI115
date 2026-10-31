@@ -343,7 +343,7 @@ onUnmounted(() => document.removeEventListener('keydown', onModalKeydown));
             </section>
 
             <section v-if="readOnly" aria-label="Estado de solo lectura" class="rounded-lg border border-[var(--nord4)] bg-[var(--surface-subtle)] px-4 py-3 text-sm text-[var(--nord1)]">
-                <template v-if="isTerminal">Esta alerta tiene un estado terminal y solo puede consultarse.</template>
+                <template v-if="isTerminal">Esta alerta está cerrada o descartada. Solo puedes consultar sus datos.</template>
                 <template v-else>No tienes permisos para registrar seguimientos ni cambiar el estado de esta alerta.</template>
             </section>
 

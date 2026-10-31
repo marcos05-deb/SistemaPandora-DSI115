@@ -73,7 +73,7 @@ function indicatorTotal(indicatorId) {
 
 function displayValue(item, unit = 'conteo') {
     if (item.suprimido) {
-        return item.supresion === 'primaria' ? `< ${props.resultados.minimo_celda}` : 'Protegido';
+        return 'Oculto';
     }
 
     const value = formatter.format(item.valor ?? 0);
@@ -183,7 +183,7 @@ function formatDate(value) {
             <div class="flex flex-wrap items-end justify-between gap-2">
                 <div>
                     <h2 id="results-title" class="text-xl font-semibold text-[var(--nord0)]">Resultados agregados</h2>
-                    <p class="mt-1 text-xs text-[var(--nord3)]">Los conteos menores de {{ resultados.minimo_celda }} se ocultan para proteger grupos pequeños.</p>
+                    <p class="mt-1 text-xs text-[var(--nord3)]">Por privacidad, los grupos con menos de {{ resultados.minimo_celda }} casos y los totales que permitirían deducirlos se ocultan.</p>
                 </div>
                 <span class="text-xs text-[var(--nord3)]">{{ resultados.areas.length }} {{ resultados.areas.length === 1 ? 'área' : 'áreas' }} en el alcance</span>
             </div>
@@ -206,7 +206,7 @@ function formatDate(value) {
                         {{ displayValue(indicatorTotal(item.id), indicatorTotal(item.id).unidad) }}
                     </p>
                     <p v-if="indicatorTotal(item.id).suprimido" class="mt-1 text-xs text-[var(--nord3)]">
-                        {{ indicatorTotal(item.id).supresion === 'primaria' ? `Valor menor que ${resultados.minimo_celda}` : 'Total protegido por supresión complementaria' }}
+                        {{ indicatorTotal(item.id).supresion === 'primaria' ? 'Oculto porque el grupo es pequeño' : 'Oculto para evitar deducir otros conteos' }}
                     </p>
                     <p v-else class="mt-1 text-xs text-[var(--nord3)]">{{ item.definicion }}</p>
                 </article>
@@ -235,9 +235,9 @@ function formatDate(value) {
                                     <th scope="row" class="px-4 py-3 font-medium text-[var(--nord1)]">{{ row.area }}</th>
                                     <td v-if="item.id === 'alertas_generadas'" class="px-4 py-3 text-[var(--nord2)]">{{ row.segmento_etiqueta || row.segmento }}</td>
                                     <td class="px-4 py-3 text-right font-semibold tabular-nums text-[var(--nord0)]">
-                                        <span v-if="row.suprimido" :title="row.supresion === 'primaria' ? `Conteo menor que ${resultados.minimo_celda}` : 'Valor oculto para impedir reconstrucción por diferencia'">
+                                        <span v-if="row.suprimido" :title="row.supresion === 'primaria' ? 'Oculto porque el grupo es pequeño' : 'Oculto para evitar que se deduzcan otros conteos'">
                                             {{ displayValue(row, indicatorTotal(item.id).unidad) }}
-                                            <span class="sr-only">{{ row.supresion === 'primaria' ? `Menor que ${resultados.minimo_celda}` : 'protegido por supresión complementaria' }}</span>
+                                            <span class="sr-only">{{ row.supresion === 'primaria' ? 'Oculto porque el grupo es pequeño' : 'Oculto para evitar que se deduzcan otros conteos' }}</span>
                                         </span>
                                         <template v-else>{{ displayValue(row, indicatorTotal(item.id).unidad) }}</template>
                                     </td>
@@ -247,7 +247,7 @@ function formatDate(value) {
                                             <rect x="0" y="2" width="100" height="8" rx="4" fill="var(--nord5)" />
                                             <rect x="0" y="2" :width="barWidth(row, item.id)" height="8" rx="4" fill="var(--frost3)" />
                                         </svg>
-                                        <span v-else class="text-xs text-[var(--nord3)]">Valor protegido</span>
+                                        <span v-else class="text-xs text-[var(--nord3)]">Oculto por privacidad</span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -258,13 +258,13 @@ function formatDate(value) {
                                         {{ displayValue(indicatorTotal(item.id), indicatorTotal(item.id).unidad) }}
                                     </td>
                                     <td class="px-4 py-3 text-xs text-[var(--nord3)]">
-                                        <span v-if="indicatorTotal(item.id).suprimido">{{ indicatorTotal(item.id).supresion === 'primaria' ? 'Supresión primaria' : 'Supresión complementaria' }}</span>
+                                        <span v-if="indicatorTotal(item.id).suprimido">{{ indicatorTotal(item.id).supresion === 'primaria' ? 'Oculto porque el grupo es pequeño' : 'Oculto para evitar deducir otros conteos' }}</span>
                                     </td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
-                    <p class="px-4 pb-3 text-xs text-[var(--nord3)] sm:px-5">{{ item.formula }} · Fuente: {{ item.fuente }}. Una celda oculta no se incluye en las barras.</p>
+                    <p class="px-4 pb-3 text-xs text-[var(--nord3)] sm:px-5">{{ item.formula }} · Fuente: {{ item.fuente }}. Los valores ocultos no se representan en las barras.</p>
                 </section>
             </div>
         </section>

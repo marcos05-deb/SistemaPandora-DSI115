@@ -238,10 +238,10 @@ const limpiarFiltros = () => {
             </h3>
             <p class="text-[14px] text-[var(--nord3)] max-w-md mx-auto leading-relaxed">
                 <template v-if="filtrosSinResultados">
-                    No hay atenciones que coincidan con el período, área o tipo seleccionados. Pruebe ampliar el rango o limpiar filtros.
+                    No hay atenciones que coincidan con el período, área o tipo seleccionados. Prueba ampliar el rango o limpiar los filtros.
                 </template>
                 <template v-else>
-                    No se encontraron registros de consultas previas para este paciente en las áreas a las que tienes acceso autorizado.
+                    No hay consultas previas de este paciente en las áreas que puedes consultar.
                 </template>
             </p>
             <div class="mt-6 flex items-center justify-center gap-3">

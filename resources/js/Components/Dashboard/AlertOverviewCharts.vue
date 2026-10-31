@@ -60,7 +60,7 @@ function formatDate(dateStr) {
     return formatLocalDate(dateStr, { year: 'numeric', month: 'short', day: 'numeric' }, 'es-ES', '-');
 }
 
-const countLabel = (count) => count === null ? 'Protegido' : count;
+const countLabel = (count) => count === null ? 'Oculto' : count;
 
 const visible = computed(() => Boolean(props.overview?.visible));
 const revealCarnets = computed(() => Boolean(props.overview?.reveal_carnets));
@@ -224,7 +224,7 @@ const donutSegments = computed(() => {
 
 <template>
     <div v-if="visible" class="space-y-6">
-        <p v-if="overview.privacidad_protegida" role="status" class="text-sm text-[var(--nord3)]">Los desgloses con grupos pequeños y sus totales relacionados se protegen para evitar la identificación de personas.</p>
+        <p v-if="overview.privacidad_protegida" role="status" class="rounded-lg border border-[var(--nord4)] bg-[var(--surface-subtle)] px-4 py-3 text-sm text-[var(--nord1)]">Por privacidad, se ocultan los conteos de grupos pequeños y los totales que permitirían deducirlos.</p>
         <section
             aria-labelledby="dashboard-alertas-title"
             class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden animate-fade-in"
@@ -238,8 +238,8 @@ const donutSegments = computed(() => {
                         Alertas preventivas
                     </h2>
                     <p class="mt-1 text-sm text-[var(--nord3)]">
-                        Resumen {{ scopeLabel }} · {{ countLabel(overview.abiertas) }} abiertas de {{ countLabel(overview.total) }} registradas
-                        <span v-if="!revealCarnets" class="text-[var(--nord3)]"> · sin carnets</span>
+                        Resumen {{ scopeLabel }} · {{ overview.total === null ? 'Conteos ocultos por privacidad' : `${overview.abiertas} abiertas de ${overview.total} registradas` }}
+                        <span v-if="!revealCarnets" class="text-[var(--nord3)]"> · sin identificadores personales</span>
                     </p>
                 </div>
                 <Link
@@ -373,7 +373,7 @@ const donutSegments = computed(() => {
                         </div>
                     </li>
                 </ul>
-                <p v-else class="text-sm text-[var(--nord3)]">{{ overview.por_etiqueta?.some((row) => row.count === null) ? 'Desglose protegido por privacidad.' : 'Aún no hay etiquetas registradas en expedientes.' }}</p>
+                <p v-else class="text-sm text-[var(--nord3)]">{{ overview.por_etiqueta?.some((row) => row.count === null) ? 'Conteos ocultos por privacidad.' : 'Aún no hay etiquetas registradas en expedientes.' }}</p>
             </div>
         </section>
 
@@ -388,7 +388,7 @@ const donutSegments = computed(() => {
                         Tendencia suicida
                     </h2>
                     <p class="mt-1 max-w-xl text-sm text-[var(--nord3)]">
-                        Distribución estadística por facultad y carrera. Solo conteos agregados; sin carnets ni datos personales.
+                        Distribución estadística por facultad y carrera. Solo conteos agregados; no se incluyen identificadores personales ni notas clínicas.
                     </p>
                 </div>
                 <div class="flex items-baseline gap-2 rounded-2xl border border-[var(--nord4)] bg-[var(--surface-subtle)] px-5 py-3">
@@ -504,7 +504,7 @@ const donutSegments = computed(() => {
                         </div>
                     </div>
                     <p v-else class="rounded-xl border border-dashed border-[var(--nord4)] px-4 py-10 text-center text-sm text-[var(--nord3)]">
-                        {{ tendencia.total_alumnos === null ? 'Desglose protegido por privacidad.' : 'Sin casos de tendencia suicida.' }}
+                        {{ tendencia.total_alumnos === null ? 'Conteos ocultos por privacidad.' : 'Sin casos de tendencia suicida.' }}
                     </p>
                 </div>
 

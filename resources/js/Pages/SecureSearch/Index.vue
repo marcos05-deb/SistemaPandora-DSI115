@@ -55,7 +55,7 @@ loadHistory();
 </script>
 
 <template>
-    <Head title="Busqueda Segura" />
+    <Head title="Búsqueda segura" />
 
     <div class="max-w-2xl mx-auto mt-10">
         <div class="bg-white rounded-[10px] shadow-sm border border-[var(--nord4)] overflow-hidden">
@@ -64,7 +64,7 @@ loadHistory();
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[var(--nord10)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    Búsqueda por UUID
+                    Buscar expediente por código
                 </h2>
                 <Link v-if="canSeeCarnetSearch" href="/pacientes" class="text-[12px] text-[var(--nord10)] hover:text-[var(--nord9)] transition-colors font-medium">
                     Buscar por Carnet →
@@ -79,8 +79,7 @@ loadHistory();
                         </svg>
                     </div>
                     <p class="text-[13px] text-[var(--nord3)]">
-                        Ingrese el código único (UUID) del expediente para consultarlo. 
-                        La identidad del paciente permanece protegida hasta que acceda al detalle.
+                        Ingresa el código del expediente (UUID) para consultarlo. La identidad del paciente se mantiene protegida hasta que abras el detalle.
                     </p>
                 </div>
 
@@ -180,7 +179,7 @@ loadHistory();
             </div>
         </div>
 
-        <p class="mt-6 text-[12px] text-[var(--nord3)] text-center">Los datos se muestran de forma anonimizada. Solo personal autorizado puede acceder al expediente completo.</p>
+        <p class="mt-6 text-[12px] text-[var(--nord3)] text-center">Los datos se muestran de forma anonimizada. Solo el personal autorizado puede consultar el expediente completo.</p>
     </div>
 
     <Modal :show="showHistorial" title="Historial de Citas" max-width="max-w-2xl" @close="showHistorial = false">

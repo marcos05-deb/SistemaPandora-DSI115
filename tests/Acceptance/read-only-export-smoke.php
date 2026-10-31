@@ -14,6 +14,7 @@ $app->make(Kernel::class)->bootstrap();
 
 // Synthetic data only: no authentication, database reads, seeds or migrations.
 $value = ['valor' => 13, 'suprimido' => false, 'unidad' => 'conteo'];
+$total = $value + ['etiqueta' => 'Consultas registradas'];
 $report = new ReporteGenerado(
     parametrosAplicados: ['desde' => '2026-09-01', 'hasta' => '2026-10-22', 'area' => 1,
         'indicadores' => ['consultas_registradas'], 'agrupar_por' => ['indicador']],
@@ -21,7 +22,7 @@ $report = new ReporteGenerado(
     columnas: [['id' => 'consultas_registradas', 'etiqueta' => 'Consultas registradas']],
     grupos: [['dimensiones' => ['indicador_etiqueta' => 'Consultas registradas'],
         'valores' => ['consultas_registradas' => $value]]],
-    totales: ['consultas_registradas' => $value], sinDatos: false, minimoCelda: 5,
+    totales: ['consultas_registradas' => $total], sinDatos: false, minimoCelda: 5,
 );
 $path = tempnam(sys_get_temp_dir(), 'hu20_readonly_');
 if ($path === false) {
@@ -32,9 +33,11 @@ try {
     $pdf = Pdf::loadView('exports.reporte-pdf', [
         'report' => $report, 'areaEtiqueta' => 'QA Area',
         'generadoPor' => 'QA Synthetic', 'generadoEn' => $report->generadoEn,
+        'indicadoresEtiquetas' => array_column($report->columnas, 'etiqueta'),
+        'agrupacionesEtiquetas' => ['Indicador'],
     ])->setPaper('a4', 'landscape')->output();
     $writer->openToFile($path);
-    $writer->addRow(Row::fromValues(['consultas_registradas', 13]));
+    $writer->addRow(Row::fromValues(['Consultas registradas', 13]));
     $writer->close();
     $xlsx = (string) file_get_contents($path);
     if (! str_starts_with($pdf, '%PDF') || ! str_starts_with($xlsx, 'PK')) {

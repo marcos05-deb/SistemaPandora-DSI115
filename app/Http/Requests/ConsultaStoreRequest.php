@@ -87,12 +87,12 @@ class ConsultaStoreRequest extends FormRequest
             'fecha_consulta.before_or_equal' => 'La fecha de la consulta no puede ser futura.',
             'fecha_consulta.after_or_equal' => 'La fecha de la consulta no puede ser anterior a un año.',
             'evaluacion_inicial.required' => 'La evaluación inicial es obligatoria en la primera consulta.',
-            'crisis_psicologica.required' => 'Indique si se registró una crisis psicológica.',
-            'indicadores_tendencia_suicida.present' => 'Registre los indicadores de tendencia suicida o indique que no hay ninguno.',
+            'crisis_psicologica.required' => 'Indica si se registró una crisis psicológica.',
+            'indicadores_tendencia_suicida.present' => 'Registra los indicadores de tendencia suicida o indica que no hay ninguno.',
         ];
 
         foreach (self::EVALUACION_CAMPOS as $campo) {
-            $messages["evaluacion_inicial.{$campo}.required"] = 'Este campo de la evaluación inicial es obligatorio.';
+            $messages["evaluacion_inicial.{$campo}.required"] = 'Completa este campo de la evaluación inicial.';
         }
 
         return $messages;
@@ -107,11 +107,11 @@ class ConsultaStoreRequest extends FormRequest
             if ($diagnostico === '' && $observacion === '') {
                 $validator->errors()->add(
                     'diagnostico',
-                    'Complete al menos el diagnóstico o la observación clínica.'
+                    'Completa el diagnóstico o las notas clínicas; al menos uno es obligatorio.'
                 );
                 $validator->errors()->add(
                     'notas_clinicas',
-                    'Complete al menos el diagnóstico o la observación clínica.'
+                    'Completa el diagnóstico o las notas clínicas; al menos uno es obligatorio.'
                 );
             }
         });

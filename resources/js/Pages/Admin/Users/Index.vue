@@ -150,7 +150,7 @@ function deactivateUser(id, name) {
               <th class="py-[12px] px-[16px] font-semibold">Nombre</th>
               <th class="py-[12px] px-[16px] font-semibold">Correo</th>
               <th class="py-[12px] px-[16px] font-semibold">Rol</th>
-              <th class="py-[12px] px-[16px] font-semibold">Área / Especialidad</th>
+              <th class="py-[12px] px-[16px] font-semibold">Área o especialidad</th>
               <th class="py-[12px] px-[16px] font-semibold text-right">Acciones</th>
             </tr>
           </thead>
@@ -180,7 +180,7 @@ function deactivateUser(id, name) {
                   v-if="user.roles[0]?.slug === 'sysadmin'"
                   class="inline-flex items-center px-[9px] py-[3px] rounded-[99px] text-[11px] font-medium pill-admin"
                 >
-                  Admin sistema
+                  Administrador del sistema
                 </span>
                 <span
                   v-else
@@ -194,7 +194,7 @@ function deactivateUser(id, name) {
                   <div class="text-[13px] text-[var(--nord0)]">{{ user.areas[0]?.nombre || "Sin área asignada" }}</div>
                   <div class="text-[11px] text-[var(--nord3)]">{{ user.profesional.especialidad }}</div>
                 </template>
-                <span v-else class="text-[11px] italic text-[var(--nord3)]">N/A</span>
+                <span v-else class="text-[11px] italic text-[var(--nord3)]">Sin perfil profesional</span>
               </td>
               <td class="py-3 px-4 text-right">
                 <template v-if="user.id !== $page.props.auth.user.id">

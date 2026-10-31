@@ -29,7 +29,7 @@ const catalog = {
     419: {
         title: 'Sesión expirada',
         description:
-            'La página caducó por seguridad (token CSRF). Vuelve a iniciar sesión o recarga e inténtalo de nuevo.',
+            'La sesión o la página expiró. Recarga la página; si el problema continúa, cierra sesión e inicia de nuevo.',
         accent: 'var(--aurora-orange)',
     },
     429: {
@@ -41,7 +41,7 @@ const catalog = {
     500: {
         title: 'Error del servidor',
         description:
-            'Ocurrió un problema interno al procesar la solicitud. El equipo técnico puede revisar los registros; intenta de nuevo en unos momentos.',
+            'No se pudo completar la solicitud. Inténtalo de nuevo en unos momentos; si el problema continúa, informa al administrador del sistema.',
         accent: 'var(--aurora-red)',
     },
     503: {

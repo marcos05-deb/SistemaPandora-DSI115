@@ -180,12 +180,23 @@ function hu20PdfHtml(TestCase $test, array $parameters): string
     $areaEtiqueta = $dto->todasAreas
         ? 'Todas las áreas'
         : (string) Area::query()->whereKey($dto->areaId)->value('nombre');
+    $groupLabels = [
+        'indicador' => 'Indicador',
+        'area' => 'Área',
+        'mes' => 'Mes',
+        'semana' => 'Semana desde',
+    ];
 
     return view('exports.reporte-pdf', [
         'report' => $report,
         'areaEtiqueta' => $areaEtiqueta,
         'generadoPor' => $test->coordinator->name,
         'generadoEn' => Carbon::now(config('app.timezone'))->toIso8601String(),
+        'indicadoresEtiquetas' => array_column($report->columnas, 'etiqueta'),
+        'agrupacionesEtiquetas' => array_map(
+            static fn (string $dimension): string => $groupLabels[$dimension] ?? $dimension,
+            $report->parametrosAplicados['agrupar_por'],
+        ),
     ])->render();
 }
 
@@ -209,10 +220,12 @@ test('HU20-E01 should_export_pdf_and_excel_with_same_totals_as_screen', function
     $rows = hu20ReadXlsxRows($xlsx->getContent());
     $flat = collect($rows)->flatten()->implode(' ');
     expect($flat)->toContain($total)
-        ->and($flat)->toContain('Consultas registradas');
+        ->and($flat)->toContain('Consultas registradas')
+        ->and($flat)->toContain('Mes');
 
     expect($total)->toBe('13')
-        ->and($html)->toMatch('/Totales.*consultas_registradas.*13/s');
+        ->and($html)->toMatch('/Totales.*Consultas registradas.*13/s')
+        ->and($html)->toContain('Agrupado por:</strong> Mes');
     foreach ($props['reporte']['grupos'] as $group) {
         expect($html)->toContain($group['dimensiones']['mes'])
             ->and($rows)->toContain([
@@ -231,7 +244,7 @@ test('HU20-E02 should_include_active_filters_in_both_export_headers', function (
     expect($pdf->getStatusCode())->toBe(200)
         ->and(str_starts_with($pdf->getContent(), '%PDF'))->toBeTrue();
 
-    foreach (['2026-09-01', '2026-10-22', 'HU20 Psychology', 'consultas_registradas'] as $needle) {
+    foreach (['2026-09-01', '2026-10-22', 'HU20 Psychology', 'Consultas registradas'] as $needle) {
         expect($html)->toContain($needle)
             ->and($xlsxText)->toContain($needle);
     }
@@ -257,8 +270,10 @@ test('HU20-E04 should_identify_period_and_indicators_in_headers', function (): v
     $html = hu20PdfHtml($this, $parameters);
 
     expect($html)->toContain('2026-09-01')
-        ->and($html)->toContain('consultas_registradas')
-        ->and($html)->toContain('pacientes_atendidos');
+        ->and($html)->toContain('Consultas registradas')
+        ->and($html)->toContain('Pacientes atendidos')
+        ->and($html)->not->toContain('consultas_registradas')
+        ->and($html)->not->toContain('pacientes_atendidos');
 });
 
 test('HU20-E05 should_forbid_foreign_area_and_scope_limited_exports', function (): void {
