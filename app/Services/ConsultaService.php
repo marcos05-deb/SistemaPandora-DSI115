@@ -23,6 +23,8 @@ class ConsultaService
                 ? Carbon::parse($data['fecha_consulta'], config('app.timezone'))
                 : now()->timezone(config('app.timezone'));
 
+            $conReferencia = filter_var($data['referencia_externa'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
             $consulta->fill([
                 'profesional_id' => $profesionalId,
                 'motivo_consulta' => $data['motivo_consulta'],
@@ -36,6 +38,11 @@ class ConsultaService
                 'crisis_psicologica' => filter_var($data['crisis_psicologica'], FILTER_VALIDATE_BOOLEAN) ? 'Sí' : 'No',
                 'indicadores_tendencia_suicida' => $data['indicadores_tendencia_suicida'],
                 'fecha_consulta' => $fechaConsulta,
+                'referencia_externa' => $conReferencia,
+                'institucion_destino' => $conReferencia ? $data['institucion_destino'] : null,
+                'motivo_referencia' => $conReferencia ? $data['motivo_referencia'] : null,
+                'tipo_referencia' => $conReferencia ? $data['tipo_referencia'] : null,
+                'prioridad_referencia' => $conReferencia ? $data['prioridad_referencia'] : null,
             ]);
             $consulta->save();
 

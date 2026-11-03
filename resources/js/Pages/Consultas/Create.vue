@@ -25,6 +25,11 @@ const form = useForm({
     diagnostico: '',
     plan_atencion: '',
     tecnica_utilizada: '',
+    referencia_externa: null,
+    tipo_referencia: '',
+    institucion_destino: '',
+    prioridad_referencia: '',
+    motivo_referencia: '',
     fecha_consulta: hoy,
     evaluacion_inicial: {
         apariencia_externa: '',
@@ -38,6 +43,28 @@ const form = useForm({
         pronostico: '',
     },
 });
+
+// Referral fields are only sent when the toggle is "Sí" (server rejects them otherwise).
+form.transform((data) => {
+    if (data.referencia_externa === true) {
+        return data;
+    }
+    return {
+        ...data,
+        referencia_externa: false,
+        tipo_referencia: null,
+        institucion_destino: null,
+        prioridad_referencia: null,
+        motivo_referencia: null,
+    };
+});
+
+const TIPOS_REFERENCIA = [
+    { value: 'hospital', label: 'Hospital' },
+    { value: 'clinica', label: 'Clínica' },
+    { value: 'especialista_externo', label: 'Especialista externo' },
+    { value: 'otra', label: 'Otra' },
+];
 
 const maxFechaConsulta = hoy;
 const minFechaConsulta = haceUnAno;
@@ -59,6 +86,11 @@ const FIELD_LABELS = {
     diagnostico: 'Diagnóstico',
     notas_clinicas: 'Observación / Notas clínicas',
     plan_atencion: 'Plan de atención',
+    referencia_externa: 'Referencia externa',
+    tipo_referencia: 'Tipo de referencia',
+    institucion_destino: 'Institución de destino',
+    prioridad_referencia: 'Prioridad de la referencia',
+    motivo_referencia: 'Motivo de la referencia',
     'evaluacion_inicial.apariencia_externa': 'Apariencia externa',
     'evaluacion_inicial.voz': 'Voz',
     'evaluacion_inicial.patrones_habla': 'Patrones de habla',
@@ -87,6 +119,11 @@ const VISUAL_FIELD_ORDER = [
     'notas_clinicas',
     'crisis_psicologica',
     'indicadores_tendencia_suicida',
+    'referencia_externa',
+    'tipo_referencia',
+    'institucion_destino',
+    'prioridad_referencia',
+    'motivo_referencia',
     'plan_atencion',
 ];
 
@@ -155,6 +192,23 @@ function runClientValidation() {
         errors.plan_atencion = 'El plan de atención es obligatorio.';
     } else if (String(form.plan_atencion).trim().length < 10) {
         errors.plan_atencion = 'El plan de atención debe tener al menos 10 caracteres.';
+    }
+
+    if (form.referencia_externa === true) {
+        if (isBlank(form.tipo_referencia)) {
+            errors.tipo_referencia = 'El tipo de referencia es obligatorio.';
+        }
+        if (isBlank(form.institucion_destino)) {
+            errors.institucion_destino = 'La institución de destino es obligatoria.';
+        }
+        if (isBlank(form.prioridad_referencia)) {
+            errors.prioridad_referencia = 'La prioridad de la referencia es obligatoria.';
+        }
+        if (isBlank(form.motivo_referencia)) {
+            errors.motivo_referencia = 'El motivo de la referencia es obligatorio.';
+        } else if (String(form.motivo_referencia).trim().length < 10) {
+            errors.motivo_referencia = 'El motivo de la referencia debe tener al menos 10 caracteres.';
+        }
     }
 
     if (isBlank(form.diagnostico) && isBlank(form.notas_clinicas)) {
@@ -277,6 +331,12 @@ watch(
     () => clearFieldError('indicadores_tendencia_suicida'),
     { deep: true },
 );
+for (const campo of ['referencia_externa', 'tipo_referencia', 'institucion_destino', 'prioridad_referencia', 'motivo_referencia']) {
+    watch(
+        () => form[campo],
+        () => clearFieldError(campo),
+    );
+}
 watch(
     () => form.fecha_consulta,
     () => clearFieldError('fecha_consulta'),
@@ -551,6 +611,110 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                     ></textarea>
                     <p v-if="hasError('notas_clinicas')" id="notas_clinicas-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('notas_clinicas') }}</p>
                 </div>
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-pd-border bg-pd-surface p-5 shadow-sm">
+                            <h2 class="mb-3 text-[15px] font-semibold text-pd-text-primary">Referencia externa</h2>
+                            <div class="space-y-4">
+                                <fieldset
+                                    id="referencia_externa"
+                                    tabindex="-1"
+                                    class="rounded-lg border border-pd-border bg-pd-surface-subtle px-3 py-2"
+                                    :aria-invalid="hasError('referencia_externa') ? 'true' : 'false'"
+                                    :aria-describedby="hasError('referencia_externa') ? 'referencia_externa-error' : undefined"
+                                >
+                                    <legend class="text-[13px] font-semibold text-pd-text-primary">¿Se refiere a una institución externa?</legend>
+                                    <div class="mt-2 flex gap-6">
+                                        <label for="referencia_externa-si" class="inline-flex items-center gap-2 text-[13px] text-pd-text-primary">
+                                            <input id="referencia_externa-si" v-model="form.referencia_externa" type="radio" name="referencia_externa" :value="true" class="text-pd-brand focus:ring-pd-brand" />
+                                            Sí
+                                        </label>
+                                        <label for="referencia_externa-no" class="inline-flex items-center gap-2 text-[13px] text-pd-text-primary">
+                                            <input id="referencia_externa-no" v-model="form.referencia_externa" type="radio" name="referencia_externa" :value="false" class="text-pd-brand focus:ring-pd-brand" />
+                                            No
+                                        </label>
+                                    </div>
+                                    <p v-if="hasError('referencia_externa')" id="referencia_externa-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('referencia_externa') }}</p>
+                                </fieldset>
+
+                                <template v-if="form.referencia_externa === true">
+                                    <div>
+                                        <label for="tipo_referencia" class="block text-[13px] font-semibold text-pd-text-primary mb-1.5">
+                                            Tipo <span class="text-pd-danger" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
+                                        </label>
+                                        <select
+                                            id="tipo_referencia"
+                                            v-model="form.tipo_referencia"
+                                            aria-required="true"
+                                            :aria-invalid="hasError('tipo_referencia') ? 'true' : 'false'"
+                                    :aria-describedby="hasError('tipo_referencia') ? 'tipo_referencia-error' : undefined"
+                                            class="w-full rounded-lg border bg-pd-surface-subtle px-3 py-2 text-[14px] text-pd-text-primary focus:border-pd-brand focus:ring-0"
+                                            :class="hasError('tipo_referencia') ? 'border-pd-danger' : 'border-pd-border'"
+                                        >
+                                            <option value="" disabled>Selecciona un tipo</option>
+                                            <option v-for="tipo in TIPOS_REFERENCIA" :key="tipo.value" :value="tipo.value">{{ tipo.label }}</option>
+                                        </select>
+                                        <p v-if="hasError('tipo_referencia')" id="tipo_referencia-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('tipo_referencia') }}</p>
+                                    </div>
+                                    <div>
+                                        <label for="institucion_destino" class="block text-[13px] font-semibold text-pd-text-primary mb-1.5">
+                                            Institución de destino <span class="text-pd-danger" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
+                                        </label>
+                                        <input
+                                            id="institucion_destino"
+                                            v-model="form.institucion_destino"
+                                            type="text"
+                                            maxlength="150"
+                                            placeholder="Ej.: Hospital Nacional Rosales"
+                                            aria-required="true"
+                                            :aria-invalid="hasError('institucion_destino') ? 'true' : 'false'"
+                                    :aria-describedby="hasError('institucion_destino') ? 'institucion_destino-error' : undefined"
+                                            class="w-full rounded-lg border bg-pd-surface-subtle px-3 py-2 text-[14px] text-pd-text-primary focus:border-pd-brand focus:ring-0"
+                                            :class="hasError('institucion_destino') ? 'border-pd-danger' : 'border-pd-border'"
+                                        />
+                                        <p v-if="hasError('institucion_destino')" id="institucion_destino-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('institucion_destino') }}</p>
+                                    </div>
+                                    <fieldset
+                                        id="prioridad_referencia"
+                                        tabindex="-1"
+                                        class="rounded-lg border border-pd-border bg-pd-surface-subtle px-3 py-2"
+                                        :aria-invalid="hasError('prioridad_referencia') ? 'true' : 'false'"
+                                    :aria-describedby="hasError('prioridad_referencia') ? 'prioridad_referencia-error' : undefined"
+                                    >
+                                        <legend class="text-[13px] font-semibold text-pd-text-primary">
+                                            Prioridad <span class="text-pd-danger" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
+                                        </legend>
+                                        <div class="mt-2 flex gap-6">
+                                            <label for="prioridad_referencia-urgente" class="inline-flex items-center gap-2 text-[13px] text-pd-text-primary">
+                                                <input id="prioridad_referencia-urgente" v-model="form.prioridad_referencia" type="radio" name="prioridad_referencia" value="urgente" class="text-pd-brand focus:ring-pd-brand" />
+                                                Urgente
+                                            </label>
+                                            <label for="prioridad_referencia-no_urgente" class="inline-flex items-center gap-2 text-[13px] text-pd-text-primary">
+                                                <input id="prioridad_referencia-no_urgente" v-model="form.prioridad_referencia" type="radio" name="prioridad_referencia" value="no_urgente" class="text-pd-brand focus:ring-pd-brand" />
+                                                No urgente
+                                            </label>
+                                        </div>
+                                        <p v-if="hasError('prioridad_referencia')" id="prioridad_referencia-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('prioridad_referencia') }}</p>
+                                    </fieldset>
+                                    <div>
+                                        <label for="motivo_referencia" class="block text-[13px] font-semibold text-pd-text-primary mb-1.5">
+                                            Motivo de la referencia <span class="text-pd-danger" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
+                                        </label>
+                                        <textarea
+                                            id="motivo_referencia"
+                                            v-model="form.motivo_referencia"
+                                            rows="3"
+                                            maxlength="2000"
+                                            placeholder="Describe por qué se refiere al paciente (mínimo 10 caracteres)"
+                                            aria-required="true"
+                                            :aria-invalid="hasError('motivo_referencia') ? 'true' : 'false'"
+                                    :aria-describedby="hasError('motivo_referencia') ? 'motivo_referencia-error' : undefined"
+                                            class="w-full rounded-lg border bg-pd-surface-subtle px-3 py-2.5 text-[14px] text-pd-text-primary focus:border-pd-brand focus:ring-0"
+                                            :class="hasError('motivo_referencia') ? 'border-pd-danger' : 'border-pd-border'"
+                                        ></textarea>
+                                        <p v-if="hasError('motivo_referencia')" id="motivo_referencia-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('motivo_referencia') }}</p>
+                                    </div>
+                                </template>
                             </div>
                         </section>
                         <section class="rounded-xl border border-pd-border bg-pd-surface p-5 shadow-sm">

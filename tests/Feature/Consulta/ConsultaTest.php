@@ -377,3 +377,90 @@ it('allows a multi-area specialist to register consultations in both authorized 
     // AreaScope ocultaría el expediente; forzamos autorización directa de policy.
     expect($this->userSpecialist->can('create', [Consulta::class, $expedienteTercera]))->toBeFalse();
 });
+
+function payloadReferencia(array $overrides = []): array
+{
+    return array_merge([
+        'referencia_externa' => true,
+        'tipo_referencia' => 'hospital',
+        'institucion_destino' => 'Hospital Nacional Rosales',
+        'prioridad_referencia' => 'urgente',
+        'motivo_referencia' => 'Requiere valoración psiquiátrica hospitalaria.',
+    ], $overrides);
+}
+
+it('stores the external referral encrypted and shows it to the treating specialist', function () {
+    $this->actingAs($this->userSpecialist)
+        ->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('consultas.store', $this->expediente->id), payloadConsulta(payloadReferencia()))
+        ->assertRedirect();
+
+    $consulta = Consulta::firstOrFail();
+    expect($consulta->referencia_externa)->toBeTrue()
+        ->and($consulta->institucion_destino)->toBe('Hospital Nacional Rosales')
+        ->and($consulta->motivo_referencia)->toBe('Requiere valoración psiquiátrica hospitalaria.');
+
+    $raw = (array) DB::table('consultas')->where('id', $consulta->id)->first();
+    foreach (['institucion_destino', 'motivo_referencia', 'tipo_referencia', 'prioridad_referencia'] as $campo) {
+        expect($raw[$campo])->not->toBeNull()
+            ->and($raw[$campo])->not->toContain('Rosales')
+            ->and($raw[$campo])->not->toBe('hospital')
+            ->and($raw[$campo])->not->toBe('urgente')
+            ->and($raw[$campo])->not->toContain('psiquiátrica');
+    }
+
+    $this->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->get(route('pacientes.historial', $this->paciente->codigo))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('historial.data.0.referencia_externa.institucion_destino', 'Hospital Nacional Rosales')
+            ->where('historial.data.0.referencia_externa.tipo', 'hospital')
+            ->where('historial.data.0.referencia_externa.prioridad', 'urgente')
+            ->where('historial.data.0.referencia_externa.motivo', 'Requiere valoración psiquiátrica hospitalaria.')
+        );
+});
+
+it('masks the external referral fields in audits', function () {
+    $this->actingAs($this->userSpecialist)
+        ->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('consultas.store', $this->expediente->id), payloadConsulta(payloadReferencia()))
+        ->assertRedirect();
+
+    $audit = Consulta::firstOrFail()->audits()->latest('id')->first();
+    expect($audit->new_values['institucion_destino'] ?? null)->toBe('[CIFRADO]')
+        ->and($audit->new_values['motivo_referencia'] ?? null)->toBe('[CIFRADO]');
+
+    $rawAudit = (string) DB::table('audits')->where('id', $audit->id)->value('new_values');
+    expect($rawAudit)->not->toContain('Rosales')->not->toContain('psiquiátrica');
+});
+
+it('requires referral details when referencia_externa is true', function () {
+    $this->actingAs($this->userSpecialist)
+        ->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('consultas.store', $this->expediente->id), payloadConsulta(['referencia_externa' => true]))
+        ->assertSessionHasErrors(['institucion_destino', 'motivo_referencia', 'tipo_referencia', 'prioridad_referencia']);
+
+    $this->post(route('consultas.store', $this->expediente->id), payloadConsulta(payloadReferencia([
+        'motivo_referencia' => 'corto',
+        'tipo_referencia' => 'inventado',
+    ])))->assertSessionHasErrors(['motivo_referencia', 'tipo_referencia']);
+
+    expect(Consulta::count())->toBe(0);
+});
+
+it('stores null referral fields when there is no external referral and rejects stray ones', function () {
+    $this->actingAs($this->userSpecialist)
+        ->withSession(['_sym_key' => str_repeat('a', 32)])
+        ->post(route('consultas.store', $this->expediente->id), payloadConsulta(['referencia_externa' => false]))
+        ->assertRedirect();
+
+    $consulta = Consulta::firstOrFail();
+    expect($consulta->referencia_externa)->toBeFalse()
+        ->and($consulta->institucion_destino)->toBeNull()
+        ->and($consulta->motivo_referencia)->toBeNull();
+
+    $this->post(route('consultas.store', $this->expediente->id), payloadConsulta([
+        'referencia_externa' => false,
+        'institucion_destino' => 'Hospital Rosales',
+    ]))->assertSessionHasErrors('institucion_destino');
+});

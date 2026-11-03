@@ -81,6 +81,9 @@ class CryptoMigrateAreaKeys extends Command
                     $this->migrateField($cons, 'notas_clinicas');
                     $this->migrateField($cons, 'diagnostico');
                     $this->migrateField($cons, 'plan_atencion');
+                    foreach (['institucion_destino', 'motivo_referencia', 'tipo_referencia', 'prioridad_referencia'] as $campoReferencia) {
+                        $this->migrateField($cons, $campoReferencia);
+                    }
                     if ($cons->isDirty()) {
                         $cons->save();
                     }
