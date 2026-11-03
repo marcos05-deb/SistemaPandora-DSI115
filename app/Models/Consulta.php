@@ -38,6 +38,11 @@ class Consulta extends Model implements AuditableContract
         'evaluacion_inicial',
         'crisis_psicologica',
         'indicadores_tendencia_suicida',
+        'referencia_externa',
+        'institucion_destino',
+        'motivo_referencia',
+        'tipo_referencia',
+        'prioridad_referencia',
     ];
 
     protected $casts = [
@@ -50,6 +55,11 @@ class Consulta extends Model implements AuditableContract
         'evaluacion_inicial' => EncryptedArrayCast::class,
         'crisis_psicologica' => AreaEncryptedFieldCast::class,
         'indicadores_tendencia_suicida' => EncryptedArrayCast::class,
+        'referencia_externa' => 'boolean',
+        'institucion_destino' => AreaEncryptedFieldCast::class,
+        'motivo_referencia' => AreaEncryptedFieldCast::class,
+        'tipo_referencia' => AreaEncryptedFieldCast::class,
+        'prioridad_referencia' => AreaEncryptedFieldCast::class,
     ];
 
     protected static function booted(): void

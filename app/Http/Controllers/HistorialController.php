@@ -60,6 +60,12 @@ class HistorialController extends Controller
                     'plan_atencion' => $consulta->plan_atencion,
                     'evaluacion_inicial' => $consulta->evaluacion_inicial,
                     'tecnica_utilizada' => $consulta->tecnica_utilizada,
+                    'referencia_externa' => $consulta->referencia_externa ? [
+                        'tipo' => $consulta->tipo_referencia,
+                        'institucion_destino' => $consulta->institucion_destino,
+                        'prioridad' => $consulta->prioridad_referencia,
+                        'motivo' => $consulta->motivo_referencia,
+                    ] : null,
                     'tipo_atencion' => 'consulta',
                     'profesional' => [
                         'id' => $consulta->profesional->id,

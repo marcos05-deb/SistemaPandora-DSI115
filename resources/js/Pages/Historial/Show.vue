@@ -5,6 +5,8 @@ import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 import { todayLocalYmd } from '@/utils/dates';
 
+const TIPOS_REFERENCIA = { hospital: 'Hospital', clinica: 'Clínica', especialista_externo: 'Especialista externo', otra: 'Otra' };
+
 defineOptions({ layout: ClinicalLayout });
 
 const props = defineProps({
@@ -209,6 +211,16 @@ const limpiarFiltros = () => {
                                     Diagnóstico
                                 </h3>
                                 <p class="text-[14px] font-medium text-[var(--nord0)]">{{ consulta.diagnostico }}</p>
+                            </div>
+
+                            <div v-if="consulta.referencia_externa" class="p-4 rounded-[8px] bg-[var(--nord8)]/5 border border-[var(--nord8)]/20">
+                                <h3 class="text-[11px] font-bold text-[var(--nord3)] uppercase tracking-wider mb-2 flex items-center gap-2">
+                                    <span class="px-2 py-0.5 rounded-md bg-[var(--nord8)] text-white">Referencia externa</span>
+                                    <span class="normal-case">{{ TIPOS_REFERENCIA[consulta.referencia_externa.tipo] || consulta.referencia_externa.tipo }}</span>
+                                    <span class="normal-case">· {{ consulta.referencia_externa.prioridad === 'urgente' ? 'Urgente' : 'No urgente' }}</span>
+                                </h3>
+                                <p class="text-[14px] font-medium text-[var(--nord0)]">{{ consulta.referencia_externa.institucion_destino }}</p>
+                                <p class="text-[13px] text-[var(--nord0)] whitespace-pre-line leading-relaxed mt-1">{{ consulta.referencia_externa.motivo }}</p>
                             </div>
 
                             <div v-if="consulta.plan_atencion" class="p-4 rounded-[8px] bg-[var(--nord8)]/5 border border-[var(--nord8)]/20">

@@ -8,6 +8,7 @@ use App\Models\Consulta;
 use App\Models\Expediente;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class ConsultaStoreRequest extends FormRequest
@@ -38,6 +39,10 @@ class ConsultaStoreRequest extends FormRequest
         'pronostico',
     ];
 
+    public const TIPOS_REFERENCIA = ['hospital', 'clinica', 'especialista_externo', 'otra'];
+
+    public const PRIORIDADES_REFERENCIA = ['urgente', 'no_urgente'];
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -62,6 +67,13 @@ class ConsultaStoreRequest extends FormRequest
             'indicadores_tendencia_suicida' => ['present', 'array', 'max:50'],
             'indicadores_tendencia_suicida.*' => ['required', 'string', 'max:120', 'distinct'],
         ];
+
+        $conReferencia = $this->boolean('referencia_externa');
+        $rules['referencia_externa'] = ['sometimes', 'boolean'];
+        $rules['institucion_destino'] = $conReferencia ? ['required', 'string', 'max:150'] : ['prohibited'];
+        $rules['motivo_referencia'] = $conReferencia ? ['required', 'string', 'min:10', 'max:2000'] : ['prohibited'];
+        $rules['tipo_referencia'] = $conReferencia ? ['required', Rule::in(self::TIPOS_REFERENCIA)] : ['prohibited'];
+        $rules['prioridad_referencia'] = $conReferencia ? ['required', Rule::in(self::PRIORIDADES_REFERENCIA)] : ['prohibited'];
 
         if ($isFirstConsulta) {
             foreach (self::EVALUACION_CAMPOS as $campo) {
@@ -89,6 +101,23 @@ class ConsultaStoreRequest extends FormRequest
             'evaluacion_inicial.required' => 'La evaluación inicial es obligatoria en la primera consulta.',
             'crisis_psicologica.required' => 'Indica si se registró una crisis psicológica.',
             'indicadores_tendencia_suicida.present' => 'Registra los indicadores de tendencia suicida o indica que no hay ninguno.',
+        ];
+
+        $messages += [
+            'referencia_externa.boolean' => 'Indica si la consulta incluye una referencia externa.',
+            'institucion_destino.required' => 'La institución de destino es obligatoria.',
+            'institucion_destino.max' => 'La institución de destino no puede superar :max caracteres.',
+            'motivo_referencia.required' => 'El motivo de la referencia es obligatorio.',
+            'motivo_referencia.min' => 'El motivo de la referencia debe tener al menos :min caracteres.',
+            'motivo_referencia.max' => 'El motivo de la referencia no puede superar :max caracteres.',
+            'tipo_referencia.required' => 'El tipo de referencia es obligatorio.',
+            'tipo_referencia.in' => 'El tipo de referencia no es válido.',
+            'prioridad_referencia.required' => 'La prioridad de la referencia es obligatoria.',
+            'prioridad_referencia.in' => 'La prioridad de la referencia no es válida.',
+            'institucion_destino.prohibited' => 'Los datos de referencia solo aplican si hay referencia externa.',
+            'motivo_referencia.prohibited' => 'Los datos de referencia solo aplican si hay referencia externa.',
+            'tipo_referencia.prohibited' => 'Los datos de referencia solo aplican si hay referencia externa.',
+            'prioridad_referencia.prohibited' => 'Los datos de referencia solo aplican si hay referencia externa.',
         ];
 
         foreach (self::EVALUACION_CAMPOS as $campo) {

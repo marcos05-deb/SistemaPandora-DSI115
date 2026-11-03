@@ -47,6 +47,11 @@ if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ]; then
     php artisan migrate --database=pgsql_admin --force --no-interaction 2>/dev/null || true
     # Reconciliación idempotente Lab II (citas de cerrados, fechas, ausencias)
     php artisan pandora:reconciliar-datos-lab2 --no-interaction 2>/dev/null || true
+    # Opt-in demo data (Sprint 3): set SEED_SPRINT3=1 and SPRINT3_DEMO_PASSWORD; remove SEED_SPRINT3 afterwards.
+    if [ "${SEED_SPRINT3:-0}" = "1" ]; then
+        echo "Preparando datos de demostración del Sprint 3..."
+        php artisan pandora:preparar-sprint3 --force --no-interaction || echo "AVISO: pandora:preparar-sprint3 falló; el contenedor continúa (revise el detalle arriba)."
+    fi
 fi
 
 # Lightweight scheduler (hourly alertas:reevaluar etc.) next to the web server; logs go to stdout.
