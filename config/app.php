@@ -13,6 +13,7 @@ return [
     'key' => env('APP_KEY'),
     'area_key_secret' => env('AREA_KEY_SECRET'),
     'blind_index_secret' => env('BLIND_INDEX_SECRET'),
+    'sprint3_demo_password' => env('SPRINT3_DEMO_PASSWORD'),
     'previous_keys' => [
         ...array_filter(
             explode(',', env('APP_PREVIOUS_KEYS', ''))

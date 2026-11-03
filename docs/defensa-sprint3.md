@@ -29,12 +29,12 @@ Duración: ~8 min por épica, 2 min de apertura y 3 min de cierre. Cada integran
 - [ ] Abrir `docs/evidencia/HU-15.md` … `HU-23.md` y `docs/auditoria/matriz_cobertura.md` en pestañas, por si el jurado pide evidencia.
 
 ### Qué NO mostrar o evitar
-- No editar los filtros del reporte después de "Generar" y antes de exportar (limitación conocida de HU-20 CA-1).
+- Si se editan los filtros después de "Generar", la descarga usa el reporte mostrado y la pantalla lo avisa; para exportar otros filtros, generar de nuevo.
 - No arrancar la demo con la app dormida; no depender del primer request en frío.
 - No mostrar contraseñas ni el archivo `.env`.
 - No intentar eliminar o editar eventos de auditoría desde SQL con el usuario administrador (existe un bypass para limpieza de pruebas).
 - La búsqueda segura y la pantalla de crear consulta ya generan eventos de lectura (`view_patient_secure_search`, `view_consulta_form`); se pueden usar como evidencia en la bitácora.
-- No prometer que la reevaluación de alertas es automática (el comando existe, pero no está programado).
+- La reevaluación de alertas corre cada hora, pero en Render gratuito se pausa mientras el servicio duerme: no prometer recuperación inmediata.
 
 ### Cuentas demo (seeder `database/seeders/DatabaseSeeder.php`)
 | Correo | Rol | Área |
