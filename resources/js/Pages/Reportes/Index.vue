@@ -1,4 +1,5 @@
 <script setup>
+import ProtectedValue from '@/Components/UI/ProtectedValue.vue';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, ref } from 'vue';
 import { formatElSalvadorDateTime, formatLocalDate } from '@/utils/dates';
@@ -142,7 +143,7 @@ function resetForm() {
 function formatValue(value) {
     if (!value || value.suprimido) {
         if (!value) return '0';
-        return 'Oculto';
+        return 'Dato protegido';
     }
 
     const formatted = formatter.format(value.valor ?? 0);
@@ -292,7 +293,7 @@ function dateLabel(value) {
                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     <article v-for="column in reporte.columnas" :key="column.id" class="rounded-lg bg-pd-surface-subtle p-3">
                         <p class="text-xs font-medium text-pd-text-muted">{{ column.etiqueta }}</p>
-                        <p class="mt-1 text-2xl font-bold tabular-nums text-pd-text-primary">{{ formatValue(reporte.totales[column.id]) }}</p>
+                        <p class="mt-1 text-2xl font-bold tabular-nums text-pd-text-primary"><ProtectedValue v-if="reporte.totales[column.id]?.suprimido" :suppression="reporte.totales[column.id].supresion" :minimum="minCelda" /><template v-else>{{ formatValue(reporte.totales[column.id]) }}</template></p>
                     </article>
                 </div>
             </section>
@@ -314,8 +315,8 @@ function dateLabel(value) {
                         <tbody class="divide-y divide-pd-border">
                             <tr v-for="(group, index) in reporte.grupos" :key="index" class="hover:bg-pd-surface-subtle/70">
                                 <th v-for="(dimension, dimensionIndex) in tableDimensions" :key="dimension.id" :scope="dimensionIndex === 0 ? 'row' : undefined" class="px-4 py-3 font-medium text-pd-text-primary">{{ dimensionValue(group, dimension.id) }}</th>
-                                <td v-if="groupedByIndicator" class="px-4 py-3 text-right font-semibold tabular-nums text-pd-text-primary">{{ formatValue(group.valores[group.dimensiones.indicador]) }}</td>
-                                <td v-else v-for="column in reportColumns" :key="column.id" class="px-4 py-3 text-right font-semibold tabular-nums text-pd-text-primary">{{ formatValue(group.valores[column.id]) }}</td>
+                                <td v-if="groupedByIndicator" class="px-4 py-3 text-right font-semibold tabular-nums text-pd-text-primary"><ProtectedValue v-if="group.valores[group.dimensiones.indicador]?.suprimido" :suppression="group.valores[group.dimensiones.indicador].supresion" :minimum="minCelda" /><template v-else>{{ formatValue(group.valores[group.dimensiones.indicador]) }}</template></td>
+                                <td v-else v-for="column in reportColumns" :key="column.id" class="px-4 py-3 text-right font-semibold tabular-nums text-pd-text-primary"><ProtectedValue v-if="group.valores[column.id]?.suprimido" :suppression="group.valores[column.id].supresion" :minimum="minCelda" /><template v-else>{{ formatValue(group.valores[column.id]) }}</template></td>
                             </tr>
                             <tr v-if="reporte.grupos.length === 0"><td :colspan="tableDimensions.length + reportColumns.length" class="px-4 py-8 text-center text-sm text-pd-text-muted">No hay resultados para esta combinación. Prueba con otros filtros.</td></tr>
                         </tbody>
