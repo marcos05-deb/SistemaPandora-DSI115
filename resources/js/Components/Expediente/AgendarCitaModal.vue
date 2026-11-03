@@ -1,6 +1,7 @@
 <script setup>
 import { useForm, usePage } from '@inertiajs/vue3';
 import { watch, ref, computed } from 'vue';
+import { nowElSalvadorInput } from '@/utils/dates';
 
 const props = defineProps({
     show: Boolean,
@@ -50,14 +51,8 @@ watch(() => props.show, (isOpen) => {
             || page.props.flash?.prompt_cita_consulta_id
             || '';
 
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        minDateTime.value = now.toISOString().slice(0, 16);
-
-        const nextYear = new Date();
-        nextYear.setFullYear(nextYear.getFullYear() + 1);
-        nextYear.setMinutes(nextYear.getMinutes() - nextYear.getTimezoneOffset());
-        maxDateTime.value = nextYear.toISOString().slice(0, 16);
+        minDateTime.value = nowElSalvadorInput();
+        maxDateTime.value = nowElSalvadorInput(page.props.limites?.cita_horizonte_max_dias ?? 365);
     }
 });
 </script>
@@ -89,13 +84,13 @@ watch(() => props.show, (isOpen) => {
                             </svg>
                             <div>
                                 <h4 class="text-[13px] font-bold text-[var(--nord0)]">Consulta guardada exitosamente</h4>
-                                <p class="text-[12px] text-[var(--nord3)] mt-0.5">¿Desea agendar la próxima cita de seguimiento desde esta consulta?</p>
+                                <p class="text-[12px] text-[var(--nord3)] mt-0.5">¿Quieres agendar la próxima cita de seguimiento desde esta consulta?</p>
                             </div>
                         </div>
 
                         <div v-if="!form.consulta_id" class="rounded-lg border border-[var(--aurora-red)]/30 bg-[var(--aurora-red)]/5 px-3 py-2.5">
                             <p class="text-[12px] text-[var(--aurora-red)] font-medium">
-                                No hay una consulta activa para vincular. Registre una consulta antes de agendar.
+                                No hay una consulta activa para vincular. Registra una consulta antes de agendar.
                             </p>
                         </div>
                         <div v-else class="rounded-lg border border-[var(--nord4)] bg-[var(--surface-subtle)] px-3 py-2.5">

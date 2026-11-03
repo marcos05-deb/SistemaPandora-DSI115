@@ -55,8 +55,8 @@ final class ReporteGenerarRequest extends FormRequest
 
             $desde = CarbonImmutable::parse($this->validated('desde'), config('app.timezone'));
             $hasta = CarbonImmutable::parse($this->validated('hasta'), config('app.timezone'));
-            if ($desde->diffInDays($hasta) > 365) {
-                $validator->errors()->add('hasta', 'El período no puede exceder 366 días.');
+            if ($desde->diffInDays($hasta) > config('limites.analitica_rango_dias') - 1) {
+                $validator->errors()->add('hasta', 'El período no puede exceder '.config('limites.analitica_rango_dias').' días.');
 
                 return;
             }
@@ -113,8 +113,8 @@ final class ReporteGenerarRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'desde.required' => 'El período requiere una fecha inicial.',
-            'hasta.required' => 'El período requiere una fecha final.',
+            'desde.required' => 'La fecha inicial es obligatoria.',
+            'hasta.required' => 'La fecha final es obligatoria.',
             'hasta.after_or_equal' => 'La fecha final debe ser igual o posterior a la fecha inicial.',
             'area.required' => 'Selecciona un área antes de generar el reporte.',
             'indicadores.required' => 'Selecciona al menos un indicador.',

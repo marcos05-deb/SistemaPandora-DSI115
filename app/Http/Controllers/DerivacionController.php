@@ -35,6 +35,8 @@ class DerivacionController extends Controller
         $paciente->update(['ultima_accion' => 'Apertura de expediente']);
 
         return redirect()->back()
-            ->with('success', 'Paciente derivado exitosamente.');
+            ->with('success', 'Paciente derivado correctamente.')
+            ->with('message', 'Paciente derivado correctamente.')
+            ->with('variant', 'success');
     }
 }

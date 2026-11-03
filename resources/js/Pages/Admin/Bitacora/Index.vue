@@ -3,6 +3,7 @@ import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, ref } from 'vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { formatElSalvadorDateTime } from '@/utils/dates';
 
 defineOptions({ layout: AdminLayout });
 
@@ -114,7 +115,7 @@ function toggle(id) {
 
 function formatDate(value) {
     if (!value) return '—';
-    return new Intl.DateTimeFormat('es-SV', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(value));
+    return formatElSalvadorDateTime(value);
 }
 </script>
 
@@ -139,7 +140,7 @@ function formatDate(value) {
                 <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
                     <div>
                         <h2 id="bitacora-filters-title" class="text-lg font-semibold text-[var(--nord0)]">Filtros</h2>
-                        <p class="mt-1 text-xs text-[var(--nord3)]">Período máximo 366 días. Por defecto: últimos 7 días.</p>
+                        <p class="mt-1 text-xs text-[var(--nord3)]">Período máximo {{ page.props.limites?.analitica_rango_dias ?? 366 }} días. Por defecto: últimos 7 días.</p>
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <button type="button" class="min-h-10 rounded-lg px-3 text-sm font-medium text-[var(--nord2)] underline decoration-[var(--nord4)] underline-offset-4 hover:text-[var(--nord0)]" @click="clearFilters">

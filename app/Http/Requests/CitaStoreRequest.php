@@ -31,7 +31,7 @@ class CitaStoreRequest extends FormRequest
     {
         return [
             'consulta_id' => ['required', 'uuid', 'exists:consultas,id'],
-            'fecha_hora' => ['required', 'date', 'after:now'],
+            'fecha_hora' => ['required', 'date', 'after:now', 'before_or_equal:'.now()->addDays((int) config('limites.cita_horizonte_max_dias'))->toDateTimeString()],
             'motivo' => ['required', 'string', 'max:5000'],
             'acordada_con_paciente' => ['accepted'],
         ];
@@ -43,10 +43,11 @@ class CitaStoreRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'consulta_id.required' => 'Debe agendar la cita desde una consulta activa.',
+            'consulta_id.required' => 'Agenda la cita desde una consulta activa.',
             'consulta_id.exists' => 'La consulta de origen no es válida.',
             'fecha_hora.after' => 'La fecha de la cita debe ser futura.',
-            'acordada_con_paciente.accepted' => 'Debe confirmar que la fecha y hora fueron acordadas con el paciente.',
+            'fecha_hora.before_or_equal' => 'La cita no puede agendarse a más de '.config('limites.cita_horizonte_max_dias').' días.',
+            'acordada_con_paciente.accepted' => 'Confirma que la fecha y hora fueron acordadas con el paciente.',
         ];
     }
 
@@ -91,7 +92,7 @@ class CitaStoreRequest extends FormRequest
             if (! $consultaActiva) {
                 $validator->errors()->add(
                     'consulta_id',
-                    'Debe agendar la cita desde una consulta activa. No hay consultas registradas en este expediente.'
+                    'Agenda la cita desde una consulta activa. Este expediente no tiene consultas registradas; registra una primero.'
                 );
 
                 return;
@@ -100,7 +101,7 @@ class CitaStoreRequest extends FormRequest
             if ($consultaActiva->id !== $consulta->id) {
                 $validator->errors()->add(
                     'consulta_id',
-                    'Debe agendar la cita desde la consulta activa (la más reciente del expediente).'
+                    'Agenda la cita desde la consulta activa (la más reciente del expediente).'
                 );
             }
         });

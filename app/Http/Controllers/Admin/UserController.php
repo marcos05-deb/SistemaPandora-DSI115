@@ -120,7 +120,7 @@ class UserController extends Controller
                                 $q->where('slug', 'area_coordinator');
                             })->exists();
                         if ($exists) {
-                            $fail('Ya existe un coordinador activo asignado a esta área clínica.');
+                            $fail('Esta área ya tiene un Coordinador de área activo. Elige otra área o desactiva al coordinador actual.');
                         }
                     }
                 },
@@ -210,7 +210,7 @@ class UserController extends Controller
                 'is_active' => $validated['is_active'] ?? true,
             ]);
 
-            return redirect()->route('admin.users.index')->with('message', 'Perfil de administrador actualizado.')->with('variant', 'success');
+            return redirect()->route('admin.users.index')->with('message', 'Perfil del Administrador del sistema actualizado.')->with('variant', 'success');
         }
 
         $sysadminRole = Role::where('slug', 'sysadmin')->first();
@@ -234,7 +234,7 @@ class UserController extends Controller
                                 $q->where('slug', 'area_coordinator');
                             })->exists();
                         if ($exists) {
-                            $fail('Ya existe un coordinador activo asignado a esta área clínica.');
+                            $fail('Esta área ya tiene un Coordinador de área activo. Elige otra área o desactiva al coordinador actual.');
                         }
                     }
                 },
@@ -275,7 +275,7 @@ class UserController extends Controller
             }
         });
 
-        return redirect()->route('admin.users.index')->with('message', 'Usuario actualizado exitosamente.')->with('variant', 'success');
+        return redirect()->route('admin.users.index')->with('message', 'Usuario actualizado correctamente.')->with('variant', 'success');
     }
 
     /**

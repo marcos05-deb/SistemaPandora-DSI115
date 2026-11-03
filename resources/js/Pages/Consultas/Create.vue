@@ -1,10 +1,10 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, ref, watch } from 'vue';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 import PrimaryButton from '@/Components/UI/PrimaryButton.vue';
-import { todayLocalYmd } from '@/utils/dates';
+import { addDaysYmd, todayLocalYmd } from '@/utils/dates';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -15,14 +15,7 @@ const props = defineProps({
 });
 
 const hoy = todayLocalYmd();
-const haceUnAno = (() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 1);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-})();
+const haceUnAno = addDaysYmd(hoy, -(usePage().props.limites?.consulta_antiguedad_max_dias ?? 365));
 
 const form = useForm({
     motivo_consulta: '',
@@ -326,7 +319,7 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
 <template>
     <Head title="Registrar Consulta Clínica" />
 
-    <div class="max-w-4xl mx-auto space-y-6 pb-10">
+    <div class="max-w-6xl mx-auto space-y-6 pb-10">
         <Breadcrumbs :items="[
             { label: 'Panel Clínico', href: '/dashboard' },
             { label: 'Pacientes', href: '/pacientes' },
@@ -334,44 +327,35 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
             { label: 'Nueva Consulta' },
         ]" />
 
-        <div class="bg-white rounded-xl shadow-sm border border-[var(--nord4)] overflow-hidden">
-            <div class="px-4 sm:px-6 py-5 border-b border-[var(--nord4)] bg-[var(--surface-header)] flex items-start sm:items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <h1 class="text-[16px] sm:text-[18px] font-semibold text-[var(--nord0)] tracking-tight flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[var(--nord8)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span class="truncate">Registrar Nueva Consulta</span>
-                    </h1>
-                    <p class="text-[13px] text-[var(--nord3)] mt-1 sm:ml-7 truncate">
-                        Completando atención para {{ expediente.paciente.nombre_completo }}
-                    </p>
-                </div>
-                <div class="hidden sm:block">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium bg-[var(--aurora-green)]/10 text-[var(--aurora-green)] border border-[var(--aurora-green)]/20">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                        Cifrado JSON Extremo a Extremo
-                    </span>
-                </div>
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <h1 class="text-[26px] font-bold tracking-tight text-pd-text-primary">Registrar nueva consulta</h1>
+                <p class="text-[14px] text-pd-text-secondary mt-1">Completando atención para {{ expediente.paciente.nombre_completo }}</p>
             </div>
+            <span class="hidden sm:inline-flex items-center rounded-full bg-pd-brand-soft px-3 py-1 text-[11px] font-medium text-pd-brand">Cifrado JSON extremo a extremo</span>
+        </div>
 
-            <form novalidate @submit.prevent="submit" class="p-6 space-y-6">
+        <div class="rounded-xl border border-pd-border bg-pd-surface px-5 py-3 flex items-center gap-3">
+            <span class="text-[14px] font-semibold text-pd-text-primary">{{ expediente.paciente.nombre_completo }}</span>
+            <span class="text-[12px] font-mono text-pd-text-secondary">{{ expediente.paciente.carnet }}</span>
+        </div>
+
+        <div>
+            <form novalidate @submit.prevent="submit" class="space-y-5">
                 <div
                     v-if="hasAnyErrors || clientBanner"
-                    class="rounded-xl border border-[var(--aurora-red)]/40 bg-[var(--aurora-red)]/5 px-4 py-3"
+                    class="rounded-xl border border-pd-danger/40 bg-pd-danger-soft px-4 py-3"
                     role="alert"
                     aria-live="polite"
                 >
-                    <p class="text-[13px] font-semibold text-[var(--aurora-red)]">
+                    <p class="text-[13px] font-semibold text-pd-danger">
                         {{ clientBanner || 'No se pudo guardar la consulta. Revisa los campos señalados:' }}
                     </p>
                     <ul v-if="errorSummary.length" class="mt-2 space-y-1">
                         <li v-for="item in errorSummary" :key="item.key">
                             <button
                                 type="button"
-                                class="text-left text-[12px] text-[var(--aurora-red)] hover:underline"
+                                class="text-left text-[12px] text-pd-danger hover:underline"
                                 @click="focusField(item.key)"
                             >
                                 → {{ item.label }}: {{ item.message }}
@@ -380,29 +364,31 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                     </ul>
                 </div>
 
+                <div class="grid grid-cols-1 gap-5" :class="esPrimeraConsulta ? 'lg:grid-cols-[minmax(0,1fr)_380px]' : ''">
+                    <div v-if="esPrimeraConsulta">
                 <!-- Evaluación Inicial -->
-                <div v-if="esPrimeraConsulta" class="border border-[var(--nord4)] rounded-xl overflow-hidden shadow-sm">
-                    <div class="bg-[var(--nord6)] px-4 py-3 border-b border-[var(--nord4)]">
-                        <h2 class="text-[14px] font-semibold text-[var(--nord0)] flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[var(--nord9)]" viewBox="0 0 20 20" fill="currentColor">
+                <div v-if="esPrimeraConsulta" class="border border-pd-border rounded-xl overflow-hidden shadow-sm">
+                    <div class="bg-pd-surface-subtle px-4 py-3 border-b border-pd-border">
+                        <h2 class="text-[14px] font-semibold text-pd-text-primary flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-pd-brand" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
                             </svg>
                             Evaluación Inicial (Requerido - Primera Cita)
                         </h2>
-                        <p class="text-[12px] text-[var(--nord3)] mt-1">
-                            Los campos marcados con <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">asterisco</span> son obligatorios.
+                        <p class="text-[12px] text-pd-text-secondary mt-1">
+                            Los campos marcados con <span class="text-pd-danger" aria-hidden="true">*</span><span class="sr-only">asterisco</span> son obligatorios.
                         </p>
                     </div>
-                    <div class="p-0 bg-white">
+                    <div class="p-0 bg-pd-surface">
                         <div
                             v-for="(fields, index) in ACCORDION_FIELDS"
                             :key="index"
-                            :class="Number(index) < 2 ? 'border-b border-[var(--nord4)]' : ''"
+                            :class="Number(index) < 2 ? 'border-b border-pd-border' : ''"
                         >
                             <button
                                 type="button"
-                                class="w-full text-left px-4 py-3 font-medium text-[13px] flex justify-between items-center hover:bg-[var(--nord6)] transition-colors"
-                                :class="accordionPendingCount(Number(index)) > 0 ? 'text-[var(--aurora-red)] border-l-4 border-l-[var(--aurora-red)]' : 'text-[var(--nord0)]'"
+                                class="w-full text-left px-4 py-3 font-medium text-[13px] flex justify-between items-center hover:bg-pd-surface-subtle transition-colors"
+                                :class="accordionPendingCount(Number(index)) > 0 ? 'text-pd-danger border-l-4 border-l-pd-danger' : 'text-pd-text-primary'"
                                 :aria-expanded="activeAccordion === Number(index)"
                                 @click="activeAccordion = Number(index)"
                             >
@@ -410,7 +396,7 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                                     <svg
                                         v-if="accordionPendingCount(Number(index)) > 0"
                                         xmlns="http://www.w3.org/2000/svg"
-                                        class="h-4 w-4 text-[var(--aurora-red)] shrink-0"
+                                        class="h-4 w-4 text-pd-danger shrink-0"
                                         viewBox="0 0 20 20"
                                         fill="currentColor"
                                         aria-hidden="true"
@@ -424,15 +410,15 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                                         </template>
                                     </span>
                                 </span>
-                                <svg :class="{ 'rotate-180': activeAccordion === Number(index) }" class="h-4 w-4 text-[var(--nord3)] transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <svg :class="{ 'rotate-180': activeAccordion === Number(index) }" class="h-4 w-4 text-pd-text-secondary transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                 </svg>
                             </button>
-                            <div v-show="activeAccordion === Number(index)" class="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div v-show="activeAccordion === Number(index)" class="p-4 bg-pd-surface grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div v-for="campo in fields" :key="campo">
                                     <label
                                         :for="fieldId('evaluacion_inicial.' + campo)"
-                                        class="block text-[12px] font-semibold text-[var(--nord0)] mb-1.5"
+                                        class="block text-[12px] font-semibold text-pd-text-primary mb-1.5"
                                     >
                                         <template v-if="campo === 'apariencia_externa'">Apariencia externa</template>
                                         <template v-else-if="campo === 'patrones_habla'">Patrones de habla</template>
@@ -444,7 +430,7 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                                         <template v-else-if="campo === 'voz'">Voz</template>
                                         <template v-else-if="campo === 'ademanes'">Ademanes</template>
                                         <template v-else>{{ campo.replaceAll('_', ' ') }}</template>
-                                        <span class="text-[var(--aurora-red)]" aria-hidden="true"> *</span>
+                                        <span class="text-pd-danger" aria-hidden="true"> *</span>
                                         <span class="sr-only">(obligatorio)</span>
                                     </label>
                                     <input
@@ -454,13 +440,13 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                                         aria-required="true"
                                         :aria-invalid="hasError('evaluacion_inicial.' + campo) ? 'true' : 'false'"
                                         :aria-describedby="hasError('evaluacion_inicial.' + campo) ? fieldId('evaluacion_inicial.' + campo) + '-error' : undefined"
-                                        class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[13px] focus:border-[var(--nord8)] focus:ring-0"
-                                        :class="hasError('evaluacion_inicial.' + campo) ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                                        class="w-full rounded-lg border bg-pd-surface-subtle px-3 py-2 text-[13px] focus:border-pd-brand focus:ring-0"
+                                        :class="hasError('evaluacion_inicial.' + campo) ? 'border-pd-danger' : 'border-pd-border'"
                                     />
                                     <p
                                         v-if="hasError('evaluacion_inicial.' + campo)"
                                         :id="fieldId('evaluacion_inicial.' + campo) + '-error'"
-                                        class="text-[var(--aurora-red)] text-[11px] mt-1"
+                                        class="text-pd-danger text-[11px] mt-1"
                                     >
                                         {{ errorMessage('evaluacion_inicial.' + campo) }}
                                     </p>
@@ -469,29 +455,15 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                         </div>
                     </div>
                 </div>
-
-                <!-- Motivo de Consulta -->
-                <div>
-                    <label for="motivo_consulta" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
-                        Motivo de Consulta <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
-                    </label>
-                    <textarea
-                        id="motivo_consulta"
-                        v-model="form.motivo_consulta"
-                        rows="2"
-                        aria-required="true"
-                        :aria-invalid="hasError('motivo_consulta') ? 'true' : 'false'"
-                        :aria-describedby="hasError('motivo_consulta') ? 'motivo_consulta-error' : undefined"
-                        class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2.5 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
-                        :class="hasError('motivo_consulta') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
-                    ></textarea>
-                    <p v-if="hasError('motivo_consulta')" id="motivo_consulta-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('motivo_consulta') }}</p>
-                </div>
-
+                    </div>
+                    <div class="space-y-5">
+                        <section class="rounded-xl border border-pd-border bg-pd-surface p-5 shadow-sm">
+                            <h2 class="mb-3 text-[15px] font-semibold text-pd-text-primary">Datos de la atención</h2>
+                            <div class="space-y-4">
                 <!-- Fecha de consulta -->
                 <div>
-                    <label for="fecha_consulta" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
-                        Fecha de la consulta <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
+                    <label for="fecha_consulta" class="block text-[13px] font-semibold text-pd-text-primary mb-1.5">
+                        Fecha de la consulta <span class="text-pd-danger" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
                     </label>
                     <input
                         id="fecha_consulta"
@@ -502,17 +474,15 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                         aria-required="true"
                         :aria-invalid="hasError('fecha_consulta') ? 'true' : 'false'"
                         :aria-describedby="hasError('fecha_consulta') ? 'fecha_consulta-error' : undefined"
-                        class="w-full sm:w-64 rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
-                        :class="hasError('fecha_consulta') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                        class="w-full rounded-lg border bg-pd-surface-subtle px-3 py-2 text-[14px] text-pd-text-primary focus:border-pd-brand focus:ring-0"
+                        :class="hasError('fecha_consulta') ? 'border-pd-danger' : 'border-pd-border'"
                     />
-                    <p class="text-[11px] text-[var(--nord3)] mt-1">Fecha de la atención clínica. No puede ser futura.</p>
-                    <p v-if="hasError('fecha_consulta')" id="fecha_consulta-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('fecha_consulta') }}</p>
+                    <p class="text-[11px] text-pd-text-secondary mt-1">Fecha de la atención clínica. No puede ser futura.</p>
+                    <p v-if="hasError('fecha_consulta')" id="fecha_consulta-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('fecha_consulta') }}</p>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="tecnica_utilizada" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
-                            Técnica Utilizada <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
+                        <label for="tecnica_utilizada" class="block text-[13px] font-semibold text-pd-text-primary mb-1.5">
+                            Técnica Utilizada <span class="text-pd-danger" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
                         </label>
                         <input
                             id="tecnica_utilizada"
@@ -521,14 +491,35 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                             aria-required="true"
                             :aria-invalid="hasError('tecnica_utilizada') ? 'true' : 'false'"
                             :aria-describedby="hasError('tecnica_utilizada') ? 'tecnica_utilizada-error' : undefined"
-                            class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
-                            :class="hasError('tecnica_utilizada') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                            class="w-full rounded-lg border bg-pd-surface-subtle px-3 py-2 text-[14px] text-pd-text-primary focus:border-pd-brand focus:ring-0"
+                            :class="hasError('tecnica_utilizada') ? 'border-pd-danger' : 'border-pd-border'"
                         />
-                        <p v-if="hasError('tecnica_utilizada')" id="tecnica_utilizada-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('tecnica_utilizada') }}</p>
+                        <p v-if="hasError('tecnica_utilizada')" id="tecnica_utilizada-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('tecnica_utilizada') }}</p>
                     </div>
-
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-pd-border bg-pd-surface p-5 shadow-sm">
+                            <h2 class="mb-3 text-[15px] font-semibold text-pd-text-primary">Registro clínico</h2>
+                            <div class="space-y-4">
+                <!-- Motivo de Consulta -->
+                <div>
+                    <label for="motivo_consulta" class="block text-[13px] font-semibold text-pd-text-primary mb-1.5">
+                        Motivo de Consulta <span class="text-pd-danger" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
+                    </label>
+                    <textarea
+                        id="motivo_consulta"
+                        v-model="form.motivo_consulta"
+                        rows="2"
+                        aria-required="true"
+                        :aria-invalid="hasError('motivo_consulta') ? 'true' : 'false'"
+                        :aria-describedby="hasError('motivo_consulta') ? 'motivo_consulta-error' : undefined"
+                        class="w-full rounded-lg border bg-pd-surface-subtle px-3 py-2.5 text-[14px] text-pd-text-primary focus:border-pd-brand focus:ring-0"
+                        :class="hasError('motivo_consulta') ? 'border-pd-danger' : 'border-pd-border'"
+                    ></textarea>
+                    <p v-if="hasError('motivo_consulta')" id="motivo_consulta-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('motivo_consulta') }}</p>
+                </div>
                     <div>
-                        <label for="diagnostico" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
+                        <label for="diagnostico" class="block text-[13px] font-semibold text-pd-text-primary mb-1.5">
                             Diagnóstico
                         </label>
                         <input
@@ -537,19 +528,16 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                             type="text"
                             :aria-invalid="hasError('diagnostico') ? 'true' : 'false'"
                             :aria-describedby="hasError('diagnostico') ? 'diagnostico-error dx-obs-hint' : 'dx-obs-hint'"
-                            class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
-                            :class="hasError('diagnostico') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                            class="w-full rounded-lg border bg-pd-surface-subtle px-3 py-2 text-[14px] text-pd-text-primary focus:border-pd-brand focus:ring-0"
+                            :class="hasError('diagnostico') ? 'border-pd-danger' : 'border-pd-border'"
                         />
-                        <p v-if="hasError('diagnostico')" id="diagnostico-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('diagnostico') }}</p>
+                        <p v-if="hasError('diagnostico')" id="diagnostico-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('diagnostico') }}</p>
                     </div>
-                </div>
-
-                <p id="dx-obs-hint" class="text-[12px] text-[var(--nord3)] -mt-2">
-                        Completa el diagnóstico o las notas clínicas; al menos uno es obligatorio <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio al menos uno)</span>
+                <p id="dx-obs-hint" class="text-[12px] text-pd-text-secondary -mt-2">
+                        Completa el diagnóstico o las notas clínicas; al menos uno es obligatorio <span class="text-pd-danger" aria-hidden="true">*</span><span class="sr-only">(obligatorio al menos uno)</span>
                 </p>
-
                 <div>
-                    <label for="notas_clinicas" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
+                    <label for="notas_clinicas" class="block text-[13px] font-semibold text-pd-text-primary mb-1.5">
                         Observación / Notas clínicas
                     </label>
                     <textarea
@@ -558,25 +546,28 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                         rows="4"
                         :aria-invalid="hasError('notas_clinicas') ? 'true' : 'false'"
                         :aria-describedby="hasError('notas_clinicas') ? 'notas_clinicas-error dx-obs-hint' : 'dx-obs-hint'"
-                        class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2.5 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
-                        :class="hasError('notas_clinicas') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                        class="w-full rounded-lg border bg-pd-surface-subtle px-3 py-2.5 text-[14px] text-pd-text-primary focus:border-pd-brand focus:ring-0"
+                        :class="hasError('notas_clinicas') ? 'border-pd-danger' : 'border-pd-border'"
                     ></textarea>
-                    <p v-if="hasError('notas_clinicas')" id="notas_clinicas-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('notas_clinicas') }}</p>
+                    <p v-if="hasError('notas_clinicas')" id="notas_clinicas-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('notas_clinicas') }}</p>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            </div>
+                        </section>
+                        <section class="rounded-xl border border-pd-border bg-pd-surface p-5 shadow-sm">
+                            <div class="space-y-4">
+                <div class="grid grid-cols-1 gap-4">
                     <fieldset
                         id="crisis_psicologica"
                         tabindex="-1"
-                        class="rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2"
+                        class="rounded-lg border border-pd-border bg-pd-surface-subtle px-3 py-2"
                         :aria-invalid="hasError('crisis_psicologica') ? 'true' : 'false'"
                         :aria-describedby="hasError('crisis_psicologica') ? 'crisis_psicologica-error' : undefined"
                     >
-                        <legend class="text-[13px] font-semibold text-[var(--nord0)]">
-                            Crisis psicológica <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
+                        <legend class="text-[13px] font-semibold text-pd-text-primary">
+                            Crisis psicológica <span class="text-pd-danger" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
                         </legend>
                         <div class="mt-2 flex gap-6">
-                            <label for="crisis_psicologica-si" class="inline-flex items-center gap-2 text-[13px] text-[var(--nord0)]">
+                            <label for="crisis_psicologica-si" class="inline-flex items-center gap-2 text-[13px] text-pd-text-primary">
                                 <input
                                     id="crisis_psicologica-si"
                                     v-model="form.crisis_psicologica"
@@ -586,11 +577,11 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                                     :value="true"
                                     :aria-invalid="hasError('crisis_psicologica') ? 'true' : 'false'"
                                     :aria-describedby="hasError('crisis_psicologica') ? 'crisis_psicologica-error' : undefined"
-                                    class="text-[var(--nord8)] focus:ring-[var(--nord8)]"
+                                    class="text-pd-brand focus:ring-pd-brand"
                                 />
                                 Sí
                             </label>
-                            <label for="crisis_psicologica-no" class="inline-flex items-center gap-2 text-[13px] text-[var(--nord0)]">
+                            <label for="crisis_psicologica-no" class="inline-flex items-center gap-2 text-[13px] text-pd-text-primary">
                                 <input
                                     id="crisis_psicologica-no"
                                     v-model="form.crisis_psicologica"
@@ -600,28 +591,28 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                                     :value="false"
                                     :aria-invalid="hasError('crisis_psicologica') ? 'true' : 'false'"
                                     :aria-describedby="hasError('crisis_psicologica') ? 'crisis_psicologica-error' : undefined"
-                                    class="text-[var(--nord8)] focus:ring-[var(--nord8)]"
+                                    class="text-pd-brand focus:ring-pd-brand"
                                 />
                                 No
                             </label>
                         </div>
-                        <p v-if="hasError('crisis_psicologica')" id="crisis_psicologica-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('crisis_psicologica') }}</p>
+                        <p v-if="hasError('crisis_psicologica')" id="crisis_psicologica-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('crisis_psicologica') }}</p>
                     </fieldset>
 
                     <fieldset
                         id="indicadores_tendencia_suicida"
                         tabindex="-1"
-                        class="rounded-lg border border-[var(--nord4)] bg-[var(--nord6)] px-3 py-2"
+                        class="rounded-lg border border-pd-border bg-pd-surface-subtle px-3 py-2"
                         :aria-invalid="hasError('indicadores_tendencia_suicida') ? 'true' : 'false'"
                         :aria-describedby="hasError('indicadores_tendencia_suicida') ? 'indicadores_tendencia_suicida-error' : undefined"
                     >
-                        <legend class="text-[13px] font-semibold text-[var(--nord0)]">Indicadores de tendencia suicida</legend>
+                        <legend class="text-[13px] font-semibold text-pd-text-primary">Indicadores de tendencia suicida</legend>
                         <div v-if="props.indicadoresTendenciaSuicida.length" class="mt-2 space-y-2">
                             <label
                                 v-for="(indicador, index) in props.indicadoresTendenciaSuicida"
                                 :key="indicador"
                                 :for="'indicador-tendencia-' + index"
-                                class="inline-flex items-center gap-2 text-[13px] text-[var(--nord0)]"
+                                class="inline-flex items-center gap-2 text-[13px] text-pd-text-primary"
                             >
                                 <input
                                     :id="'indicador-tendencia-' + index"
@@ -630,21 +621,26 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                                     :value="indicador"
                                     :aria-invalid="hasError('indicadores_tendencia_suicida') ? 'true' : 'false'"
                                     :aria-describedby="hasError('indicadores_tendencia_suicida') ? 'indicadores_tendencia_suicida-error' : undefined"
-                                    class="rounded text-[var(--nord8)] focus:ring-[var(--nord8)]"
+                                    class="rounded text-pd-brand focus:ring-pd-brand"
                                 />
                                 <span class="capitalize">{{ indicador.replaceAll('_', ' ') }}</span>
                             </label>
                         </div>
-                        <p v-else class="mt-2 text-[12px] text-[var(--nord3)]">
+                        <p v-else class="mt-2 text-[12px] text-pd-text-secondary">
                             No hay indicadores de tendencia suicida configurados.
                         </p>
-                        <p v-if="hasError('indicadores_tendencia_suicida')" id="indicadores_tendencia_suicida-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('indicadores_tendencia_suicida') }}</p>
+                        <p v-if="hasError('indicadores_tendencia_suicida')" id="indicadores_tendencia_suicida-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('indicadores_tendencia_suicida') }}</p>
                     </fieldset>
                 </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
 
+                <section class="rounded-xl border border-pd-border bg-pd-surface p-5 shadow-sm">
                 <div>
-                    <label for="plan_atencion" class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">
-                        Plan de atención <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
+                    <label for="plan_atencion" class="block text-[13px] font-semibold text-pd-text-primary mb-1.5">
+                        Plan de atención <span class="text-pd-danger" aria-hidden="true">*</span><span class="sr-only">(obligatorio)</span>
                     </label>
                     <textarea
                         id="plan_atencion"
@@ -655,16 +651,17 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                         aria-required="true"
                         :aria-invalid="hasError('plan_atencion') ? 'true' : 'false'"
                         :aria-describedby="hasError('plan_atencion') ? 'plan_atencion-error' : undefined"
-                        class="w-full rounded-lg border bg-[var(--nord6)] px-3 py-2.5 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
-                        :class="hasError('plan_atencion') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
+                        class="w-full rounded-lg border bg-pd-surface-subtle px-3 py-2.5 text-[14px] text-pd-text-primary focus:border-pd-brand focus:ring-0"
+                        :class="hasError('plan_atencion') ? 'border-pd-danger' : 'border-pd-border'"
                     ></textarea>
-                    <p v-if="hasError('plan_atencion')" id="plan_atencion-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('plan_atencion') }}</p>
+                    <p v-if="hasError('plan_atencion')" id="plan_atencion-error" class="text-pd-danger text-[12px] mt-1">{{ errorMessage('plan_atencion') }}</p>
                 </div>
+                </section>
 
-                <div class="pt-4 border-t border-[var(--nord4)] flex items-center justify-end gap-3">
+                <div class="pt-4 border-t border-pd-border flex items-center justify-end gap-3">
                     <Link
                         :href="'/pacientes/' + expediente.paciente.carnet"
-                        class="px-4 py-2 text-[13px] font-medium text-[var(--nord3)] hover:bg-[var(--nord6)] rounded-lg transition-colors border border-transparent hover:border-[var(--nord4)]"
+                        class="px-4 py-2 text-[13px] font-medium text-pd-text-secondary hover:bg-pd-surface-subtle rounded-lg transition-colors border border-transparent hover:border-pd-border"
                     >
                         Cancelar
                     </Link>

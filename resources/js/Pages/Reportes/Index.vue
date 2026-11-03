@@ -1,6 +1,7 @@
 <script setup>
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, ref } from 'vue';
+import { formatElSalvadorDateTime, formatLocalDate } from '@/utils/dates';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 
@@ -19,6 +20,8 @@ const props = defineProps({
 });
 
 const page = usePage();
+const minCelda = computed(() => props.reporte?.minimo_celda ?? page.props.privacidad?.min_celda);
+const rangoMaxDias = computed(() => page.props.limites?.analitica_rango_dias ?? 366);
 const pageError = ref('');
 const exportError = ref('');
 const exportSuccess = ref('');
@@ -153,7 +156,7 @@ function error(field) {
 }
 
 function dateLabel(value) {
-    return new Intl.DateTimeFormat('es-SV', { dateStyle: 'medium' }).format(new Date(`${value}T12:00:00`));
+    return formatLocalDate(value, { dateStyle: 'medium' }, undefined, '-');
 }
 </script>
 
@@ -161,79 +164,81 @@ function dateLabel(value) {
     <Head title="Reportes personalizados" />
 
     <main class="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        <header class="space-y-1">
-            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--frost3)]">Analítica institucional</p>
-            <h1 class="text-2xl font-bold tracking-tight text-[var(--nord0)] sm:text-3xl">Reportes personalizados</h1>
-            <p class="max-w-3xl text-sm leading-relaxed text-[var(--nord3)]">Crea reportes con los indicadores y grupos que selecciones. Puedes guardar la dirección de esta página para volver a consultar el mismo reporte.</p>
+        <header class="flex flex-wrap items-start justify-between gap-3">
+            <div class="space-y-1">
+            <h1 class="text-2xl font-bold tracking-tight text-pd-text-primary sm:text-3xl">Reportes personalizados</h1>
+            <p class="max-w-3xl text-sm leading-relaxed text-pd-text-secondary">Crea reportes con los indicadores y grupos que selecciones. Puedes guardar la dirección de esta página para volver a consultar el mismo reporte.</p>
+            </div>
+            <span class="rounded-full bg-pd-brand-soft px-3 py-1.5 text-xs font-semibold text-pd-brand">Datos institucionales</span>
         </header>
 
-        <section aria-labelledby="report-filters-title" class="rounded-2xl border border-[var(--nord4)] bg-white p-4 shadow-sm sm:p-6">
+        <section aria-labelledby="report-filters-title" class="rounded-xl border border-pd-border bg-pd-surface p-4  sm:p-6">
             <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                    <h2 id="report-filters-title" class="text-lg font-semibold text-[var(--nord0)]">Parámetros del reporte</h2>
-                    <p class="mt-1 text-xs text-[var(--nord3)]">Área e indicadores son obligatorios. El período máximo es de 366 días.</p>
+                    <h2 id="report-filters-title" class="text-lg font-semibold text-pd-text-primary">Parámetros del reporte</h2>
+                    <p class="mt-1 text-xs text-pd-text-muted">Área e indicadores son obligatorios. El período máximo es de {{ rangoMaxDias }} días.</p>
                 </div>
-                <button type="button" class="min-h-10 rounded-lg px-3 text-sm font-medium text-[var(--nord2)] underline decoration-[var(--nord4)] underline-offset-4 hover:text-[var(--nord0)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--frost3)]" @click="resetForm">
+                <button type="button" class="min-h-10 rounded-lg px-3 text-sm font-medium text-pd-text-secondary underline decoration-pd-border underline-offset-4 hover:text-pd-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pd-brand" @click="resetForm">
                     Restablecer
                 </button>
             </div>
 
-            <div v-if="Object.keys(form.errors).length" ref="errorSummary" role="alert" tabindex="-1" class="mb-4 rounded-xl border border-[var(--aurora-red)]/40 bg-[var(--aurora-red)]/10 p-3 text-sm text-[var(--nord0)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--aurora-red)]">
+            <div v-if="Object.keys(form.errors).length" ref="errorSummary" role="alert" tabindex="-1" class="mb-4 rounded-xl border border-pd-danger/40 bg-pd-danger/10 p-3 text-sm text-pd-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-pd-danger">
                 <h3 class="font-semibold">Revisa los parámetros</h3>
                 <ul class="mt-1 list-inside list-disc"><li v-for="(message, field) in form.errors" :key="field">{{ message }}</li></ul>
             </div>
-            <div v-if="pageError" role="alert" class="mb-4 rounded-xl border border-[var(--aurora-red)]/40 bg-[var(--aurora-red)]/10 p-3 text-sm text-[var(--nord0)]">{{ pageError }}</div>
+            <div v-if="pageError" role="alert" class="mb-4 rounded-xl border border-pd-danger/40 bg-pd-danger/10 p-3 text-sm text-pd-text-primary">{{ pageError }}</div>
 
             <form class="space-y-5" @submit.prevent="generateReport">
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <div>
-                        <label for="report-from" class="mb-1.5 block text-sm font-medium text-[var(--nord1)]">Desde</label>
-                        <input id="report-from" v-model="form.desde" type="date" required :aria-invalid="Boolean(form.errors.desde)" aria-describedby="report-from-error" class="min-h-11 w-full rounded-lg border border-[var(--nord4)] bg-white px-3 text-sm text-[var(--nord0)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--frost3)]" />
-                        <p v-if="form.errors.desde" id="report-from-error" class="mt-1 text-sm text-[var(--aurora-red)]">{{ form.errors.desde }}</p>
+                        <label for="report-from" class="mb-1.5 block text-sm font-medium text-pd-text-primary">Desde</label>
+                        <input id="report-from" v-model="form.desde" type="date" required :aria-invalid="Boolean(form.errors.desde)" aria-describedby="report-from-error" class="min-h-11 w-full rounded-lg border border-pd-border bg-pd-surface px-3 text-sm text-pd-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pd-brand" />
+                        <p v-if="form.errors.desde" id="report-from-error" class="mt-1 text-sm text-pd-danger">{{ form.errors.desde }}</p>
                     </div>
                     <div>
-                        <label for="report-through" class="mb-1.5 block text-sm font-medium text-[var(--nord1)]">Hasta</label>
-                        <input id="report-through" v-model="form.hasta" type="date" required :aria-invalid="Boolean(form.errors.hasta)" aria-describedby="report-through-error" class="min-h-11 w-full rounded-lg border border-[var(--nord4)] bg-white px-3 text-sm text-[var(--nord0)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--frost3)]" />
-                        <p v-if="form.errors.hasta" id="report-through-error" class="mt-1 text-sm text-[var(--aurora-red)]">{{ form.errors.hasta }}</p>
+                        <label for="report-through" class="mb-1.5 block text-sm font-medium text-pd-text-primary">Hasta</label>
+                        <input id="report-through" v-model="form.hasta" type="date" required :aria-invalid="Boolean(form.errors.hasta)" aria-describedby="report-through-error" class="min-h-11 w-full rounded-lg border border-pd-border bg-pd-surface px-3 text-sm text-pd-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pd-brand" />
+                        <p v-if="form.errors.hasta" id="report-through-error" class="mt-1 text-sm text-pd-danger">{{ form.errors.hasta }}</p>
                     </div>
                     <div>
-                        <label for="report-area" class="mb-1.5 block text-sm font-medium text-[var(--nord1)]">Área</label>
-                        <select id="report-area" v-model="form.area" required :aria-invalid="Boolean(form.errors.area)" aria-describedby="report-area-error" class="min-h-11 w-full rounded-lg border border-[var(--nord4)] bg-white px-3 text-sm text-[var(--nord0)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--frost3)]">
+                        <label for="report-area" class="mb-1.5 block text-sm font-medium text-pd-text-primary">Área</label>
+                        <select id="report-area" v-model="form.area" required :aria-invalid="Boolean(form.errors.area)" aria-describedby="report-area-error" class="min-h-11 w-full rounded-lg border border-pd-border bg-pd-surface px-3 text-sm text-pd-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pd-brand">
                             <option v-if="puede_todas_areas" value="todas">Todas las áreas</option>
                             <option v-for="area in areas" :key="area.id" :value="String(area.id)">{{ area.nombre }}</option>
                         </select>
-                        <p v-if="form.errors.area" id="report-area-error" class="mt-1 text-sm text-[var(--aurora-red)]">{{ form.errors.area }}</p>
+                        <p v-if="form.errors.area" id="report-area-error" class="mt-1 text-sm text-pd-danger">{{ form.errors.area }}</p>
                     </div>
                 </div>
 
                 <fieldset>
-                    <legend class="mb-2 text-sm font-medium text-[var(--nord1)]">Indicadores</legend>
-                    <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        <label v-for="item in catalogo" :key="item.id" class="flex min-h-11 cursor-pointer items-start gap-2 rounded-lg border border-[var(--nord4)] px-3 py-2.5 text-sm text-[var(--nord1)] hover:bg-[var(--nord6)] focus-within:outline focus-within:outline-2 focus-within:outline-[var(--frost3)]">
-                            <input v-model="form.indicadores" type="checkbox" :value="item.id" class="mt-0.5 rounded border-[var(--nord3)] text-[var(--frost3)] focus:ring-[var(--frost3)]" />
+                    <legend class="mb-2 text-sm font-medium text-pd-text-primary">Indicadores</legend>
+                    <div class="flex flex-wrap gap-2">
+                        <label v-for="item in catalogo" :key="item.id" class="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border border-pd-border bg-pd-surface px-3 py-2 text-sm font-medium text-pd-text-primary transition hover:bg-pd-surface-subtle has-[:checked]:border-pd-brand/40 has-[:checked]:bg-pd-brand-soft has-[:checked]:text-pd-brand focus-within:outline focus-within:outline-2 focus-within:outline-pd-brand">
+                            <input v-model="form.indicadores" type="checkbox" :value="item.id" class="mt-0.5 rounded border-pd-text-muted text-pd-brand focus:ring-pd-brand" />
                             <span class="leading-snug">{{ item.etiqueta }}</span>
                         </label>
                     </div>
-                    <p v-if="error('indicadores')" class="mt-1 text-sm text-[var(--aurora-red)]">{{ error('indicadores') }}</p>
+                    <p v-if="error('indicadores')" class="mt-1 text-sm text-pd-danger">{{ error('indicadores') }}</p>
                 </fieldset>
 
                 <fieldset>
-                    <legend class="mb-2 text-sm font-medium text-[var(--nord1)]">Agrupar por (máximo dos)</legend>
-                    <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                        <label v-for="group in agrupaciones" :key="group.id" class="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-[var(--nord4)] px-3 py-2.5 text-sm text-[var(--nord1)] hover:bg-[var(--nord6)] focus-within:outline focus-within:outline-2 focus-within:outline-[var(--frost3)]">
-                            <input v-model="form.agrupar_por" type="checkbox" :value="group.id" :disabled="form.agrupar_por.length >= 2 && !form.agrupar_por.includes(group.id)" class="rounded border-[var(--nord3)] text-[var(--frost3)] focus:ring-[var(--frost3)] disabled:opacity-50" />
+                    <legend class="mb-2 text-sm font-medium text-pd-text-primary">Agrupar por (máximo dos)</legend>
+                    <div class="flex flex-wrap gap-2">
+                        <label v-for="group in agrupaciones" :key="group.id" class="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border border-pd-border bg-pd-surface px-3 py-2 text-sm font-medium text-pd-text-primary transition hover:bg-pd-surface-subtle has-[:checked]:border-pd-brand/40 has-[:checked]:bg-pd-brand-soft has-[:checked]:text-pd-brand focus-within:outline focus-within:outline-2 focus-within:outline-pd-brand">
+                            <input v-model="form.agrupar_por" type="checkbox" :value="group.id" :disabled="form.agrupar_por.length >= 2 && !form.agrupar_por.includes(group.id)" class="rounded border-pd-text-muted text-pd-brand focus:ring-pd-brand disabled:opacity-50" />
                             <span>{{ group.etiqueta }}</span>
                         </label>
                     </div>
-                    <p v-if="error('agrupar_por')" class="mt-1 text-sm text-[var(--aurora-red)]">{{ error('agrupar_por') }}</p>
+                    <p v-if="error('agrupar_por')" class="mt-1 text-sm text-pd-danger">{{ error('agrupar_por') }}</p>
                 </fieldset>
 
-                <div class="flex flex-wrap items-center gap-3 border-t border-[var(--nord5)] pt-4">
-                    <button type="submit" :disabled="form.processing" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--nord10)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--nord9)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--nord10)] disabled:cursor-not-allowed disabled:opacity-60">
+                <div class="flex flex-wrap items-center gap-3 border-t border-pd-border pt-4">
+                    <button type="submit" :disabled="form.processing" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-pd-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-pd-brand/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pd-brand disabled:cursor-not-allowed disabled:opacity-60">
                         <svg v-if="form.processing" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
                         {{ form.processing ? 'Generando…' : 'Generar reporte' }}
                     </button>
-                    <span v-if="form.processing" role="status" class="text-sm text-[var(--nord3)]">Generando reporte</span>
+                    <span v-if="form.processing" role="status" class="text-sm text-pd-text-muted">Generando reporte</span>
                 </div>
             </form>
         </section>
@@ -241,64 +246,64 @@ function dateLabel(value) {
         <section v-if="reporte" aria-labelledby="report-results-title" aria-live="polite" class="space-y-4">
             <div class="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                    <h2 id="report-results-title" class="text-xl font-semibold text-[var(--nord0)]">Reporte generado</h2>
-                    <p class="mt-1 text-xs text-[var(--nord3)]">{{ dateLabel(reporte.parametros_aplicados.desde) }} — {{ dateLabel(reporte.parametros_aplicados.hasta) }} · {{ areaLabel(reporte.parametros_aplicados.area) }}</p>
-                    <p class="mt-1 text-xs leading-relaxed text-[var(--nord3)]">
+                    <h2 id="report-results-title" class="text-xl font-semibold text-pd-text-primary">Reporte generado</h2>
+                    <p class="mt-1 text-xs text-pd-text-muted">{{ dateLabel(reporte.parametros_aplicados.desde) }} — {{ dateLabel(reporte.parametros_aplicados.hasta) }} · {{ areaLabel(reporte.parametros_aplicados.area) }}</p>
+                    <p class="mt-1 text-xs leading-relaxed text-pd-text-muted">
                         Indicadores: {{ reporte.columnas.map((column) => column.etiqueta).join(', ') }} ·
                         Agrupar por: {{ reporte.parametros_aplicados.agrupar_por.map((group) => groupLabels[group]).join(' + ') }}
                     </p>
-                    <p class="mt-1 text-xs text-[var(--nord3)]">Por privacidad, los conteos de grupos pequeños y sus totales relacionados se ocultan.</p>
+                    <p class="mt-1 text-xs text-pd-text-muted">Por privacidad, los grupos con menos de {{ minCelda }} casos y los totales que permitirían deducirlos se ocultan.</p>
                 </div>
                 <div class="flex flex-col items-end gap-2">
-                    <p class="text-xs text-[var(--nord3)]">Generado por {{ reporte.generado_por }} · {{ new Intl.DateTimeFormat('es-SV', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(reporte.generado_en)) }}</p>
+                    <p class="text-xs text-pd-text-muted">Generado por {{ reporte.generado_por }} · {{ formatElSalvadorDateTime(reporte.generado_en) }}</p>
                     <div v-if="canExport" class="flex flex-wrap justify-end gap-2">
-                        <button type="button" :disabled="Boolean(exporting)" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--nord4)] bg-white px-4 py-2 text-sm font-semibold text-[var(--nord1)] transition hover:bg-[var(--nord6)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--frost3)] disabled:cursor-not-allowed disabled:opacity-60" @click="downloadExport('pdf')">
+                        <button type="button" :disabled="Boolean(exporting)" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-pd-border bg-pd-surface px-4 py-2 text-sm font-semibold text-pd-text-primary transition hover:bg-pd-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pd-brand disabled:cursor-not-allowed disabled:opacity-60" @click="downloadExport('pdf')">
                             <svg v-if="exporting === 'pdf'" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
                             {{ exporting === 'pdf' ? 'Generando PDF…' : 'Descargar PDF' }}
                         </button>
-                        <button type="button" :disabled="Boolean(exporting)" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--nord4)] bg-white px-4 py-2 text-sm font-semibold text-[var(--nord1)] transition hover:bg-[var(--nord6)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--frost3)] disabled:cursor-not-allowed disabled:opacity-60" @click="downloadExport('excel')">
+                        <button type="button" :disabled="Boolean(exporting)" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-pd-border bg-pd-surface px-4 py-2 text-sm font-semibold text-pd-text-primary transition hover:bg-pd-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pd-brand disabled:cursor-not-allowed disabled:opacity-60" @click="downloadExport('excel')">
                             <svg v-if="exporting === 'excel'" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
                             {{ exporting === 'excel' ? 'Generando Excel…' : 'Descargar Excel' }}
                         </button>
                     </div>
-                    <p v-if="exportSuccess" role="status" class="text-sm text-[var(--aurora-green)]">{{ exportSuccess }}</p>
-                    <p v-if="exportError" role="alert" class="text-sm text-[var(--aurora-red)]">{{ exportError }}</p>
+                    <p v-if="exportSuccess" role="status" class="text-sm text-pd-success">{{ exportSuccess }}</p>
+                    <p v-if="exportError" role="alert" class="text-sm text-pd-danger">{{ exportError }}</p>
                 </div>
             </div>
 
-            <p v-if="reporte.sin_datos" class="rounded-xl border border-[var(--nord4)] bg-white p-5 text-sm text-[var(--nord2)]">No hay registros que coincidan con estos filtros. Por eso, los totales son 0.</p>
+            <p v-if="reporte.sin_datos" class="rounded-xl border border-pd-border bg-pd-surface p-5 text-sm text-pd-text-secondary">No hay registros que coincidan con estos filtros. Por eso, los totales son 0.</p>
 
-            <section aria-labelledby="report-totals-title" class="rounded-2xl border border-[var(--nord4)] bg-white p-4 shadow-sm">
-                <h3 id="report-totals-title" class="mb-3 text-base font-semibold text-[var(--nord0)]">Totales del período</h3>
+            <section aria-labelledby="report-totals-title" class="rounded-xl border border-pd-border bg-pd-surface p-4 ">
+                <h3 id="report-totals-title" class="mb-3 text-base font-semibold text-pd-text-primary">Totales del período</h3>
                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    <article v-for="column in reporte.columnas" :key="column.id" class="rounded-xl border border-[var(--nord5)] p-3">
-                        <p class="text-xs font-medium text-[var(--nord3)]">{{ column.etiqueta }}</p>
-                        <p class="mt-1 text-xl font-bold tabular-nums text-[var(--nord0)]">{{ formatValue(reporte.totales[column.id]) }}</p>
+                    <article v-for="column in reporte.columnas" :key="column.id" class="rounded-lg bg-pd-surface-subtle p-3">
+                        <p class="text-xs font-medium text-pd-text-muted">{{ column.etiqueta }}</p>
+                        <p class="mt-1 text-2xl font-bold tabular-nums text-pd-text-primary">{{ formatValue(reporte.totales[column.id]) }}</p>
                     </article>
                 </div>
             </section>
 
-            <section class="overflow-hidden rounded-2xl border border-[var(--nord4)] bg-white shadow-sm">
-                <div class="border-b border-[var(--nord5)] px-4 py-3 sm:px-5">
-                    <h3 class="font-semibold text-[var(--nord0)]">Grupos</h3>
+            <section class="overflow-hidden rounded-xl border border-pd-border bg-pd-surface ">
+                <div class="border-b border-pd-border px-4 py-3 sm:px-5">
+                    <h3 class="font-semibold text-pd-text-primary">Grupos</h3>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[650px] border-collapse text-left text-sm">
                         <caption class="sr-only">Resultados del reporte agrupados por los parámetros seleccionados</caption>
-                        <thead class="bg-[var(--nord6)] text-xs uppercase tracking-wide text-[var(--nord2)]">
+                        <thead class="bg-pd-surface-header text-xs tracking-wide text-pd-text-secondary">
                             <tr>
                                 <th v-for="dimension in tableDimensions" :key="dimension.id" scope="col" class="px-4 py-3 font-semibold">{{ groupLabels[dimension.id] }}</th>
                                 <th v-if="groupedByIndicator" scope="col" class="px-4 py-3 text-right font-semibold">Total</th>
                                 <th v-else v-for="column in reportColumns" :key="column.id" scope="col" class="px-4 py-3 text-right font-semibold">{{ column.etiqueta }}</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-[var(--nord5)]">
-                            <tr v-for="(group, index) in reporte.grupos" :key="index" class="hover:bg-[var(--nord6)]/70">
-                                <th v-for="(dimension, dimensionIndex) in tableDimensions" :key="dimension.id" :scope="dimensionIndex === 0 ? 'row' : undefined" class="px-4 py-3 font-medium text-[var(--nord1)]">{{ dimensionValue(group, dimension.id) }}</th>
-                                <td v-if="groupedByIndicator" class="px-4 py-3 text-right font-semibold tabular-nums text-[var(--nord0)]">{{ formatValue(group.valores[group.dimensiones.indicador]) }}</td>
-                                <td v-else v-for="column in reportColumns" :key="column.id" class="px-4 py-3 text-right font-semibold tabular-nums text-[var(--nord0)]">{{ formatValue(group.valores[column.id]) }}</td>
+                        <tbody class="divide-y divide-pd-border">
+                            <tr v-for="(group, index) in reporte.grupos" :key="index" class="hover:bg-pd-surface-subtle/70">
+                                <th v-for="(dimension, dimensionIndex) in tableDimensions" :key="dimension.id" :scope="dimensionIndex === 0 ? 'row' : undefined" class="px-4 py-3 font-medium text-pd-text-primary">{{ dimensionValue(group, dimension.id) }}</th>
+                                <td v-if="groupedByIndicator" class="px-4 py-3 text-right font-semibold tabular-nums text-pd-text-primary">{{ formatValue(group.valores[group.dimensiones.indicador]) }}</td>
+                                <td v-else v-for="column in reportColumns" :key="column.id" class="px-4 py-3 text-right font-semibold tabular-nums text-pd-text-primary">{{ formatValue(group.valores[column.id]) }}</td>
                             </tr>
-                            <tr v-if="reporte.grupos.length === 0"><td :colspan="tableDimensions.length + reportColumns.length" class="px-4 py-8 text-center text-sm text-[var(--nord3)]">No hay resultados para esta combinación. Prueba con otros filtros.</td></tr>
+                            <tr v-if="reporte.grupos.length === 0"><td :colspan="tableDimensions.length + reportColumns.length" class="px-4 py-8 text-center text-sm text-pd-text-muted">No hay resultados para esta combinación. Prueba con otros filtros.</td></tr>
                         </tbody>
                     </table>
                 </div>

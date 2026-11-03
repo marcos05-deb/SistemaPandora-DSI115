@@ -60,8 +60,8 @@ final class BitacoraIndexRequest extends FormRequest
             $tz = (string) config('app.timezone');
             $desde = CarbonImmutable::parse($this->input('desde'), $tz);
             $hasta = CarbonImmutable::parse($this->input('hasta'), $tz);
-            if ($desde->diffInDays($hasta) > 365) {
-                $validator->errors()->add('hasta', 'El período no puede exceder 366 días.');
+            if ($desde->diffInDays($hasta) > config('limites.analitica_rango_dias') - 1) {
+                $validator->errors()->add('hasta', 'El período no puede exceder '.config('limites.analitica_rango_dias').' días.');
             }
         });
     }
@@ -85,8 +85,8 @@ final class BitacoraIndexRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'desde.required' => 'Indica la fecha inicial.',
-            'hasta.required' => 'Indica la fecha final.',
+            'desde.required' => 'La fecha inicial es obligatoria.',
+            'hasta.required' => 'La fecha final es obligatoria.',
             'hasta.after_or_equal' => 'La fecha final debe ser igual o posterior a la inicial.',
             'accion.in' => 'La acción seleccionada no es válida.',
             'usuario.exists' => 'El usuario seleccionado no existe.',

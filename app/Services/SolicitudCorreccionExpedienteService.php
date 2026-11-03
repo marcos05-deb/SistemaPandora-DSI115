@@ -28,13 +28,13 @@ final class SolicitudCorreccionExpedienteService
 
         if (! $paciente->datos_corregidos_en) {
             throw ValidationException::withMessages([
-                'motivo' => 'Aún no ha usado la corrección libre. No necesita solicitar permiso.',
+                'motivo' => 'Aún no has usado la corrección libre. No necesitas solicitar permiso.',
             ]);
         }
 
         if ($this->permisoDatosVigente($paciente)) {
             throw ValidationException::withMessages([
-                'motivo' => 'Ya existe un permiso aprobado vigente. Úselo antes de solicitar otro.',
+                'motivo' => 'Ya existe un permiso aprobado vigente. Úsalo antes de solicitar otro.',
             ]);
         }
 
@@ -72,13 +72,13 @@ final class SolicitudCorreccionExpedienteService
 
         if (! $expediente->actualizado_clinicamente_en) {
             throw ValidationException::withMessages([
-                'motivo' => 'Aún no ha usado la actualización clínica libre. No necesita solicitar permiso.',
+                'motivo' => 'Aún no has usado la actualización clínica libre. No necesitas solicitar permiso.',
             ]);
         }
 
         if ($this->permisoClinicoVigente($expediente)) {
             throw ValidationException::withMessages([
-                'motivo' => 'Ya existe un permiso aprobado vigente. Úselo antes de solicitar otro.',
+                'motivo' => 'Ya existe un permiso aprobado vigente. Úsalo antes de solicitar otro.',
             ]);
         }
 
@@ -288,7 +288,7 @@ final class SolicitudCorreccionExpedienteService
 
         if ($campos === []) {
             throw ValidationException::withMessages([
-                'campos' => 'Debe indicar al menos un campo a corregir.',
+                'campos' => 'Indica al menos un campo a corregir.',
             ]);
         }
 

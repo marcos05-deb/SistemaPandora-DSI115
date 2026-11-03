@@ -64,7 +64,7 @@ loadHistory();
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[var(--nord10)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    Buscar expediente por código
+                    Buscar expediente por código anónimo
                 </h2>
                 <Link v-if="canSeeCarnetSearch" href="/pacientes" class="text-[12px] text-[var(--nord10)] hover:text-[var(--nord9)] transition-colors font-medium">
                     Buscar por Carnet →
@@ -79,7 +79,7 @@ loadHistory();
                         </svg>
                     </div>
                     <p class="text-[13px] text-[var(--nord3)]">
-                        Ingresa el código del expediente (UUID) para consultarlo. La identidad del paciente se mantiene protegida hasta que abras el detalle.
+                        Ingresa el código anónimo del paciente para consultar su expediente. La identidad del paciente se mantiene protegida hasta que abras el detalle.
                     </p>
                 </div>
 
@@ -149,7 +149,7 @@ loadHistory();
 
             <div class="p-8">
                 <div class="border border-[var(--nord4)] rounded-lg px-5 py-4 bg-[var(--nord6)]">
-                    <dt class="text-[11px] font-medium text-[var(--nord3)] uppercase tracking-wider">Código de Expediente</dt>
+                    <dt class="text-[11px] font-medium text-[var(--nord3)] uppercase tracking-wider">Código anónimo</dt>
                     <dd class="text-[14px] font-mono font-semibold text-[var(--nord0)] mt-1">{{ results.code }}</dd>
                 </div>
 

@@ -10,7 +10,7 @@ defineProps({
 </script>
 
 <template>
-    <nav class="flex items-center mb-3" aria-label="Breadcrumb">
+    <nav class="flex items-center mb-3" aria-label="Ruta de navegación">
         <ol class="inline-flex items-center gap-0.5 text-[12px] bg-[var(--surface-subtle)] border border-[var(--nord4)] rounded-full px-3 py-1.5">
             <template v-for="(item, i) in items" :key="i">
                 <!-- Separador -->

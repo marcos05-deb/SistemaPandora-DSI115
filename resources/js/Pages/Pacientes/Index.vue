@@ -80,7 +80,7 @@ loadHistory();
                 <div class="flex items-center gap-3">
                     <Link v-if="canSeeUuidSearch" href="/busqueda-segura"
                         class="text-[12px] font-medium text-[var(--frost4)] hover:text-[var(--nord10)] transition-colors flex items-center gap-1">
-                        Buscar expediente por código
+                        Buscar expediente por código anónimo
                         <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </Link>
                     <Link v-if="canCreatePatient" href="/pacientes/create"
@@ -216,7 +216,7 @@ loadHistory();
                             {{ (results.carnet || '?').charAt(0) }}
                         </div>
                         <div>
-                            <dt class="text-[10px] font-semibold text-[var(--nord3)] uppercase tracking-wider">Carnet Estudiantil</dt>
+                            <dt class="text-[10px] font-semibold text-[var(--nord3)] uppercase tracking-wider">Carnet</dt>
                             <dd class="text-[16px] font-mono font-bold text-[var(--nord0)] mt-0.5">{{ results.carnet }}</dd>
                         </div>
                         <div class="ml-auto">

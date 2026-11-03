@@ -95,7 +95,7 @@ it('can registrar una consulta exitosamente y cifrar datos', function () {
         ->post(route('consultas.store', $this->expediente->id), payloadConsulta());
 
     $response->assertRedirect(route('pacientes.show', $this->paciente->carnet));
-    $response->assertSessionHas('message', 'Consulta registrada exitosamente.');
+    $response->assertSessionHas('message', 'Consulta registrada correctamente.');
 
     expect(Consulta::count())->toBe(1);
 

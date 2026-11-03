@@ -38,7 +38,7 @@ class ExpedienteCloseRequest extends FormRequest
             'resultado_final.required' => 'El resultado final es obligatorio para cerrar el expediente.',
             'resultado_final.min' => 'El resultado final debe tener al menos :min caracteres.',
             'motivo_cierre.required' => 'El motivo de cierre es obligatorio.',
-            'confirmacion_irreversible.accepted' => 'Debe confirmar que el cierre es irreversible.',
+            'confirmacion_irreversible.accepted' => 'Confirma que el cierre es irreversible.',
         ];
     }
 

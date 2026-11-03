@@ -19,7 +19,7 @@ class EnsureIsSysadmin
         $especialista = Auth::user();
 
         if (! $especialista || ! $especialista->hasRole('sysadmin')) {
-            abort(403, 'Acceso denegado. Se requiere rol de administrador.');
+            abort(403, 'Acceso denegado. Esta sección es solo para el Administrador del sistema.');
         }
 
         return $next($request);

@@ -32,7 +32,7 @@ const closeInput = ref(null);
 const discardInput = ref(null);
 const permissions = computed(() => props.can ?? props.alerta?.can ?? { seguimiento: false, cerrar: false, descartar: false });
 const today = dayjs().tz('America/El_Salvador').format('YYYY-MM-DD');
-const maxReview = dayjs.tz(today, 'America/El_Salvador').add(365, 'day').format('YYYY-MM-DD');
+const maxReview = dayjs.tz(today, 'America/El_Salvador').add(page.props.limites?.alerta_revision_max_dias ?? 365, 'day').format('YYYY-MM-DD');
 
 const followUpForm = useForm({
     valoracion: '',
@@ -93,7 +93,7 @@ function handleHttpException(response) {
 }
 
 function handleNetworkError() {
-    pageError.value = 'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
+    pageError.value = 'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.';
 }
 
 function focusFollowUpErrors() {
@@ -420,7 +420,7 @@ onUnmounted(() => document.removeEventListener('keydown', onModalKeydown));
                                 :class="followUpForm.errors.proxima_revision ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
                             />
                             <p v-if="followUpForm.errors.proxima_revision" id="proxima-revision-error" class="mt-1.5 text-sm text-[var(--aurora-red)]">{{ followUpForm.errors.proxima_revision }}</p>
-                            <p class="mt-1 text-xs text-[var(--nord3)]">Selecciona una fecha entre hoy y los próximos 365 días.</p>
+                            <p class="mt-1 text-xs text-[var(--nord3)]">Selecciona una fecha entre hoy y los próximos {{ page.props.limites?.alerta_revision_max_dias ?? 365 }} días.</p>
                         </div>
                     </div>
 

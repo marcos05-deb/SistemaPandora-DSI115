@@ -1,15 +1,38 @@
 /**
- * Fechas clínicas: America/El_Salvador.
- * Nunca usar `new Date('YYYY-MM-DD')` (UTC) ni toISOString().slice(0,10) para "hoy" local.
+ * Fechas clínicas: todo se muestra en America/El_Salvador, locale es-SV, formato 24 h.
+ * Nunca usar `new Date('YYYY-MM-DD')` (UTC) ni toISOString().slice(0,10) para "hoy".
  */
+export const TZ = 'America/El_Salvador';
+export const LOCALE = 'es-SV';
 
-/** @returns {string} YYYY-MM-DD en zona local del navegador */
+const DATE_OPTS = { year: 'numeric', month: 'long', day: 'numeric' };
+const DATETIME_OPTS = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' };
+const TIME_OPTS = { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' };
+
+const toDate = value => {
+    if (value == null || value === '') return null;
+    const d = value instanceof Date ? value : new Date(String(value));
+    return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const partsOf = (date, options) => {
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, hourCycle: 'h23', ...options }).formatToParts(date);
+    return type => parts.find(item => item.type === type)?.value ?? '';
+};
+
+/** @returns {string} YYYY-MM-DD de hoy en El Salvador */
 export function todayLocalYmd() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
+    const p = partsOf(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' });
+    return `${p('year')}-${p('month')}-${p('day')}`;
+}
+
+/**
+ * ¿Es una fecha calendario sin hora? (YYYY-MM-DD)
+ * @param {unknown} value
+ */
+export function isDateOnly(value) {
+    if (value == null || value === '') return false;
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(value).trim());
 }
 
 /**
@@ -23,117 +46,58 @@ export function parseLocalYmd(value) {
     return new Date(y, m - 1, d);
 }
 
-/**
- * ¿Es una fecha calendario sin hora? (YYYY-MM-DD o prefijo de timestamp sin T usable)
- * @param {unknown} value
- */
-export function isDateOnly(value) {
-    if (value == null || value === '') return false;
-    const s = String(value).trim();
-    return /^\d{4}-\d{2}-\d{2}$/.test(s);
+/** Suma días a un YYYY-MM-DD (aritmética de calendario, sin zonas). */
+export function addDaysYmd(ymd, days) {
+    const [y, m, d] = ymd.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
 
 /**
- * Formatea fecha calendario o datetime sin restar un día por UTC.
- * @param {string|null|undefined} value
- * @param {Intl.DateTimeFormatOptions} options
- * @param {string} locale
- * @param {string} emptyLabel
+ * Fecha (sin hora) en El Salvador. Acepta YYYY-MM-DD o instante ISO.
  */
-export function formatLocalDate(
-    value,
-    options = { year: 'numeric', month: 'long', day: 'numeric' },
-    locale = 'es-ES',
-    emptyLabel = 'No registrada'
-) {
+export function formatLocalDate(value, options = DATE_OPTS, locale = LOCALE, emptyLabel = 'No registrada') {
     if (value == null || value === '') return emptyLabel;
-
     const s = String(value).trim();
-
-    if (isDateOnly(s) || (/^\d{4}-\d{2}-\d{2}/.test(s) && !s.includes('T') && s.length <= 10)) {
-        const [y, m, d] = s.slice(0, 10).split('-').map(Number);
-        return new Date(y, m - 1, d).toLocaleDateString(locale, options);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        const [y, m, d] = s.split('-').map(Number);
+        // Fecha calendario: se formatea en UTC para no desplazar el día.
+        return new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(new Date(Date.UTC(y, m - 1, d)));
     }
-
-    // ISO datetime o timestamp: respetar zona del instante
-    const dt = new Date(s);
-    if (Number.isNaN(dt.getTime())) return emptyLabel;
-    return dt.toLocaleDateString(locale, options);
+    const dt = toDate(s);
+    if (!dt) return emptyLabel;
+    return new Intl.DateTimeFormat(locale, { ...options, timeZone: TZ }).format(dt);
 }
 
-/**
- * @param {string|null|undefined} value
- * @param {string} locale
- * @param {string} emptyLabel
- */
-export function formatLocalDateTime(
-    value,
-    locale = 'es-ES',
-    emptyLabel = ''
-) {
-    if (value == null || value === '') return emptyLabel;
-    const dt = new Date(String(value));
-    if (Number.isNaN(dt.getTime())) return emptyLabel;
-    return dt.toLocaleString(locale, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+/** Fecha y hora (24 h) en El Salvador. */
+export function formatElSalvadorDateTime(value, locale = LOCALE, emptyLabel = 'No registrada') {
+    const dt = toDate(value);
+    if (!dt) return emptyLabel;
+    return new Intl.DateTimeFormat(locale, { ...DATETIME_OPTS, timeZone: TZ }).format(dt);
+}
+
+export function formatLocalDateTime(value, locale = LOCALE, emptyLabel = '') {
+    return formatElSalvadorDateTime(value, locale, emptyLabel);
+}
+
+/** Hora (24 h) en El Salvador. */
+export function formatLocalTime(value, locale = LOCALE) {
+    const dt = toDate(value);
+    if (!dt) return '-';
+    return new Intl.DateTimeFormat(locale, { ...TIME_OPTS, timeZone: TZ }).format(dt);
 }
 
 /**
  * @param {string|Date|null|undefined} value
- * @returns {string} YYYY-MM-DDTHH:mm in America/El_Salvador
+ * @returns {string} YYYY-MM-DDTHH:mm en El Salvador (para input datetime-local)
  */
 export function formatElSalvadorDateTimeInput(value) {
-    if (value == null || value === '') return '';
-    const date = value instanceof Date ? value : new Date(String(value));
-    if (Number.isNaN(date.getTime())) return '';
-    const parts = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/El_Salvador',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hourCycle: 'h23',
-    }).formatToParts(date);
-    const part = type => parts.find(item => item.type === type)?.value ?? '';
-    return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}`;
+    const date = toDate(value);
+    if (!date) return '';
+    const p = partsOf(date, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return `${p('year')}-${p('month')}-${p('day')}T${p('hour')}:${p('minute')}`;
 }
 
-/**
- * @param {string|null|undefined} value
- * @param {string} locale
- * @param {string} emptyLabel
- */
-export function formatElSalvadorDateTime(
-    value,
-    locale = 'es-ES',
-    emptyLabel = 'No registrada'
-) {
-    if (value == null || value === '') return emptyLabel;
-    const date = new Date(String(value));
-    if (Number.isNaN(date.getTime())) return emptyLabel;
-    return new Intl.DateTimeFormat(locale, {
-        timeZone: 'America/El_Salvador',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(date);
-}
-
-/**
- * Hora local a partir de un instante ISO.
- * @param {string|null|undefined} value
- */
-export function formatLocalTime(value, locale = 'es-ES') {
-    if (value == null || value === '') return '-';
-    const dt = new Date(String(value));
-    if (Number.isNaN(dt.getTime())) return '-';
-    return dt.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase();
+/** Ahora (+ días) como YYYY-MM-DDTHH:mm en El Salvador. */
+export function nowElSalvadorInput(plusDays = 0) {
+    return formatElSalvadorDateTimeInput(new Date(Date.now() + plusDays * 86_400_000));
 }

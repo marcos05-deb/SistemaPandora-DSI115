@@ -64,7 +64,7 @@ final class PacienteDatosCorreccionService
                 $permiso = $this->solicitudes->permisoDatosVigente($paciente);
                 if (! $permiso) {
                     throw ValidationException::withMessages([
-                        'motivo_correccion' => 'Este paciente ya fue corregido una vez. Solicite permiso al administrador para una nueva corrección.',
+                        'motivo_correccion' => 'Este paciente ya fue corregido una vez. Solicita permiso al Administrador del sistema para una nueva corrección.',
                     ]);
                 }
             }
@@ -78,7 +78,7 @@ final class PacienteDatosCorreccionService
 
             if ($todosLosCambios === []) {
                 throw ValidationException::withMessages([
-                    'motivo_correccion' => 'No se detectaron cambios en los datos. Corrija al menos un campo o cancele la operación.',
+                    'motivo_correccion' => 'No se detectaron cambios en los datos. Corrige al menos un campo o cancela la operación.',
                 ]);
             }
 
@@ -152,7 +152,7 @@ final class PacienteDatosCorreccionService
             $paciente->refresh();
 
             if ($paciente->codigo !== $codigoOriginal) {
-                throw new \RuntimeException('El UUID del paciente no debe cambiar durante la corrección.');
+                throw new \RuntimeException('El código anónimo del paciente no debe cambiar durante la corrección.');
             }
 
             return $paciente;
@@ -193,7 +193,7 @@ final class PacienteDatosCorreccionService
 
         if ($fuera !== []) {
             throw ValidationException::withMessages([
-                'motivo_correccion' => 'Solo puede modificar los campos autorizados por el administrador: '.implode(', ', $autorizados).'.',
+                'motivo_correccion' => 'Solo puedes modificar los campos autorizados por el Administrador del sistema: '.implode(', ', $autorizados).'.',
             ]);
         }
     }

@@ -38,7 +38,7 @@ class ExpedienteUpdateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'motivo_cambio.required' => 'Debe indicar el motivo del cambio.',
+            'motivo_cambio.required' => 'Indica el motivo del cambio.',
             'motivo_cambio.min' => 'El motivo del cambio debe tener al menos :min caracteres.',
         ];
     }
@@ -68,7 +68,7 @@ class ExpedienteUpdateRequest extends FormRequest
             if (! $tieneCambio) {
                 $validator->errors()->add(
                     'motivo_consulta',
-                    'Debe modificar al menos un campo permitido del expediente.'
+                    'Modifica al menos un campo permitido del expediente.'
                 );
             }
         });

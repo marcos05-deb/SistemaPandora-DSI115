@@ -21,12 +21,12 @@ class ValidateSymmetricKey
         if (! $request->session()->has('_sym_key')) {
             if ($request->wantsJson() || $request->inertia()) {
                 return response()->json([
-                    'message' => 'Sesión expirada. Por favor, inicie sesión nuevamente.',
+                    'message' => 'Tu sesión expiró. Inicia sesión nuevamente.',
                 ], 401);
             }
 
             return redirect()->route('login')->withErrors([
-                'session' => 'Su sesión expiró. Por favor, inicie sesión nuevamente.',
+                'session' => 'Tu sesión expiró. Inicia sesión nuevamente.',
             ]);
         }
 

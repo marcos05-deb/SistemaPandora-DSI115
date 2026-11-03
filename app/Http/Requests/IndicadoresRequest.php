@@ -76,8 +76,8 @@ class IndicadoresRequest extends FormRequest
 
             $desde = CarbonImmutable::parse($this->validated('desde'), config('app.timezone'));
             $hasta = CarbonImmutable::parse($this->validated('hasta'), config('app.timezone'));
-            if ($desde->diffInDays($hasta) > 365) {
-                $validator->errors()->add('hasta', 'El período no puede exceder 366 días.');
+            if ($desde->diffInDays($hasta) > config('limites.analitica_rango_dias') - 1) {
+                $validator->errors()->add('hasta', 'El período no puede exceder '.config('limites.analitica_rango_dias').' días.');
             }
         });
     }

@@ -101,7 +101,7 @@ final class ReporteParametrizadoService
 
         return new ReporteGenerado(
             parametrosAplicados: $parameters->toArray(),
-            generadoEn: now()->toIso8601String(),
+            generadoEn: now(config('app.timezone'))->toIso8601String(),
             generadoPor: $user->name,
             columnas: array_values(array_filter(
                 $this->columnasPermitidas($user),

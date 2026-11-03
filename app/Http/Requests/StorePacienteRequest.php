@@ -72,14 +72,14 @@ class StorePacienteRequest extends FormRequest
     {
         return [
             'carnet.regex' => 'El carnet debe contener exactamente 2 letras seguidas de 5 números.',
-            'carnet.unique' => 'Este carnet ya ha sido registrado.',
-            'fecha_nacimiento.before_or_equal' => 'La fecha no puede estar en el futuro.',
-            'fecha_nacimiento.after_or_equal' => 'La fecha de nacimiento no es válida (anterior a 1900).',
+            'carnet.unique' => 'Este carnet ya está registrado. Verifica el carnet o busca al paciente existente.',
+            'fecha_nacimiento.before_or_equal' => 'La fecha de nacimiento no puede estar en el futuro.',
+            'fecha_nacimiento.after_or_equal' => 'La fecha de nacimiento no puede ser anterior a 1900.',
             'fecha_primera_consulta.before_or_equal' => 'La fecha de la primera consulta no puede estar en el futuro.',
             'fecha_primera_consulta.after_or_equal' => 'La primera consulta no puede ser anterior a la fecha de nacimiento.',
-            'padre_telefono.regex' => 'Debe tener exactamente 8 dígitos.',
-            'madre_telefono.regex' => 'Debe tener exactamente 8 dígitos.',
-            'responsable_telefono.regex' => 'Debe tener exactamente 8 dígitos numéricos.',
+            'padre_telefono.regex' => 'El teléfono del padre debe tener exactamente 8 dígitos.',
+            'madre_telefono.regex' => 'El teléfono de la madre debe tener exactamente 8 dígitos.',
+            'responsable_telefono.regex' => 'El teléfono del responsable debe tener exactamente 8 dígitos numéricos.',
         ];
     }
 }

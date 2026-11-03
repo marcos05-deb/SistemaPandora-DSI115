@@ -76,15 +76,15 @@ class UpdatePacienteRequest extends FormRequest
     {
         return [
             'carnet.regex' => 'El carnet debe contener exactamente 2 letras seguidas de 5 números (formato AA00000).',
-            'carnet.unique' => 'Este carnet ya está registrado por otro paciente.',
+            'carnet.unique' => 'Este carnet ya está registrado. Verifica el carnet o busca al paciente existente.',
             'motivo_correccion.required' => 'El motivo de la corrección es obligatorio.',
             'motivo_correccion.min' => 'El motivo de la corrección debe tener al menos 10 caracteres.',
             'motivo_correccion.max' => 'El motivo de la corrección no puede superar 500 caracteres.',
-            'fecha_nacimiento.before_or_equal' => 'La fecha no puede estar en el futuro ni ser posterior a la primera consulta.',
-            'fecha_nacimiento.after_or_equal' => 'La fecha de nacimiento no es válida (anterior a 1900).',
-            'padre_telefono.regex' => 'Debe tener exactamente 8 dígitos.',
-            'madre_telefono.regex' => 'Debe tener exactamente 8 dígitos.',
-            'responsable_telefono.regex' => 'Debe tener exactamente 8 dígitos numéricos.',
+            'fecha_nacimiento.before_or_equal' => 'La fecha de nacimiento no puede estar en el futuro ni ser posterior a la primera consulta.',
+            'fecha_nacimiento.after_or_equal' => 'La fecha de nacimiento no puede ser anterior a 1900.',
+            'padre_telefono.regex' => 'El teléfono del padre debe tener exactamente 8 dígitos.',
+            'madre_telefono.regex' => 'El teléfono de la madre debe tener exactamente 8 dígitos.',
+            'responsable_telefono.regex' => 'El teléfono del responsable debe tener exactamente 8 dígitos numéricos.',
         ];
     }
 }

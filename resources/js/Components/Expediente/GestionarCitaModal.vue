@@ -1,6 +1,9 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import { watch, ref, computed } from 'vue';
+import { nowElSalvadorInput } from '@/utils/dates';
+
+const page = usePage();
 
 const props = defineProps({
     show: Boolean,
@@ -50,15 +53,9 @@ watch(() => props.show, (isOpen) => {
     if (isOpen) {
         if (props.mode === 'reprogramar') {
             // Establecer fecha/hora mínima a ahora
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            minDateTime.value = now.toISOString().slice(0, 16);
-            
-            // Máximo a 1 año vista
-            const nextYear = new Date();
-            nextYear.setFullYear(nextYear.getFullYear() + 1);
-            nextYear.setMinutes(nextYear.getMinutes() - nextYear.getTimezoneOffset());
-            maxDateTime.value = nextYear.toISOString().slice(0, 16);
+            minDateTime.value = nowElSalvadorInput();
+            // Horizonte máximo configurable (hora de El Salvador)
+            maxDateTime.value = nowElSalvadorInput(page.props.limites?.cita_horizonte_max_dias ?? 365);
         }
     }
 });

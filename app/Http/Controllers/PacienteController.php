@@ -68,7 +68,7 @@ class PacienteController extends Controller
             }
 
             return redirect()->route('pacientes.index')->withErrors([
-                'carnet' => 'Expediente no encontrado o no tienes permisos para acceder a él.',
+                'carnet' => 'No se encontró un expediente con ese carnet o no tienes permiso para verlo. Verifica el carnet e inténtalo de nuevo.',
             ]);
         }
 

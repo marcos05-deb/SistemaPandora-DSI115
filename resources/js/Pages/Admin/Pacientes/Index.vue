@@ -3,7 +3,7 @@ import { ref, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { todayLocalYmd } from '@/utils/dates';
+import { formatElSalvadorDateTime, todayLocalYmd } from '@/utils/dates';
 
 defineOptions({ layout: AdminLayout });
 
@@ -45,9 +45,7 @@ watch(search, () => applyFilters());
 
 function formatDate(dateStr) {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('es-ES', {
-        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-    });
+    return formatElSalvadorDateTime(dateStr, undefined, '-');
 }
 
 function marcarRevisado(id) {

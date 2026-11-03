@@ -115,7 +115,7 @@ function cambiarPaginaAgenda(pageNum) {
 }
 
 function formatDay(dateStr) {
-    return formatLocalDate(dateStr, { day: '2-digit', month: 'short', year: 'numeric' }, 'es-ES', '-');
+    return formatLocalDate(dateStr, { day: '2-digit', month: 'short', year: 'numeric' }, 'es-SV', '-');
 }
 
 function formatTime(dateStr) {
@@ -232,7 +232,7 @@ const statusLabels = {
                     <input
                         v-model="form.paciente"
                         type="text"
-                        placeholder="Buscar por carnet o código..."
+                        placeholder="Buscar por carnet o código anónimo..."
                         class="w-full md:w-56 border-none bg-[var(--nord6)] text-[var(--nord0)] text-sm rounded-xl px-3 py-2"
                         @keydown.enter.prevent="buscarAhora"
                     />

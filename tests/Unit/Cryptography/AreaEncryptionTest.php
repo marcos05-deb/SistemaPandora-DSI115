@@ -58,7 +58,7 @@ test('falla si se intenta usar la clave de un area distinta', function () {
 
     // Act & Assert
     expect(fn () => $service->decrypt($encryptedInCardiologia, $areaPediatriaId))
-        ->toThrow(RuntimeException::class, 'Decryption failed');
+        ->toThrow(RuntimeException::class, 'No se pudo descifrar');
 });
 
 test('AreaEncryptedFieldCast resuelve area_id e inyecta el servicio correctamente', function () {

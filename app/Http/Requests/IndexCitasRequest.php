@@ -39,8 +39,8 @@ class IndexCitasRequest extends FormRequest
                 $start = CarbonImmutable::createFromFormat('Y-m-d', $this->start);
                 $end = CarbonImmutable::createFromFormat('Y-m-d', $this->end);
 
-                if ($start->diffInDays($end) > 45) {
-                    $validator->errors()->add('end', 'El rango de fechas no puede exceder los 45 días.');
+                if ($start->diffInDays($end) > config('limites.citas_rango_dias')) {
+                    $validator->errors()->add('end', 'El rango de fechas no puede exceder '.config('limites.citas_rango_dias').' días.');
                 }
             }
         });

@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { formatElSalvadorDateTime } from '@/utils/dates';
 
 defineOptions({ layout: AdminLayout });
 
@@ -10,9 +11,7 @@ const props = defineProps({
 
 function formatDate(dateStr) {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('es-ES', {
-        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-    });
+    return formatElSalvadorDateTime(dateStr, undefined, '-');
 }
 
 function marcarRevisado() {

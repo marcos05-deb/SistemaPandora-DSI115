@@ -36,8 +36,8 @@ class StoreSolicitudCorreccionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'campos.required' => 'Debe indicar al menos un campo.',
-            'campos.min' => 'Debe indicar al menos un campo.',
+            'campos.required' => 'Indica al menos un campo.',
+            'campos.min' => 'Indica al menos un campo.',
             'motivo.required' => 'El motivo es obligatorio.',
             'motivo.min' => 'El motivo debe tener al menos 10 caracteres.',
         ];

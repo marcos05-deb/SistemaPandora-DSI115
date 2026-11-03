@@ -80,23 +80,20 @@ class AppServiceProvider extends ServiceProvider
 
     private function configureRateLimiting(): void
     {
+        // Account lockout (3 failures = 15 min) lives in LoginController.
+        // This limiter only stops one device from probing many accounts.
         RateLimiter::for('login', function (Request $request) {
-            $key = Str::lower($request->input('email')).'|'.$request->ip();
-
-            return Limit::perMinutes(10, 10)
-                ->by($key)
+            return Limit::perMinute(5)
+                ->by($request->ip())
                 ->response(function (Request $request, array $headers) {
-                    $retryAfter = $headers['Retry-After'] ?? 900;
+                    $minutes = max(1, (int) ceil(((int) ($headers['Retry-After'] ?? 60)) / 60));
+                    $message = "Demasiados intentos de inicio de sesión desde este equipo. Intenta de nuevo en {$minutes} minuto(s).";
 
                     if ($request->wantsJson()) {
-                        return response()->json([
-                            'message' => 'Demasiados intentos de inicio de sesión. Intente nuevamente en 15 minutos.',
-                        ], 429, $headers);
+                        return response()->json(['message' => $message], 429, $headers);
                     }
 
-                    return back()->withErrors([
-                        'throttle' => 'Demasiados intentos de inicio de sesión. Intente nuevamente en 15 minutos.',
-                    ])->onlyInput('email');
+                    return back()->withErrors(['throttle' => $message])->onlyInput('email');
                 });
         });
     }
