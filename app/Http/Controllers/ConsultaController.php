@@ -7,9 +7,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ConsultaStoreRequest;
 use App\Models\Consulta;
 use App\Models\Expediente;
+use App\Services\ClinicalAccessAuditor;
 use App\Services\ConsultaService;
 use App\Services\RubricaResolver;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,9 +28,12 @@ class ConsultaController extends Controller
         $this->rubricaResolver = $rubricaResolver;
     }
 
-    public function create(Expediente $expediente): Response
+    public function create(Request $request, Expediente $expediente): Response
     {
         Gate::authorize('create', [Consulta::class, $expediente]);
+
+        // HU-21 CA-1: the form renders patient/expediente data, so the read is audited.
+        app(ClinicalAccessAuditor::class)->record($request->user(), $expediente, 'view_consulta_form');
 
         $isFirstConsulta = ! $expediente->consultas()->exists();
         $effectiveVersion = $this->rubricaResolver->vigente();

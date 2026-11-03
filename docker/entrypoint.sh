@@ -49,4 +49,9 @@ if [ "${DB_CONNECTION:-pgsql}" = "pgsql" ]; then
     php artisan pandora:reconciliar-datos-lab2 --no-interaction 2>/dev/null || true
 fi
 
+# Lightweight scheduler (hourly alertas:reevaluar etc.) next to the web server; logs go to stdout.
+if [ "${RUN_SCHEDULER:-1}" = "1" ]; then
+    php artisan schedule:work --no-interaction &
+fi
+
 exec "$@"

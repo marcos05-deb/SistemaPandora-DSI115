@@ -819,3 +819,45 @@ test('HU16-E14 should_audit_alert_creation_and_inbox_read_without_plaintext_phi'
         ->and($auditText)->not->toContain('Observación clínica reservada HU16')
         ->and($auditText)->not->toContain($expediente->paciente->carnet);
 });
+
+test('HU16-E13 should_create_the_alert_once_when_the_scheduled_command_runs_after_the_cause_is_fixed', function (): void {
+    // Arrange: an area without coordinator makes the listener evaluation fail.
+    hu16CreateVersion($this->rubrica, $this->professional, variables: hu16Variables([
+        'crisis_psicologica' => ['umbral' => '1.00'],
+    ]));
+    $orphanArea = Area::factory()->create();
+    $orphanProfessional = Especialista::factory()
+        ->withRole('specialist')
+        ->withProfesional($orphanArea)
+        ->create()
+        ->profesional;
+    [$patient, $expediente] = hu16CreatePatientAndExpediente($orphanArea, $orphanProfessional);
+    $logHandler = new TestHandler;
+    Log::channel()->getLogger()->pushHandler($logHandler);
+
+    // Act: the failure is swallowed by the listener and logged with context.
+    $consulta = hu16RegisterConsultation($this, $expediente, ['crisis_psicologica' => true], evaluate: false);
+    app(EvaluarRiesgoTrasConsulta::class)->handle(new ConsultaSenalesRiesgoRegistradas($consulta));
+    $alertsBeforeFix = AlertaPreventiva::query()->where('paciente_id', $patient->codigo)->count();
+    $firstRunStatus = Artisan::call('alertas:reevaluar', ['--paciente' => $patient->codigo]);
+    $alertsWhileBroken = AlertaPreventiva::query()->where('paciente_id', $patient->codigo)->count();
+
+    Especialista::factory()->withRole('area_coordinator')->withProfesional($orphanArea)->create();
+    Artisan::call('alertas:reevaluar', ['--paciente' => $patient->codigo]);
+    $alertsAfterFix = AlertaPreventiva::query()->where('paciente_id', $patient->codigo)->count();
+    Artisan::call('alertas:reevaluar', ['--paciente' => $patient->codigo]);
+    $alertsAfterSecondRun = AlertaPreventiva::query()->where('paciente_id', $patient->codigo)->count();
+    $logged = collect($logHandler->getRecords())->first(
+        static fn ($record): bool => str_contains((string) $record->message, 'risk listener failed')
+    );
+
+    // Assert
+    expect(Consulta::query()->whereKey($consulta->id)->exists())->toBeTrue()
+        ->and($alertsBeforeFix)->toBe(0)
+        ->and($firstRunStatus)->toBe(0)
+        ->and($alertsWhileBroken)->toBe(0)
+        ->and($alertsAfterFix)->toBe(1)
+        ->and($alertsAfterSecondRun)->toBe(1)
+        ->and($logged->context['consulta_id'] ?? null)->toBe($consulta->id)
+        ->and($logged->context['exception'] ?? null)->toBe(RuntimeException::class);
+});
