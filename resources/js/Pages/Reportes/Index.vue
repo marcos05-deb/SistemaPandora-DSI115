@@ -65,15 +65,28 @@ function generateReport() {
     });
 }
 
+// Export uses the parameters of the report on screen, not the (possibly edited) form.
 function exportQuery() {
+    const applied = props.reporte.parametros_aplicados;
     const params = new URLSearchParams();
-    params.set('desde', form.desde);
-    params.set('hasta', form.hasta);
-    params.set('area', form.area);
-    form.indicadores.forEach((id) => params.append('indicadores[]', id));
-    form.agrupar_por.forEach((id) => params.append('agrupar_por[]', id));
+    params.set('desde', applied.desde);
+    params.set('hasta', applied.hasta);
+    params.set('area', String(applied.area));
+    applied.indicadores.forEach((id) => params.append('indicadores[]', id));
+    applied.agrupar_por.forEach((id) => params.append('agrupar_por[]', id));
     return params.toString();
 }
+
+const filtersChanged = computed(() => {
+    const applied = props.reporte?.parametros_aplicados;
+    if (!applied) return false;
+    const same = (a, b) => a.length === b.length && [...a].sort().join() === [...b].sort().join();
+    return form.desde !== applied.desde
+        || form.hasta !== applied.hasta
+        || String(form.area) !== String(applied.area)
+        || !same(form.indicadores, applied.indicadores)
+        || !same(form.agrupar_por, applied.agrupar_por);
+});
 
 async function downloadExport(formato) {
     if (!canExport.value || exporting.value) {
@@ -266,6 +279,7 @@ function dateLabel(value) {
                             {{ exporting === 'excel' ? 'Generando Excel…' : 'Descargar Excel' }}
                         </button>
                     </div>
+                    <p v-if="canExport && filtersChanged" role="status" class="max-w-md text-right text-xs text-pd-warning">Los filtros cambiaron. La descarga usa el reporte mostrado; genera de nuevo para aplicar los nuevos filtros.</p>
                     <p v-if="exportSuccess" role="status" class="text-sm text-pd-success">{{ exportSuccess }}</p>
                     <p v-if="exportError" role="alert" class="text-sm text-pd-danger">{{ exportError }}</p>
                 </div>

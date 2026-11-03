@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Paciente;
+use App\Services\ClinicalAccessAuditor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -57,6 +58,10 @@ class SecureSearchController extends Controller
                 'code' => 'No se encontró un expediente con ese código anónimo. Verifica el código e inténtalo de nuevo.',
             ]);
         }
+
+        // HU-21 CA-1: audit only successful lookups; the searched code is never stored
+        // (the audit row references the patient, not the user-supplied string).
+        app(ClinicalAccessAuditor::class)->record($user, $paciente, 'view_patient_secure_search');
 
         return Inertia::render('SecureSearch/Index', [
             'searchCode' => $validated['code'],

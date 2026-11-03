@@ -18,7 +18,10 @@ final class EvaluarRiesgoTrasAusencia
         try {
             $this->evaluador->evaluarAusencia($event->cita);
         } catch (Throwable $exception) {
-            Log::error('Preventive absence risk listener failed.', [
+            // Never fail the clinical action. The hourly `alertas:reevaluar` schedule recovers the alert.
+            Log::error('Preventive absence risk listener failed. Pending re-evaluation by scheduled alertas:reevaluar.', [
+                'cita_id' => $event->cita->id,
+                'paciente_id' => $event->cita->expediente?->paciente_id,
                 'exception' => $exception::class,
             ]);
         }

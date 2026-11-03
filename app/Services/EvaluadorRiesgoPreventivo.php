@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use RuntimeException;
 
@@ -102,7 +103,7 @@ final class EvaluadorRiesgoPreventivo
                     }
 
                     $evaluados++;
-                    $this->evaluarConsulta($consulta);
+                    $this->intentar(fn () => $this->evaluarConsulta($consulta), 'consulta_id', (string) $consulta->id);
                 }
             });
 
@@ -117,11 +118,24 @@ final class EvaluadorRiesgoPreventivo
                     }
 
                     $evaluados++;
-                    $this->evaluarAusencia($cita);
+                    $this->intentar(fn () => $this->evaluarAusencia($cita), 'cita_id', (string) $cita->id);
                 }
             });
 
         return $evaluados;
+    }
+
+    /** One failing case (e.g. area without coordinator) must not abort the whole recovery run. */
+    private function intentar(callable $accion, string $claveContexto, string $id): void
+    {
+        try {
+            $accion();
+        } catch (\Throwable $exception) {
+            Log::error('Preventive re-evaluation failed for one case.', [
+                $claveContexto => $id,
+                'exception' => $exception::class,
+            ]);
+        }
     }
 
     private function evaluar(
