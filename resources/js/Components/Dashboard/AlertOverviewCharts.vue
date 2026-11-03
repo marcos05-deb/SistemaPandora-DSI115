@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import ProtectedValue from '@/Components/UI/ProtectedValue.vue';
 import { Link } from '@inertiajs/vue3';
 import { formatLocalDate } from '@/utils/dates';
 
@@ -60,7 +61,7 @@ function formatDate(dateStr) {
     return formatLocalDate(dateStr, { year: 'numeric', month: 'short', day: 'numeric' }, 'es-SV', '-');
 }
 
-const countLabel = (count) => count === null ? 'Oculto' : count;
+const countLabel = (count) => count === null ? 'Dato protegido' : count;
 
 const visible = computed(() => Boolean(props.overview?.visible));
 const revealCarnets = computed(() => Boolean(props.overview?.reveal_carnets));
@@ -238,7 +239,7 @@ const donutSegments = computed(() => {
                         Alertas preventivas
                     </h2>
                     <p class="mt-1 text-sm text-[var(--nord3)]">
-                        Resumen {{ scopeLabel }} · {{ overview.total === null ? 'Conteos ocultos por privacidad' : `${overview.abiertas} abiertas de ${overview.total} registradas` }}
+                        Resumen {{ scopeLabel }} · <ProtectedValue v-if="overview.total === null" /><template v-else>{{ overview.abiertas }} abiertas de {{ overview.total }} registradas</template>
                         <span v-if="!revealCarnets" class="text-[var(--nord3)]"> · sin identificadores personales</span>
                     </p>
                 </div>
@@ -272,7 +273,7 @@ const donutSegments = computed(() => {
                             />
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <span class="text-2xl font-bold tabular-nums text-[var(--nord0)]">{{ countLabel(overview.total) }}</span>
+                            <span class="text-2xl font-bold tabular-nums text-[var(--nord0)]"><ProtectedValue v-if="overview.total === null" compact /><template v-else>{{ countLabel(overview.total) }}</template></span>
                             <span class="text-[10px] uppercase tracking-wide text-[var(--nord3)]">Total</span>
                         </div>
                     </div>
@@ -282,7 +283,7 @@ const donutSegments = computed(() => {
                                 <span class="h-2.5 w-2.5 rounded-full shrink-0" :style="{ background: ESTADO_COLORS[row.key] || 'var(--nord10)' }" />
                                 {{ row.label }}
                             </span>
-                            <span class="font-semibold tabular-nums text-[var(--nord0)]">{{ countLabel(row.count) }}</span>
+                            <span class="font-semibold tabular-nums text-[var(--nord0)]"><ProtectedValue v-if="row.count === null" /><template v-else>{{ countLabel(row.count) }}</template></span>
                         </li>
                     </ul>
                 </div>
@@ -293,9 +294,9 @@ const donutSegments = computed(() => {
                         <li v-for="row in overview.por_senal" :key="row.key">
                             <div class="mb-1 flex items-center justify-between gap-2 text-sm">
                                 <span class="truncate text-[var(--nord1)]">{{ row.label }}</span>
-                                <span class="shrink-0 font-semibold tabular-nums text-[var(--nord0)]">{{ countLabel(row.count) }}</span>
+                                <span class="shrink-0 font-semibold tabular-nums text-[var(--nord0)]"><ProtectedValue v-if="row.count === null" /><template v-else>{{ countLabel(row.count) }}</template></span>
                             </div>
-                            <div class="h-2 overflow-hidden rounded-full bg-[var(--nord5)]" role="presentation">
+                            <div v-if="row.count !== null" class="h-2 overflow-hidden rounded-full bg-[var(--nord5)]" role="presentation">
                                 <div
                                     class="h-full rounded-full transition-all duration-700 ease-out"
                                     :style="{
@@ -360,7 +361,7 @@ const donutSegments = computed(() => {
                     <li v-for="(row, idx) in etiquetasConDatos" :key="row.key">
                         <div class="mb-1 flex items-center justify-between gap-2 text-sm">
                             <span class="truncate text-[var(--nord1)]">{{ row.label }}</span>
-                            <span class="shrink-0 font-semibold tabular-nums text-[var(--nord0)]">{{ countLabel(row.count) }}</span>
+                            <span class="shrink-0 font-semibold tabular-nums text-[var(--nord0)]"><ProtectedValue v-if="row.count === null" /><template v-else>{{ countLabel(row.count) }}</template></span>
                         </div>
                         <div class="h-2.5 overflow-hidden rounded-full bg-[var(--nord5)]">
                             <div
@@ -373,7 +374,7 @@ const donutSegments = computed(() => {
                         </div>
                     </li>
                 </ul>
-                <p v-else class="text-sm text-[var(--nord3)]">{{ overview.por_etiqueta?.some((row) => row.count === null) ? 'Conteos ocultos por privacidad.' : 'Aún no hay etiquetas registradas en expedientes.' }}</p>
+                <div v-else class="text-sm text-[var(--nord3)]"><ProtectedValue v-if="overview.por_etiqueta?.some((row) => row.count === null)" /><p v-else>Aún no hay etiquetas registradas en expedientes.</p></div>
             </div>
         </section>
 
@@ -392,7 +393,7 @@ const donutSegments = computed(() => {
                     </p>
                 </div>
                 <div class="flex items-baseline gap-2 rounded-2xl border border-[var(--nord4)] bg-[var(--surface-subtle)] px-5 py-3">
-                    <span class="text-3xl font-bold tabular-nums text-[var(--nord0)]">{{ countLabel(tendencia.total_alumnos) }}</span>
+                    <span class="text-3xl font-bold tabular-nums text-[var(--nord0)]"><ProtectedValue v-if="tendencia.total_alumnos === null" /><template v-else>{{ countLabel(tendencia.total_alumnos) }}</template></span>
                     <span class="text-xs font-medium text-[var(--nord3)]">alumnos</span>
                 </div>
             </div>
@@ -504,7 +505,7 @@ const donutSegments = computed(() => {
                         </div>
                     </div>
                     <p v-else class="rounded-xl border border-dashed border-[var(--nord4)] px-4 py-10 text-center text-sm text-[var(--nord3)]">
-                        {{ tendencia.total_alumnos === null ? 'Conteos ocultos por privacidad.' : 'Sin casos de tendencia suicida.' }}
+                        <ProtectedValue v-if="tendencia.total_alumnos === null" /><template v-else>Sin casos de tendencia suicida.</template>
                     </p>
                 </div>
 
@@ -525,9 +526,9 @@ const donutSegments = computed(() => {
                                     <p class="text-sm font-medium leading-snug text-[var(--nord0)]">{{ row.label }}</p>
                                     <p class="mt-0.5 text-[11px] leading-snug text-[var(--nord3)]">{{ row.facultad_label }}</p>
                                 </div>
-                                <span class="shrink-0 text-sm font-bold tabular-nums text-[var(--nord0)]">{{ countLabel(row.count) }}</span>
+                                <span class="shrink-0 text-sm font-bold tabular-nums text-[var(--nord0)]"><ProtectedValue v-if="row.count === null" /><template v-else>{{ countLabel(row.count) }}</template></span>
                             </div>
-                            <div class="h-1.5 overflow-hidden rounded-full bg-[var(--nord5)]">
+                            <div v-if="row.count !== null" class="h-1.5 overflow-hidden rounded-full bg-[var(--nord5)]">
                                 <div
                                     class="h-full rounded-full bg-[var(--frost3)] transition-all duration-700 ease-out"
                                     :style="{ width: `${row.count === null ? 0 : Math.max(8, (row.count / maxCarreraCount) * 100)}%` }"

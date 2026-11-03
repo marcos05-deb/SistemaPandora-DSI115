@@ -2,6 +2,7 @@
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, ref } from 'vue';
 import { formatLocalDate } from '@/utils/dates';
+import ProtectedValue from '@/Components/UI/ProtectedValue.vue';
 import FieldTooltip from '@/Components/UI/FieldTooltip.vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
@@ -76,7 +77,7 @@ function indicatorTotal(indicatorId) {
 
 function displayValue(item, unit = 'conteo') {
     if (item.suprimido) {
-        return 'Oculto';
+        return 'Dato protegido';
     }
 
     const value = formatter.format(item.valor ?? 0);
@@ -208,12 +209,9 @@ function formatDate(value) {
                         <FieldTooltip :text="`${item.definicion} Fórmula: ${item.formula}. Fuente: ${item.fuente}.`" />
                     </div>
                     <p class="mt-3 text-3xl font-bold tabular-nums text-pd-text-primary">
-                        {{ displayValue(indicatorTotal(item.id), indicatorTotal(item.id).unidad) }}
+                        <ProtectedValue v-if="indicatorTotal(item.id).suprimido" :suppression="indicatorTotal(item.id).supresion" :minimum="minCelda" /><template v-else>{{ displayValue(indicatorTotal(item.id), indicatorTotal(item.id).unidad) }}</template>
                     </p>
-                    <p v-if="indicatorTotal(item.id).suprimido" class="mt-1 text-xs text-pd-text-muted">
-                        {{ indicatorTotal(item.id).supresion === 'primaria' ? 'Oculto porque el grupo es pequeño' : 'Oculto para evitar deducir otros conteos' }}
-                    </p>
-                    <p v-else class="mt-1 text-xs text-pd-text-muted">{{ item.definicion }}</p>
+                    <p class="mt-1 text-xs text-pd-text-muted">{{ item.definicion }}</p>
                 </article>
             </div>
 
@@ -232,7 +230,7 @@ function formatDate(value) {
                                     <th scope="col" class="px-4 py-3 font-semibold">Área</th>
                                     <th v-if="item.id === 'alertas_generadas'" scope="col" class="px-4 py-3 font-semibold">Señal</th>
                                     <th scope="col" class="px-4 py-3 text-right font-semibold">{{ item.id === 'tasa_asistencia' ? 'Tasa' : 'Total' }}</th>
-                                    <th scope="col" class="w-40 px-4 py-3 font-semibold"><span class="sr-only">Visualización</span></th>
+                                    <th scope="col" class="relative w-40 px-4 py-3 font-semibold"><span class="sr-only">Visualización</span></th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-pd-border">
@@ -240,10 +238,7 @@ function formatDate(value) {
                                     <th scope="row" class="px-4 py-3 font-medium text-pd-text-primary">{{ row.area }}</th>
                                     <td v-if="item.id === 'alertas_generadas'" class="px-4 py-3 text-pd-text-secondary">{{ row.segmento_etiqueta || row.segmento }}</td>
                                     <td class="px-4 py-3 text-right font-semibold tabular-nums text-pd-text-primary">
-                                        <span v-if="row.suprimido" :title="row.supresion === 'primaria' ? 'Oculto porque el grupo es pequeño' : 'Oculto para evitar que se deduzcan otros conteos'">
-                                            {{ displayValue(row, indicatorTotal(item.id).unidad) }}
-                                            <span class="sr-only">{{ row.supresion === 'primaria' ? 'Oculto porque el grupo es pequeño' : 'Oculto para evitar que se deduzcan otros conteos' }}</span>
-                                        </span>
+                                        <ProtectedValue v-if="row.suprimido" :suppression="row.supresion" :minimum="minCelda" />
                                         <template v-else>{{ displayValue(row, indicatorTotal(item.id).unidad) }}</template>
                                     </td>
                                     <td class="px-4 py-3">
@@ -252,7 +247,7 @@ function formatDate(value) {
                                             <rect x="0" y="2" width="100" height="8" rx="4" fill="var(--pd-border)" />
                                             <rect x="0" y="2" :width="barWidth(row, item.id)" height="8" rx="4" fill="var(--pd-brand)" />
                                         </svg>
-                                        <span v-else class="text-xs text-pd-text-muted">Oculto por privacidad</span>
+                                        <span v-else aria-hidden="true" class="block h-2 rounded-full border border-dashed border-pd-border" />
                                     </td>
                                 </tr>
                             </tbody>
@@ -260,10 +255,10 @@ function formatDate(value) {
                                 <tr>
                                     <th scope="row" :colspan="item.id === 'alertas_generadas' ? 2 : 1" class="px-4 py-3 text-sm font-semibold text-pd-text-primary">Total del alcance</th>
                                     <td class="px-4 py-3 text-right text-sm font-bold tabular-nums text-pd-text-primary">
-                                        {{ displayValue(indicatorTotal(item.id), indicatorTotal(item.id).unidad) }}
+                                        <ProtectedValue v-if="indicatorTotal(item.id).suprimido" :suppression="indicatorTotal(item.id).supresion" :minimum="minCelda" /><template v-else>{{ displayValue(indicatorTotal(item.id), indicatorTotal(item.id).unidad) }}</template>
                                     </td>
                                     <td class="px-4 py-3 text-xs text-pd-text-muted">
-                                        <span v-if="indicatorTotal(item.id).suprimido">{{ indicatorTotal(item.id).supresion === 'primaria' ? 'Oculto porque el grupo es pequeño' : 'Oculto para evitar deducir otros conteos' }}</span>
+                                        <span v-if="indicatorTotal(item.id).suprimido" aria-hidden="true" class="block h-2 rounded-full border border-dashed border-pd-border" />
                                     </td>
                                 </tr>
                             </tfoot>
