@@ -43,7 +43,7 @@ final class ExpedienteActualizacionService
                 $permiso = $this->solicitudes->permisoClinicoVigente($expediente);
                 if (! $permiso) {
                     throw ValidationException::withMessages([
-                        'motivo_cambio' => 'Este expediente ya fue actualizado una vez. Solicite permiso al administrador para una nueva actualización.',
+                        'motivo_cambio' => 'Este expediente ya fue actualizado una vez. Solicita permiso al Administrador del sistema para una nueva actualización.',
                     ]);
                 }
             }
@@ -57,7 +57,7 @@ final class ExpedienteActualizacionService
 
             if ($payload === []) {
                 throw ValidationException::withMessages([
-                    'motivo_consulta' => 'Debe modificar al menos un campo permitido del expediente.',
+                    'motivo_consulta' => 'Modifica al menos un campo permitido del expediente.',
                 ]);
             }
 
@@ -66,7 +66,7 @@ final class ExpedienteActualizacionService
                 $fuera = array_diff(array_keys($payload), $autorizados);
                 if ($fuera !== []) {
                     throw ValidationException::withMessages([
-                        'motivo_cambio' => 'Solo puede modificar los campos autorizados: '.implode(', ', $autorizados).'.',
+                        'motivo_cambio' => 'Solo puedes modificar los campos autorizados: '.implode(', ', $autorizados).'.',
                     ]);
                 }
             }

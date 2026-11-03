@@ -70,7 +70,7 @@ class ConsultaController extends Controller
         $expediente->paciente->update(['ultima_accion' => 'Registro de consulta clínica']);
 
         return redirect()->route('pacientes.show', $expediente->paciente->carnet)
-            ->with('message', 'Consulta registrada exitosamente.')
+            ->with('message', 'Consulta registrada correctamente.')
             ->with('variant', 'success')
             ->with('prompt_cita_expediente_id', $expediente->id)
             ->with('prompt_cita_consulta_id', $consulta->id);

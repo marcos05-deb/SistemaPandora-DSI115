@@ -95,9 +95,9 @@ docker compose exec app php artisan migrate:fresh --database=pgsql_admin --seed
 
 El proceso de sembrado (`DatabaseSeeder.php`) aprovisionará las siguientes credenciales con propósitos de integración y prueba:
 
-- Administrador del Sistema: `admin@pandora.com` / `password_segura`
-- Coordinador Clínico: `coordinador@pandora.com` / `password_segura`
-- Referente Psicosocial: `psicosocial@pandora.com` / `password_segura`
+- Administrador del sistema: `admin@pandora.com` / `password_segura`
+- Coordinador de área: `coordinador@pandora.com` / `password_segura`
+- Referente psicosocial: `psicosocial@pandora.com` / `password_segura`
 
 La política de cambio de contraseña forzado al primer inicio de sesión se encuentra deshabilitada de manera predeterminada para estas cuentas en el entorno local.
 

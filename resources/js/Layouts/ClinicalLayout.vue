@@ -9,7 +9,7 @@ defineProps({
     navigation: { 
         type: Array, 
         default: () => [
-            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Panel clínico', href: '/dashboard' },
             { label: 'Pacientes', href: '/pacientes' },
         ]
     },
@@ -18,6 +18,12 @@ defineProps({
 const page = usePage();
 const { isDark, toggleTheme } = useTheme();
 useAutoLogout();
+
+const initials = computed(() => {
+    const src = (page.props.auth?.user?.name || page.props.auth?.user?.email || 'U').trim();
+    const parts = src.split(/\s+/).filter(Boolean);
+    return ((parts[0]?.[0] || 'U') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+});
 
 const sidebarOpen = ref(false);
 const profileOpen = ref(false);
@@ -113,7 +119,7 @@ const allLinks = [
         roles: ['psychosocial_referent', 'specialist'],
     },
     {
-        label: 'Buscar expediente por código',
+        label: 'Buscar expediente por código anónimo',
         href: '/busqueda-segura',
         icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
         match: (url) => url.startsWith('/busqueda-segura'),
@@ -164,77 +170,70 @@ const sidebarLinks = computed(() => allLinks.filter(link =>
 </script>
 
 <template>
-    <div class="min-h-screen bg-[var(--nord6)] flex flex-col font-sans overflow-x-hidden">
+    <div class="min-h-screen bg-pd-app-bg text-pd-text-primary flex flex-col font-sans overflow-x-hidden">
         <!-- Toast Notification -->
         <div v-if="page.props.flash?.message && showFlash" class="fixed top-4 left-4 right-4 sm:left-auto z-[60] max-w-sm sm:ml-auto animate-slide-in-right pointer-events-none">
             <div :class="[
-                'relative rounded-xl shadow-xl border flex flex-col overflow-hidden pointer-events-auto transition-all duration-300',
+                'relative rounded-xl shadow-xl border flex flex-col overflow-hidden pointer-events-auto transition-all duration-300 bg-pd-surface',
                 flashExit ? 'opacity-0 translate-x-4' : 'opacity-100',
-                page.props.flash?.variant === 'success' ? 'bg-[var(--chrome-topbar)] border-[var(--aurora-green)]/40' :
-                page.props.flash?.variant === 'error' ? 'bg-[var(--chrome-topbar)] border-[var(--aurora-red)]/40' :
-                page.props.flash?.variant === 'warning' ? 'bg-[var(--chrome-topbar)] border-[var(--aurora-orange)]/50' :
-                'bg-[var(--chrome-topbar)] border-[var(--chrome-border)]'
+                page.props.flash?.variant === 'success' ? 'border-pd-success/40' :
+                page.props.flash?.variant === 'error' ? 'border-pd-danger/40' :
+                page.props.flash?.variant === 'warning' ? 'border-pd-warning/50' :
+                'border-pd-border'
             ]">
                 <div class="flex items-center gap-2.5 px-4 py-3">
                     <div :class="[
                         'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
-                        page.props.flash?.variant === 'success' ? 'bg-[var(--aurora-green)]/15' :
-                        page.props.flash?.variant === 'error' ? 'bg-[var(--aurora-red)]/15' :
-                        page.props.flash?.variant === 'warning' ? 'bg-[var(--aurora-orange)]/20' :
-                        'bg-white/10'
+                        page.props.flash?.variant === 'success' ? 'bg-pd-success-soft text-pd-success' :
+                        page.props.flash?.variant === 'error' ? 'bg-pd-danger-soft text-pd-danger' :
+                        page.props.flash?.variant === 'warning' ? 'bg-pd-warning-soft text-pd-warning' :
+                        'bg-pd-brand-soft text-pd-brand'
                     ]">
-                        <svg v-if="page.props.flash?.variant === 'success'" class="h-4 w-4 text-[var(--aurora-green)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
-                        <svg v-else-if="page.props.flash?.variant === 'error'" class="h-4 w-4 text-[var(--aurora-red)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <svg v-else-if="page.props.flash?.variant === 'warning'" class="h-4 w-4 text-[var(--aurora-orange)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
-                        <svg v-else class="h-4 w-4 text-[var(--frost2)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <svg v-if="page.props.flash?.variant === 'success'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+                        <svg v-else-if="page.props.flash?.variant === 'error'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <svg v-else-if="page.props.flash?.variant === 'warning'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                        <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
-                    <span class="text-[13px] font-medium text-white flex-1">{{ page.props.flash.message }}</span>
-                    <button @click="showFlash = false" class="p-1 hover:bg-white/10 rounded-lg transition-colors">
-                        <svg class="h-3.5 w-3.5 text-white/60 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    <span class="text-[13px] font-medium text-pd-text-primary flex-1">{{ page.props.flash.message }}</span>
+                    <button @click="showFlash = false" class="p-1 hover:bg-pd-surface-header rounded-lg transition-colors" aria-label="Cerrar mensaje">
+                        <svg class="h-3.5 w-3.5 text-pd-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
-                <!-- Progress bar -->
-                <div class="h-0.5 w-full bg-white/10">
+                <div class="h-0.5 w-full bg-pd-surface-header">
                     <div class="h-full transition-all duration-100 ease-linear"
-                        :class="page.props.flash?.variant === 'success' ? 'bg-[var(--aurora-green)]' : page.props.flash?.variant === 'error' ? 'bg-[var(--aurora-red)]' : page.props.flash?.variant === 'warning' ? 'bg-[var(--aurora-orange)]' : 'bg-[var(--frost2)]'"
+                        :class="page.props.flash?.variant === 'success' ? 'bg-pd-success' : page.props.flash?.variant === 'error' ? 'bg-pd-danger' : page.props.flash?.variant === 'warning' ? 'bg-pd-warning' : 'bg-pd-brand'"
                         :style="{ width: flashProgress + '%' }">
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Sidebar Backdrop (mobile): debajo del panel, encima del contenido -->
-        <div v-if="sidebarOpen" class="fixed inset-0 bg-[var(--nord0)]/60 backdrop-blur-sm z-40 lg:hidden" @click="sidebarOpen = false" />
+        <!-- Sidebar Backdrop (mobile) -->
+        <div v-if="sidebarOpen" class="fixed inset-0 bg-pd-sidebar/60 backdrop-blur-sm z-40 lg:hidden" @click="sidebarOpen = false" />
 
         <!-- Topbar -->
-        <header class="bg-[var(--chrome-topbar)] shadow-md z-50 h-[56px] flex-shrink-0 relative">
-            <div class="flex items-center justify-between px-4 lg:px-6 h-full">
+        <header class="bg-pd-surface border-b border-pd-border z-50 h-[72px] flex-shrink-0 relative">
+            <div class="flex items-center justify-between px-4 lg:px-7 h-full">
                 <div class="flex items-center gap-3">
-                    <!-- Hamburger (mobile) -->
-                    <button type="button" class="lg:hidden p-1.5 -ml-1 text-[var(--chrome-text-muted)] hover:text-white rounded-lg hover:bg-[var(--chrome-topbar-hover)] transition-colors" :aria-expanded="sidebarOpen" aria-controls="clinical-sidebar" @click="sidebarOpen = !sidebarOpen">
+                    <button type="button" class="lg:hidden p-2 -ml-1 text-pd-text-secondary hover:text-pd-text-primary rounded-lg hover:bg-pd-surface-header transition-colors" :aria-expanded="sidebarOpen" aria-controls="clinical-sidebar" aria-label="Abrir menú" @click="sidebarOpen = !sidebarOpen">
                         <svg v-if="!sidebarOpen" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                         <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
-                    <!-- Logo -->
-                    <div class="flex items-center gap-2.5">
-                        <div class="relative w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                            style="background: linear-gradient(135deg, var(--frost4) 0%, var(--frost3) 100%);">
-                            <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                            </svg>
-                            <span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[var(--aurora-green)] rounded-full border border-[var(--chrome-topbar)] animate-pulse"></span>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-[10px] bg-pd-brand flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                         </div>
-                        <div>
-                            <span class="text-[16px] lg:text-[17px] font-bold tracking-tight text-white">PANDORA</span>
-                            <span class="text-[10px] lg:text-[11px] font-normal text-[var(--frost2)] ml-2 align-middle hidden sm:inline">Clínico</span>
+                        <div class="leading-tight">
+                            <div class="text-[20px] font-bold tracking-tight text-pd-text-primary">PANDORA</div>
+                            <div class="hidden sm:block text-[11px] font-medium uppercase tracking-[0.08em] text-pd-text-secondary">Expediente clínico universitario</div>
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 lg:gap-3 text-[13px] text-[var(--chrome-text-muted)]">
+                <div class="flex items-center gap-2 lg:gap-3 text-[13px]">
                     <div ref="notificationRef" class="relative">
                         <button
                             type="button"
-                            class="relative inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg transition-colors hover:bg-[var(--chrome-topbar-hover)] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--frost2)]"
+                            class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-pd-border bg-pd-surface-subtle text-pd-text-secondary transition-colors hover:bg-pd-surface-header hover:text-pd-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pd-brand"
                             :aria-expanded="notificationOpen"
                             aria-controls="clinical-notifications"
                             :aria-label="`Notificaciones, ${clinicalNotifications.unreadCount || 0} sin leer`"
@@ -243,7 +242,7 @@ const sidebarLinks = computed(() => allLinks.filter(link =>
                             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                             </svg>
-                            <span v-if="clinicalNotifications.unreadCount > 0" class="absolute right-0.5 top-0.5 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-[var(--aurora-red)] px-1 text-[10px] font-bold leading-none text-white" aria-hidden="true">
+                            <span v-if="clinicalNotifications.unreadCount > 0" class="absolute -right-1 -top-1 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-pd-danger px-1 text-[10px] font-bold leading-none text-white" aria-hidden="true">
                                 {{ clinicalNotifications.unreadCount > 99 ? '99+' : clinicalNotifications.unreadCount }}
                             </span>
                         </button>
@@ -251,25 +250,25 @@ const sidebarLinks = computed(() => allLinks.filter(link =>
                             v-if="notificationOpen"
                             id="clinical-notifications"
                             aria-label="Notificaciones sin leer"
-                            class="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-[var(--nord4)] bg-white shadow-xl"
+                            class="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-pd-border bg-pd-surface shadow-xl"
                         >
-                            <div class="flex items-center justify-between border-b border-[var(--nord4)] px-4 py-3">
-                                <h2 class="text-sm font-semibold text-[var(--nord0)]">Notificaciones</h2>
-                                <span class="text-xs text-[var(--nord3)]">{{ clinicalNotifications.unreadCount || 0 }} sin leer</span>
+                            <div class="flex items-center justify-between border-b border-pd-border px-4 py-3">
+                                <h2 class="text-sm font-semibold text-pd-text-primary">Notificaciones</h2>
+                                <span class="text-xs text-pd-text-secondary">{{ clinicalNotifications.unreadCount || 0 }} sin leer</span>
                             </div>
-                            <p v-if="notificationError" role="alert" class="px-4 pt-3 text-sm text-[var(--aurora-red)]">{{ notificationError }}</p>
-                            <p v-if="unreadNotifications.length === 0" class="px-4 py-6 text-center text-sm text-[var(--nord3)]">
+                            <p v-if="notificationError" role="alert" class="px-4 pt-3 text-sm text-pd-danger">{{ notificationError }}</p>
+                            <p v-if="unreadNotifications.length === 0" class="px-4 py-6 text-center text-sm text-pd-text-secondary">
                                 No tienes notificaciones sin leer.
                             </p>
-                            <ul v-else class="max-h-80 divide-y divide-[var(--nord5)] overflow-y-auto">
+                            <ul v-else class="max-h-80 divide-y divide-pd-border overflow-y-auto">
                                 <li v-for="notification in unreadNotifications" :key="notification.id" class="flex items-start gap-3 px-4 py-3">
                                     <div class="min-w-0 flex-1">
-                                        <p class="text-sm font-medium text-[var(--nord0)]">{{ notification.label || notification.senal }}</p>
-                                        <p class="mt-1 text-xs text-[var(--nord3)]">{{ notification.senal }} · {{ formatElSalvadorDateTime(notification.created_at) }}</p>
+                                        <p class="text-sm font-medium text-pd-text-primary">{{ notification.label || notification.senal }}</p>
+                                        <p class="mt-1 text-xs text-pd-text-secondary">{{ notification.senal }} · {{ formatElSalvadorDateTime(notification.created_at) }}</p>
                                     </div>
                                     <button
                                         type="button"
-                                        class="inline-flex min-h-10 shrink-0 items-center rounded-lg px-2 text-xs font-semibold text-[var(--nord10)] hover:bg-[var(--surface-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--nord10)] disabled:cursor-wait disabled:opacity-60"
+                                        class="inline-flex min-h-10 shrink-0 items-center rounded-lg px-2 text-xs font-semibold text-pd-brand hover:bg-pd-brand-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pd-brand disabled:cursor-wait disabled:opacity-60"
                                         :aria-label="`Marcar como leída: ${notification.label || notification.senal}`"
                                         :disabled="markingNotificationId === notification.id"
                                         @click="markNotificationRead(notification.id)"
@@ -280,37 +279,40 @@ const sidebarLinks = computed(() => allLinks.filter(link =>
                             </ul>
                         </section>
                     </div>
-                    <button @click="toggleTheme" class="p-2 hover:text-white hover:bg-[var(--chrome-topbar-hover)] rounded-lg transition-colors" :title="isDark ? 'Modo Claro' : 'Modo Oscuro'">
+                    <button @click="toggleTheme" class="p-2 text-pd-text-secondary hover:text-pd-text-primary hover:bg-pd-surface-header rounded-lg transition-colors" :title="isDark ? 'Modo Claro' : 'Modo Oscuro'" :aria-label="isDark ? 'Modo Claro' : 'Modo Oscuro'">
                         <svg v-if="isDark" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                         <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
                     </button>
-                    <div class="hidden sm:block h-5 w-px bg-[var(--chrome-border)]" />
+                    <div class="hidden sm:block h-8 w-px bg-pd-border" />
 
                     <!-- Profile Dropdown -->
                     <div ref="profileRef" class="relative">
-                        <button @click="profileOpen = !profileOpen" class="flex items-center gap-2 hover:bg-[var(--chrome-topbar-hover)] rounded-lg px-2 py-1.5 transition-colors">
-                            <div class="w-7 h-7 rounded-full bg-[var(--frost4)] flex items-center justify-center text-white text-[11px] font-bold shrink-0">
-                                {{ (page.props.auth?.user?.name || 'U').charAt(0).toUpperCase() }}
+                        <button @click="profileOpen = !profileOpen" class="flex items-center gap-3 hover:bg-pd-surface-header rounded-xl px-2 py-1.5 transition-colors text-left" :aria-expanded="profileOpen">
+                            <div class="w-10 h-10 rounded-full bg-pd-brand-soft text-pd-brand flex items-center justify-center text-[13px] font-bold shrink-0">
+                                {{ initials }}
                             </div>
-                            <span class="hidden md:inline text-[var(--chrome-text)]">{{ page.props.auth?.user?.name || page.props.auth?.user?.email }}</span>
-                            <svg class="hidden md:block h-3 w-3 transition-transform duration-200" :class="profileOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            <div class="hidden md:block leading-tight">
+                                <div class="text-[14px] font-semibold text-pd-text-primary">{{ page.props.auth?.user?.name || page.props.auth?.user?.email }}</div>
+                                <div class="text-[12px] text-pd-text-secondary">{{ page.props.auth?.user?.role_label || 'Usuario' }}</div>
+                            </div>
+                            <svg class="hidden md:block h-4 w-4 text-pd-text-secondary transition-transform duration-200" :class="profileOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                         </button>
 
                         <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95 -translate-y-1" enter-to-class="opacity-100 scale-100 translate-y-0" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
-                        <div v-if="profileOpen" class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-[var(--nord4)] overflow-hidden z-50">
-                            <div class="px-4 py-3 border-b border-[var(--nord4)]">
-                                <p class="text-[14px] font-semibold text-[var(--nord0)]">{{ page.props.auth?.user?.name }}</p>
-                                <p class="text-[12px] text-[var(--nord3)]">{{ page.props.auth?.user?.email }}</p>
-                                <span class="inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--frost4)]/10 text-[var(--frost4)]">
+                        <div v-if="profileOpen" class="absolute right-0 mt-2 w-64 bg-pd-surface rounded-xl shadow-xl border border-pd-border overflow-hidden z-50">
+                            <div class="px-4 py-3 border-b border-pd-border">
+                                <p class="text-[14px] font-semibold text-pd-text-primary">{{ page.props.auth?.user?.name }}</p>
+                                <p class="text-[12px] text-pd-text-secondary">{{ page.props.auth?.user?.email }}</p>
+                                <span class="inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-pd-brand-soft text-pd-brand">
                                     {{ page.props.auth?.user?.role_label || 'Usuario' }}
                                 </span>
                             </div>
-                            <div class="px-4 py-3 border-b border-[var(--nord4)] bg-[var(--nord6)]/50">
-                                <div class="text-[10px] text-[var(--nord3)] uppercase tracking-[0.1em] font-semibold">Área</div>
-                                <div class="text-[12px] text-[var(--nord0)] mt-0.5">{{ page.props.auth?.user?.area || 'Sin área asignada' }}</div>
+                            <div class="px-4 py-3 border-b border-pd-border bg-pd-surface-subtle">
+                                <div class="text-[10px] text-pd-text-secondary uppercase tracking-[0.1em] font-semibold">Área</div>
+                                <div class="text-[12px] text-pd-text-primary mt-0.5">{{ page.props.auth?.user?.area || 'Sin área asignada' }}</div>
                             </div>
                             <div class="p-1.5">
-                                <Link href="/logout" method="post" as="button" class="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-[var(--aurora-red)] hover:bg-[var(--aurora-red)]/5 rounded-lg transition-colors font-medium">
+                                <Link href="/logout" method="post" as="button" class="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-pd-danger hover:bg-pd-danger-soft rounded-lg transition-colors font-medium">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                                     Cerrar Sesión
                                 </Link>
@@ -323,41 +325,41 @@ const sidebarLinks = computed(() => allLinks.filter(link =>
         </header>
 
         <div class="flex flex-1 overflow-hidden">
-            <!-- Sidebar -->
             <aside
                 id="clinical-sidebar"
-                class="w-[min(240px,85vw)] bg-[var(--chrome-sidebar)] shadow-xl shrink-0 z-10 flex flex-col border-r border-[var(--chrome-border)] transition-transform duration-300 lg:w-[240px] lg:translate-x-0 lg:z-10 lg:relative"
+                class="w-[min(264px,85vw)] bg-pd-sidebar shrink-0 z-10 flex flex-col transition-transform duration-300 lg:w-[264px] lg:translate-x-0 lg:z-10 lg:relative"
                 :class="sidebarOpen
-                    ? 'fixed inset-y-0 left-0 translate-x-0 z-[45] pt-[56px] lg:pt-0'
+                    ? 'fixed inset-y-0 left-0 translate-x-0 z-[45] pt-[72px] lg:pt-0 shadow-xl'
                     : 'fixed inset-y-0 left-0 -translate-x-full lg:translate-x-0'"
             >
-                <nav class="flex-1 py-4 px-3 space-y-1 mt-0 overflow-y-auto">
-                    <div class="px-3 pb-2 mb-2 text-[10px] font-semibold text-[var(--chrome-text-muted)] uppercase tracking-[0.12em] border-b border-[var(--chrome-border)]">
+                <nav class="flex-1 pt-7 px-4 space-y-2 overflow-y-auto" aria-label="Navegación">
+                    <div class="pb-3 text-[11px] font-bold text-pd-sidebar-text/80 uppercase tracking-[0.14em]">
                         Navegación
                     </div>
                     <Link
                         v-for="link in sidebarLinks"
                         :key="link.href"
                         :href="link.href"
-                        class="group relative flex items-center px-3 py-2.5 text-[14px] font-medium rounded-lg transition-all duration-200"
+                        class="group relative flex items-center min-h-[46px] px-3 py-2.5 text-[14px] font-medium rounded-lg transition-colors duration-200"
                         :class="link.match($page.url)
-                            ? 'bg-[var(--frost4)]/15 text-[var(--frost2)]'
-                            : 'text-[var(--chrome-text-muted)] hover:bg-[var(--chrome-sidebar-hover)] hover:text-white'"
+                            ? 'bg-pd-brand text-white'
+                            : 'text-pd-sidebar-text hover:bg-pd-sidebar-hover hover:text-white'"
+                        :aria-current="link.match($page.url) ? 'page' : undefined"
                     >
-                        <!-- Indicador lateral activo -->
                         <span v-if="link.match($page.url)"
-                            class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[var(--frost2)] transition-all duration-300">
+                            class="absolute left-[10px] top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-pd-brand-mint">
                         </span>
-                        <svg class="mr-3 h-[18px] w-[18px] flex-shrink-0 transition-colors" :class="link.match($page.url) ? 'text-[var(--frost2)]' : 'text-[var(--chrome-text-muted)] group-hover:text-white'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="mr-3 h-5 w-5 flex-shrink-0" :class="link.match($page.url) ? 'ml-3' : ''" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" :d="link.icon" />
                         </svg>
                         {{ link.label }}
                     </Link>
                 </nav>
-                <div class="p-3 border-t border-[var(--chrome-border)]">
-                    <div class="px-3 py-2 rounded-lg bg-[var(--chrome-sidebar-hover)]/30">
-                        <div class="text-[10px] text-[var(--chrome-text-muted)] uppercase tracking-[0.1em] font-semibold">Área</div>
-                        <div class="text-[12px] text-[var(--chrome-text)] mt-0.5 truncate">{{ page.props.auth?.user?.area || 'Sin área asignada' }}</div>
+                <div class="p-4">
+                    <div class="px-3.5 py-3 rounded-xl bg-pd-sidebar-hover border border-white/10">
+                        <div class="text-[11px] text-pd-sidebar-text/80 uppercase tracking-[0.1em] font-bold">Área autorizada</div>
+                        <div class="text-[14px] font-semibold text-white mt-1.5 truncate">{{ page.props.auth?.user?.area || 'Sin área asignada' }}</div>
+                        <div class="text-[12px] text-pd-sidebar-text/80 mt-1">Sesión protegida</div>
                     </div>
                 </div>
             </aside>

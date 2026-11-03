@@ -27,7 +27,7 @@ class PacienteController extends Controller
         ], [
             'fecha_desde.before_or_equal' => 'La fecha inicial no puede ser futura.',
             'fecha_hasta.before_or_equal' => 'La fecha final no puede ser futura.',
-            'fecha_hasta.after_or_equal' => 'La fecha final debe ser posterior o igual a la fecha inicial.',
+            'fecha_hasta.after_or_equal' => 'La fecha final debe ser igual o posterior a la fecha inicial.',
         ]);
 
         $pacientes = Paciente::select('codigo', 'created_at', 'updated_at', 'ultima_accion', 'datos_corregidos_en')

@@ -5,7 +5,7 @@ import ClinicalLayout from '@/Layouts/ClinicalLayout.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 import FieldTooltip from '@/Components/UI/FieldTooltip.vue';
 import VueDatePicker from '@vuepic/vue-datepicker';
-import { parseLocalYmd } from '@/utils/dates';
+import { parseLocalYmd, todayLocalYmd } from '@/utils/dates';
 
 defineOptions({ layout: ClinicalLayout });
 
@@ -18,7 +18,7 @@ const props = defineProps({
 const showConfirm = ref(false);
 
 const FECHA_NACIMIENTO_MINIMA = new Date(1900, 0, 1);
-const maxFechaNacimiento = parseLocalYmd(props.paciente.fecha_primera_consulta) || new Date();
+const maxFechaNacimiento = parseLocalYmd(props.paciente.fecha_primera_consulta) || parseLocalYmd(todayLocalYmd());
 
 const form = useForm({
     carnet: props.paciente.carnet || '',

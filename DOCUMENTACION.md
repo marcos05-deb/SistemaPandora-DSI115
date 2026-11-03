@@ -189,11 +189,11 @@
   - **Manejo de Excepciones:** Se confirmó que `bootstrap/app.php` maneje silenciosamente la `DecryptionException`, expulsando al usuario con un `HTTP 401` o redirigiéndolo al Login ante cualquier acceso anómalo.
   - **Pruebas:** Se creó `EncryptionTest.php` validando la consistencia e integridad del cifrado y decodificación. Las pruebas pasaron exitosamente.
 
-### [2026-06-01] Adición de Rol: Referente Psicosocial
+### [2026-06-01] Adición de Rol: Referente psicosocial
 - **Agente:** Antigravity (IA)
 - **Contexto:** A solicitud del usuario, se requirió agregar un nuevo rol intermedio dentro del sistema de Control de Acceso Basado en Roles (RBAC).
 - **Cambios realizados:**
-  - Se modificó `database/seeders/RoleSeeder.php` agregando el rol "Referente Psicosocial" con el slug `psychosocial_referent` y nivel `20` (intermedio entre Especialista y Coordinador).
+  - Se modificó `database/seeders/RoleSeeder.php` agregando el rol "Referente psicosocial" con el slug `psychosocial_referent` y nivel `20` (intermedio entre Especialista y Coordinador).
 ### [2026-06-01] Refactorización de Dashboard Clínico y Restricción de Roles
 - **Agente:** Antigravity (IA)
 - **Contexto:** Se solicitó estandarizar el dashboard de los especialistas clínicos utilizando la estética del Sistema de Diseño Nord (previamente aplicada al panel admin) y añadir una restricción en la que únicamente el `Referente Psicosocial` pueda registrar pacientes.

@@ -60,22 +60,22 @@ class LoginController extends Controller
         $existingUser = Especialista::where('email', $email)->first();
 
         if ($existingUser && $existingUser->locked_until && $existingUser->locked_until->getTimestamp() > now()->getTimestamp()) {
-            $remaining = $existingUser->locked_until->diffInMinutes(now());
+            $remaining = max(1, (int) ceil(now()->diffInSeconds($existingUser->locked_until, true) / 60));
 
             return back()->withErrors([
-                'email' => "Cuenta bloqueada. Intenta de nuevo en {$remaining} minutos.",
+                'email' => "Cuenta bloqueada por seguridad tras 3 intentos fallidos. Intenta de nuevo en {$remaining} minuto(s).",
             ])->onlyInput('email');
         }
 
         if ($existingUser && ! $existingUser->is_active) {
             return back()->withErrors([
-                'email' => 'Las credenciales proporcionadas son incorrectas.',
+                'email' => 'El correo o la contraseña son incorrectos.',
             ])->onlyInput('email');
         }
 
         if ($existingUser && $existingUser->trashed()) {
             return back()->withErrors([
-                'email' => 'Las credenciales proporcionadas son incorrectas.',
+                'email' => 'El correo o la contraseña son incorrectos.',
             ])->onlyInput('email');
         }
 
@@ -93,13 +93,13 @@ class LoginController extends Controller
                     $existingUser->save();
 
                     return back()->withErrors([
-                        'email' => 'Cuenta bloqueada por seguridad. Intenta de nuevo en 15 minutos.',
+                        'email' => 'Cuenta bloqueada por seguridad tras 3 intentos fallidos. Intenta de nuevo en 15 minutos.',
                     ])->onlyInput('email');
                 }
             }
 
             return back()->withErrors([
-                'email' => 'Las credenciales proporcionadas son incorrectas.',
+                'email' => 'El correo o la contraseña son incorrectos.',
             ])->onlyInput('email');
         }
 

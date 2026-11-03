@@ -62,7 +62,7 @@ final readonly class AreaEncryptionService
         );
 
         if ($plaintext === false) {
-            throw new RuntimeException('Decryption failed: llave de área incorrecta o datos corruptos.');
+            throw new RuntimeException('No se pudo descifrar: llave de área incorrecta o datos corruptos.');
         }
 
         return $plaintext;

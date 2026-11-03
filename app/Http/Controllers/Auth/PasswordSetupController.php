@@ -62,12 +62,12 @@ class PasswordSetupController extends Controller
         // Redirect to intended dashboard
         if ($user->hasRole('sysadmin')) {
             return redirect()->route('admin.dashboard')
-                ->with('message', 'Contraseña configurada exitosamente.')
+                ->with('message', 'Contraseña configurada correctamente.')
                 ->with('variant', 'success');
         }
 
         return redirect()->route('dashboard')
-            ->with('message', 'Contraseña configurada exitosamente.')
+            ->with('message', 'Contraseña configurada correctamente.')
             ->with('variant', 'success');
     }
 }

@@ -42,12 +42,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (DecryptionException $e, Request $request) {
             if ($request->wantsJson()) {
                 return response()->json([
-                    'message' => 'Sesión expirada. Por favor, inicie sesión nuevamente.',
+                    'message' => 'Tu sesión expiró. Inicia sesión nuevamente.',
                 ], 401);
             }
 
             return redirect()->route('login')->withErrors([
-                'session' => 'Su sesión expiró durante la operación.',
+                'session' => 'Tu sesión expiró durante la operación. Inicia sesión nuevamente.',
             ]);
         });
 

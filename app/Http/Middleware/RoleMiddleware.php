@@ -17,7 +17,7 @@ class RoleMiddleware
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
         if (! auth()->check()) {
-            abort(403, 'No autorizado.');
+            abort(403, 'Debes iniciar sesión para acceder a esta sección.');
         }
 
         $user = auth()->user();
@@ -33,6 +33,6 @@ class RoleMiddleware
             }
         }
 
-        abort(403, 'No tienes permiso para acceder a esta ruta.');
+        abort(403, 'No tienes permiso para acceder a esta sección. Si lo necesitas, solicítalo al Administrador del sistema.');
     }
 }

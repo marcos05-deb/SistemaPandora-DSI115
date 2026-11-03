@@ -24,7 +24,7 @@ class EnforceAreaScope
         }
 
         if ($especialista->hasRole('sysadmin')) {
-            return abort(403, 'Sysadmin no tiene acceso a operaciones clínicas.');
+            return abort(403, 'El Administrador del sistema no tiene acceso a operaciones clínicas.');
         }
 
         $expedienteId = $request->route('expediente');
@@ -34,13 +34,13 @@ class EnforceAreaScope
 
             if ($expedienteId instanceof Expediente) {
                 if (! in_array($expedienteId->area_id, $areaIds)) {
-                    return abort(403, 'Acceso denegado a este expediente clínico.');
+                    return abort(403, 'No tienes acceso a este expediente clínico. Solo puedes ver expedientes de tu área.');
                 }
             } else {
                 $expediente = Expediente::withoutGlobalScopes()->find($expedienteId);
 
                 if ($expediente && ! in_array($expediente->area_id, $areaIds)) {
-                    return abort(403, 'Acceso denegado a este expediente clínico.');
+                    return abort(403, 'No tienes acceso a este expediente clínico. Solo puedes ver expedientes de tu área.');
                 }
             }
         }

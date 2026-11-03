@@ -252,7 +252,7 @@ function submitUser() {
                 </svg>
               </div>
               <h4 class="text-[var(--nord0)] font-medium text-[14px]">
-                Rol de Administrador
+                Rol: Administrador del sistema
               </h4>
               <p class="text-[12px] text-[var(--nord3)] mt-2">
                 Los administradores no requieren área clínica ni especialidad. Su nivel de acceso es total.

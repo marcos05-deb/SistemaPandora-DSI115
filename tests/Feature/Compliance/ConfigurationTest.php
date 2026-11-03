@@ -23,15 +23,14 @@ class ConfigurationTest extends ComplianceTestCase
             $this->markTestSkipped('Requiere cache persistente (Redis/Database) para que el Rate Limiter cuente entre peticiones en pruebas.');
         }
 
-        // El límite suele ser 5 para login según Laravel Breeze/Fortify
-        // Vamos a probar la limitación global o de login con el número exacto
+        // Limitador 'login': 5 intentos por minuto por IP (AppServiceProvider).
         for ($i = 0; $i < 5; $i++) {
             $response = $this->post('/login', ['email' => 'nonexistent@test.com', 'password' => 'wrong']);
-            $response->assertStatus(302);
+            $response->assertStatus(302)->assertSessionDoesntHaveErrors('throttle');
         }
 
         $response = $this->post('/login', ['email' => 'nonexistent@test.com', 'password' => 'wrong']);
-        $response->assertStatus(429);
+        $response->assertStatus(302)->assertSessionHasErrors('throttle');
     }
 
     public function test_xss_y_csp_en_produccion()

@@ -29,7 +29,7 @@ class SecureSearchController extends Controller
         $validated = $request->validate([
             'code' => ['required', 'string', 'regex:/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i'],
         ], [
-            'code.regex' => 'El código del expediente no tiene un formato válido.',
+            'code.regex' => 'El código anónimo no tiene un formato válido. Revisa que esté completo.',
         ]);
 
         $user = auth()->user();
@@ -54,7 +54,7 @@ class SecureSearchController extends Controller
 
         if (! $paciente) {
             return redirect()->route('busqueda-segura')->withErrors([
-                'code' => 'No se encontró un expediente con ese código.',
+                'code' => 'No se encontró un expediente con ese código anónimo. Verifica el código e inténtalo de nuevo.',
             ]);
         }
 

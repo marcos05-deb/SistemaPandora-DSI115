@@ -23,7 +23,7 @@ class CitaReprogramarRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'fecha_hora' => ['required', 'date', 'after:now'],
+            'fecha_hora' => ['required', 'date', 'after:now', 'before_or_equal:'.now()->addDays((int) config('limites.cita_horizonte_max_dias'))->toDateTimeString()],
             'motivo_reprogramacion' => ['required', 'string', 'min:10', 'max:2000'],
             'acordada_con_paciente' => ['accepted'],
         ];
@@ -36,9 +36,10 @@ class CitaReprogramarRequest extends FormRequest
     {
         return [
             'fecha_hora.after' => 'La nueva fecha de la cita debe ser futura.',
+            'fecha_hora.before_or_equal' => 'La cita no puede agendarse a más de '.config('limites.cita_horizonte_max_dias').' días.',
             'motivo_reprogramacion.required' => 'El motivo de reprogramación es obligatorio.',
             'motivo_reprogramacion.min' => 'El motivo de reprogramación debe tener al menos :min caracteres.',
-            'acordada_con_paciente.accepted' => 'Debe confirmar que la nueva fecha fue acordada con el paciente.',
+            'acordada_con_paciente.accepted' => 'Confirma que la nueva fecha fue acordada con el paciente.',
         ];
     }
 

@@ -67,7 +67,7 @@ const getAreaName = (areaId) => {
 };
 
 function formatDate(dateStr) {
-    return formatLocalDate(dateStr, { year: 'numeric', month: 'short', day: 'numeric' }, 'es-ES', '-');
+    return formatLocalDate(dateStr, { year: 'numeric', month: 'short', day: 'numeric' }, 'es-SV', '-');
 }
 
 const isExpedienteClosed = (paciente) => {

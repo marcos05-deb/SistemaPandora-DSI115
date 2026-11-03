@@ -23,14 +23,14 @@ final class AlertaSeguimientoService
 
             if (! in_array($alerta->estado, AlertaPreventiva::ESTADOS_ACTIVOS, true)) {
                 throw ValidationException::withMessages([
-                    'estado' => 'No se puede registrar seguimiento sobre una alerta cerrada o descartada.',
+                    'estado' => 'No se puede registrar seguimiento en una alerta cerrada o descartada. Abre una alerta activa.',
                 ]);
             }
 
             $profesional = $user->profesionalParaArea($alerta->area_id);
             if ($profesional === null) {
                 throw ValidationException::withMessages([
-                    'responsable_profesional_id' => 'No se encontró un perfil profesional activo en el área de la alerta.',
+                    'responsable_profesional_id' => 'No tienes un perfil profesional activo en el área de la alerta. Pide al Administrador del sistema que te asigne a esa área.',
                 ]);
             }
 
@@ -68,7 +68,7 @@ final class AlertaSeguimientoService
             $profesional = $user->profesionalParaArea($alerta->area_id);
             if ($profesional === null) {
                 throw ValidationException::withMessages([
-                    'resultado' => 'No se encontró un perfil profesional activo en el área de la alerta.',
+                    'resultado' => 'No tienes un perfil profesional activo en el área de la alerta. Pide al Administrador del sistema que te asigne a esa área.',
                 ]);
             }
 
@@ -97,7 +97,7 @@ final class AlertaSeguimientoService
             $profesional = $user->profesionalParaArea($alerta->area_id);
             if ($profesional === null) {
                 throw ValidationException::withMessages([
-                    'justificacion' => 'No se encontró un perfil profesional activo en el área de la alerta.',
+                    'justificacion' => 'No tienes un perfil profesional activo en el área de la alerta. Pide al Administrador del sistema que te asigne a esa área.',
                 ]);
             }
 

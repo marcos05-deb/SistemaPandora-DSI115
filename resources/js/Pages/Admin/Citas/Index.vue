@@ -233,14 +233,14 @@ const getCitasBreakdown = (dateObj) => {
                          class="min-h-[64px] sm:min-h-[100px] border-b border-r border-[var(--nord4)] p-1 sm:p-2 transition-colors cursor-pointer hover:bg-[var(--nord6)]/50 relative group"
                          :class="{
                              'bg-[var(--nord6)]/20': !date.isSame(currentDate, 'month'),
-                             'bg-[var(--aurora-purple)]/5': date.isSame(dayjs(), 'day'),
+                             'bg-[var(--aurora-purple)]/5': date.isSame(dayjs().tz('America/El_Salvador'), 'day'),
                              'border-r-0': date.day() === 0,
                              'border-b-0': calendarDays.indexOf(date) >= calendarDays.length - 7
                          }">
                         
                         <div class="flex items-center justify-between">
                             <span class="text-[12px] sm:text-[14px] font-medium w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full"
-                                  :class="date.isSame(dayjs(), 'day') ? 'bg-[var(--aurora-purple)] text-white' : (date.isSame(currentDate, 'month') ? 'text-[var(--nord0)]' : 'text-[var(--nord4)]')">
+                                  :class="date.isSame(dayjs().tz('America/El_Salvador'), 'day') ? 'bg-[var(--aurora-purple)] text-white' : (date.isSame(currentDate, 'month') ? 'text-[var(--nord0)]' : 'text-[var(--nord4)]')">
                                 {{ date.format('D') }}
                             </span>
                         </div>
@@ -292,7 +292,7 @@ const getCitasBreakdown = (dateObj) => {
                                     <div class="flex items-start justify-between mb-2">
                                         <div class="flex flex-col">
                                             <span class="text-[12px] font-bold text-[var(--aurora-purple)]">
-                                                {{ dayjs(cita.fecha_hora).tz("America/El_Salvador").format('hh:mm A') }}
+                                                {{ dayjs(cita.fecha_hora).tz("America/El_Salvador").format('HH:mm') }}
                                             </span>
                                             <span class="text-[10px] font-bold px-2 py-0.5 rounded mt-1 w-max"
                                                   :class="statusColors[cita.estado] || 'bg-[var(--nord6)] text-[var(--nord3)]'">

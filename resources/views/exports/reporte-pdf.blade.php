@@ -16,13 +16,13 @@
 <body>
     <h1>Reporte personalizado — PANDORA</h1>
     <div class="meta">
-        <p><strong>Generado en:</strong> {{ $generadoEn }}</p>
+        <p><strong>Generado en:</strong> {{ \Carbon\Carbon::parse($generadoEn)->setTimezone('America/El_Salvador')->format('d/m/Y H:i') }} (hora de El Salvador)</p>
         <p><strong>Generado por:</strong> {{ $generadoPor }}</p>
         <p><strong>Período:</strong> {{ $report->parametrosAplicados['desde'] }} — {{ $report->parametrosAplicados['hasta'] }}</p>
         <p><strong>Área:</strong> {{ $areaEtiqueta }}</p>
         <p><strong>Indicadores:</strong> {{ implode(', ', $indicadoresEtiquetas) }}</p>
         <p><strong>Agrupado por:</strong> {{ implode(', ', $agrupacionesEtiquetas) }}</p>
-        <p>Por privacidad, se ocultan los grupos pequeños y los totales que permitirían deducir sus conteos.</p>
+        <p>Por privacidad, se ocultan los grupos con menos de {{ $report->minimoCelda }} casos y los totales que permitirían deducirlos.</p>
     </div>
 
     <h2>Totales</h2>

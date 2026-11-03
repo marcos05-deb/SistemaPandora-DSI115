@@ -126,7 +126,7 @@ it('completa el flujo clínico: derivar → consulta → cita → asistencia', f
         ->withSession(['_sym_key' => str_repeat('a', 32)])
         ->post(route('consultas.store', $expediente->id), payloadConsultaIntegral())
         ->assertRedirect(route('pacientes.show', $this->paciente->carnet))
-        ->assertSessionHas('message', 'Consulta registrada exitosamente.');
+        ->assertSessionHas('message', 'Consulta registrada correctamente.');
 
     $consulta = Consulta::sole();
     expect($consulta->expediente_id)->toBe($expediente->id)

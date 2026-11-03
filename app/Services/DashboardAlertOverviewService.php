@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Support\PrivacyThreshold;
 use App\Http\Requests\StorePacienteRequest;
 use App\Models\AlertaPreventiva;
 use App\Models\Area;
@@ -197,7 +198,7 @@ final class DashboardAlertOverviewService
     /** @param list<array<string, mixed>> $rows */
     private function hasSmallCounts(array $rows): bool
     {
-        $minimum = max(2, (int) config('indicadores.min_celda', 5));
+        $minimum = PrivacyThreshold::minCell();
 
         return collect($rows)->contains(static fn (array $row): bool => $row['count'] > 0 && $row['count'] < $minimum);
     }

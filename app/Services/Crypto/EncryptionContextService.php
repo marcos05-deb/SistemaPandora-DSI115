@@ -42,7 +42,7 @@ class EncryptionContextService
 
         if (empty($secret)) {
             throw new DecryptionException(
-                'BLIND_INDEX_SECRET no configurado. Contacte al administrador.'
+                'BLIND_INDEX_SECRET no configurado. Avisa al Administrador del sistema.'
             );
         }
 

@@ -32,7 +32,7 @@ final class BitacoraExportService
             throw new AuthorizationException;
         }
 
-        $corteEn = CarbonImmutable::now('UTC');
+        $corteEn = CarbonImmutable::now(config('app.timezone'));
         $max = (int) config('auditoria.export_max_eventos', self::MAX_EVENTOS);
         $total = $this->bitacora->contar($filtros, $corteEn);
         if ($total > $max) {

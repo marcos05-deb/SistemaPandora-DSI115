@@ -9,6 +9,7 @@ use App\Notifications\AlertaPreventivaCreada;
 use App\Policies\BitacoraPolicy;
 use App\Policies\IndicadorPolicy;
 use App\Services\ClinicalAccessAuditor;
+use App\Support\PrivacyThreshold;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -52,6 +53,15 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $user ? $this->sharedUser($user) : null,
             ],
+            'limites' => [
+                'citas_rango_dias' => (int) config('limites.citas_rango_dias'),
+                'analitica_rango_dias' => (int) config('limites.analitica_rango_dias'),
+                'historial_rango_dias' => (int) config('limites.historial_rango_dias'),
+                'alerta_revision_max_dias' => (int) config('limites.alerta_revision_max_dias'),
+                'consulta_antiguedad_max_dias' => (int) config('limites.consulta_antiguedad_max_dias'),
+                'cita_horizonte_max_dias' => (int) config('limites.cita_horizonte_max_dias'),
+            ],
+            'privacidad' => ['min_celda' => PrivacyThreshold::minCell()],
             'clinicalPermissions' => $clinicalPermissions,
             'can' => $clinicalPermissions,
             'clinicalNotifications' => fn () => $this->clinicalNotifications($user),

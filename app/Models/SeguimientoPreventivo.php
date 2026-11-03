@@ -43,10 +43,10 @@ class SeguimientoPreventivo extends Model implements AuditableContract
     {
         static::addGlobalScope(new AreaScope);
         static::updating(static function (): never {
-            throw new LogicException('Preventive follow-ups are append-only.');
+            throw new LogicException('Los seguimientos preventivos no se pueden modificar ni eliminar.');
         });
         static::deleting(static function (): never {
-            throw new LogicException('Preventive follow-ups are append-only.');
+            throw new LogicException('Los seguimientos preventivos no se pueden modificar ni eliminar.');
         });
     }
 

@@ -308,7 +308,7 @@ class CitaController extends Controller
                 $cita->save();
             });
 
-            return redirect()->back()->with('success', 'Cita agendada exitosamente.');
+            return redirect()->back()->with('success', 'Cita agendada correctamente.')->with('message', 'Cita agendada correctamente.')->with('variant', 'success');
         } catch (UniqueConstraintViolationException $e) {
             return redirect()->back()->withErrors([
                 'fecha_hora' => self::MENSAJE_CONFLICTO_HORARIO,
@@ -426,7 +426,7 @@ class CitaController extends Controller
                 $citaBloqueada->save();
             });
 
-            return redirect()->back()->with('success', 'Cita reprogramada exitosamente.');
+            return redirect()->back()->with('success', 'Cita reprogramada correctamente.')->with('message', 'Cita reprogramada correctamente.')->with('variant', 'success');
         } catch (UniqueConstraintViolationException $e) {
             return redirect()->back()->withErrors([
                 'fecha_hora' => self::MENSAJE_CONFLICTO_HORARIO,
@@ -476,7 +476,7 @@ class CitaController extends Controller
             $citaBloqueada->save();
         });
 
-        return redirect()->back()->with('success', 'Cita cancelada exitosamente.');
+        return redirect()->back()->with('success', 'Cita cancelada correctamente.')->with('message', 'Cita cancelada correctamente.')->with('variant', 'success');
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Support\PrivacyThreshold;
 use App\DTO\FiltrosIndicador;
 use App\DTO\ResultadoIndicadores;
 use App\Enums\EstadoCita;
@@ -97,7 +98,7 @@ final class IndicadorService
             $this->seguimientosPorArea($porArea, $areaIds, $inicio, $fin);
         }
 
-        $minimo = max(1, (int) config('indicadores.min_celda', 5));
+        $minimo = PrivacyThreshold::minCell();
         $indicadores = array_map(
             static fn (string $value): TipoIndicador => TipoIndicador::from($value),
             $filtros->indicadores,

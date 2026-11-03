@@ -44,7 +44,7 @@ Route::middleware('guest')->group(function () {
     Route::redirect('/', '/login');
     Route::get('/login', [LoginController::class, 'show'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])
-        ->middleware('throttle:5,1')
+        ->middleware('throttle:login')
         ->name('login.store');
 });
 
@@ -148,7 +148,8 @@ Route::middleware(['auth', 'require_password_change'])->group(function () {
         Route::get('/pacientes/{carnet}', [PacienteController::class, 'show'])->name('pacientes.show')->middleware('throttle:30,1');
 
         Route::middleware('enforce_area_scope')->group(function () {
-            Route::get('/citas', [CitaController::class, 'index'])->name('citas.index');
+            // HU-14: agenda for clinical professionals only (the psychosocial referent only registers/derives).
+            Route::get('/citas', [CitaController::class, 'index'])->middleware('role:area_coordinator|specialist')->name('citas.index');
             Route::get('/pacientes/{paciente}/historial', [HistorialController::class, 'show'])->name('pacientes.historial');
             Route::get('/expedientes/{expediente}/consultas/create', [ConsultaController::class, 'create'])->name('consultas.create');
             Route::post('/expedientes/{expediente}/consultas', [ConsultaController::class, 'store'])->name('consultas.store');

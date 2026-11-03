@@ -51,7 +51,7 @@ class SeguimientoStoreRequest extends FormRequest
                 'required',
                 'date_format:Y-m-d',
                 'after_or_equal:'.$today->toDateString(),
-                'before_or_equal:'.$today->copy()->addDays(365)->toDateString(),
+                'before_or_equal:'.$today->copy()->addDays((int) config('limites.alerta_revision_max_dias'))->toDateString(),
             ],
         ];
     }
@@ -83,7 +83,7 @@ class SeguimientoStoreRequest extends FormRequest
             'responsable_profesional_id.in' => 'El responsable debe ser el profesional que registra el seguimiento.',
             'proxima_revision.required' => 'La fecha de próxima revisión es obligatoria.',
             'proxima_revision.after_or_equal' => 'La próxima revisión no puede ser anterior a hoy.',
-            'proxima_revision.before_or_equal' => 'La próxima revisión no puede exceder 365 días desde hoy.',
+            'proxima_revision.before_or_equal' => 'La próxima revisión no puede exceder '.config('limites.alerta_revision_max_dias').' días desde hoy.',
         ];
     }
 }

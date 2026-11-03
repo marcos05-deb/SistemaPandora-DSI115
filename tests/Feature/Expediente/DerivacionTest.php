@@ -66,7 +66,7 @@ it('can derivar a patient to an area', function () {
         ]);
 
     $response->assertRedirect(route('pacientes.index'));
-    $response->assertSessionHas('success', 'Paciente derivado exitosamente.');
+    $response->assertSessionHas('success', 'Paciente derivado correctamente.');
 
     expect(Expediente::withoutGlobalScopes()->count())->toBe(1);
 

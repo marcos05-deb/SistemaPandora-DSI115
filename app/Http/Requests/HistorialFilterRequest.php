@@ -14,7 +14,6 @@ class HistorialFilterRequest extends FormRequest
 {
     public const TIPOS_ATENCION = ['consulta', 'derivacion', 'cierre'];
 
-    public const RANGO_MAXIMO_DIAS = 730;
 
     public function authorize(): bool
     {
@@ -42,7 +41,7 @@ class HistorialFilterRequest extends FormRequest
         return [
             'fecha_desde.before_or_equal' => 'La fecha inicial no puede ser futura.',
             'fecha_hasta.before_or_equal' => 'La fecha final no puede ser futura.',
-            'fecha_hasta.after_or_equal' => 'La fecha final debe ser posterior o igual a la fecha inicial.',
+            'fecha_hasta.after_or_equal' => 'La fecha final debe ser igual o posterior a la fecha inicial.',
             'tipo_atencion.in' => 'El tipo de atención seleccionado no es válido.',
         ];
     }
@@ -57,10 +56,10 @@ class HistorialFilterRequest extends FormRequest
                 $dias = Carbon::parse($desde)
                     ->diffInDays(Carbon::parse($hasta));
 
-                if ($dias > self::RANGO_MAXIMO_DIAS) {
+                if ($dias > config('limites.historial_rango_dias')) {
                     $validator->errors()->add(
                         'fecha_hasta',
-                        'El rango máximo del historial es de '.self::RANGO_MAXIMO_DIAS.' días.'
+                        'El rango máximo del historial es de '.config('limites.historial_rango_dias').' días.'
                     );
                 }
             }

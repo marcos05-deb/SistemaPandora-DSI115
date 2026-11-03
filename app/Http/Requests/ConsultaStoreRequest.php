@@ -56,7 +56,7 @@ class ConsultaStoreRequest extends FormRequest
             'plan_atencion' => ['required', 'string', 'min:10', 'max:1000'],
             'tecnica_utilizada' => ['required', 'string'],
             // Fecha clínica explícita (independiente de created_at).
-            'fecha_consulta' => ['required', 'date', 'before_or_equal:today', 'after_or_equal:'.now()->subYear()->toDateString()],
+            'fecha_consulta' => ['required', 'date', 'before_or_equal:today', 'after_or_equal:'.now()->subDays((int) config('limites.consulta_antiguedad_max_dias'))->toDateString()],
             'evaluacion_inicial' => [$isFirstConsulta ? 'required' : 'nullable', 'array'],
             'crisis_psicologica' => ['required', 'boolean'],
             'indicadores_tendencia_suicida' => ['present', 'array', 'max:50'],
@@ -85,7 +85,7 @@ class ConsultaStoreRequest extends FormRequest
             'plan_atencion.max' => 'El plan de atención no puede superar :max caracteres.',
             'fecha_consulta.required' => 'La fecha de la consulta es obligatoria.',
             'fecha_consulta.before_or_equal' => 'La fecha de la consulta no puede ser futura.',
-            'fecha_consulta.after_or_equal' => 'La fecha de la consulta no puede ser anterior a un año.',
+            'fecha_consulta.after_or_equal' => 'La fecha de la consulta no puede tener más de '.config('limites.consulta_antiguedad_max_dias').' días de antigüedad.',
             'evaluacion_inicial.required' => 'La evaluación inicial es obligatoria en la primera consulta.',
             'crisis_psicologica.required' => 'Indica si se registró una crisis psicológica.',
             'indicadores_tendencia_suicida.present' => 'Registra los indicadores de tendencia suicida o indica que no hay ninguno.',

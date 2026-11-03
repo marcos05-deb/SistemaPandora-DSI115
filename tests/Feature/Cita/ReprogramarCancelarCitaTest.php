@@ -64,7 +64,7 @@ it('permite al especialista reprogramar su propia cita con motivo', function () 
         ]);
 
     $response->assertRedirect();
-    $response->assertSessionHas('success', 'Cita reprogramada exitosamente.');
+    $response->assertSessionHas('success', 'Cita reprogramada correctamente.');
 
     $citaOriginal->refresh();
     expect($citaOriginal->estado)->toBe(EstadoCita::Reprogramada->value)
@@ -160,7 +160,7 @@ it('permite al especialista cancelar su propia cita futura', function () {
         ]);
 
     $response->assertRedirect();
-    $response->assertSessionHas('success', 'Cita cancelada exitosamente.');
+    $response->assertSessionHas('success', 'Cita cancelada correctamente.');
 
     $cita->refresh();
     expect($cita->estado)->toBe(EstadoCita::Cancelada->value)
