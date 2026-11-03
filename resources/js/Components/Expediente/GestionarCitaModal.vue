@@ -69,9 +69,9 @@ const title = computed(() => {
 
 const description = computed(() => {
     if (props.mode === 'reprogramar') {
-        return 'Indique el motivo del cambio y la nueva fecha acordada con el paciente. El motivo clínico original se conserva.';
+        return 'Indica el motivo del cambio y la nueva fecha acordada con el paciente. El motivo clínico original se conserva.';
     }
-    return 'Por favor, indique el motivo por el cual se cancela esta cita.';
+    return 'Indica por qué cancelas esta cita.';
 });
 </script>
 

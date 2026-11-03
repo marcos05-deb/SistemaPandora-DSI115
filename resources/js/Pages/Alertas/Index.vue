@@ -159,7 +159,7 @@ function refreshAlerts() {
                         </div>
                         <h3 class="mt-4 text-base font-semibold text-[var(--nord0)]">No hay alertas para mostrar</h3>
                         <p class="mx-auto mt-1 max-w-md text-sm leading-relaxed text-[var(--nord3)]">
-                            {{ selectedState ? 'No se encontraron alertas con el estado seleccionado.' : 'Las alertas disponibles aparecerán aquí.' }}
+                            {{ selectedState ? 'No hay alertas con este estado. Prueba con otro estado.' : 'No hay alertas registradas.' }}
                         </p>
                     </div>
 

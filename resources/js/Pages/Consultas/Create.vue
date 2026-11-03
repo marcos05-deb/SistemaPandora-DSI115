@@ -150,7 +150,7 @@ function runClientValidation() {
         errors.motivo_consulta = 'El motivo de la consulta es obligatorio.';
     }
     if (typeof form.crisis_psicologica !== 'boolean') {
-        errors.crisis_psicologica = 'Seleccione Sí o No para indicar si hubo una crisis psicológica.';
+        errors.crisis_psicologica = 'Selecciona Sí o No para indicar si hubo una crisis psicológica.';
     }
     if (isBlank(form.fecha_consulta)) {
         errors.fecha_consulta = 'La fecha de la consulta es obligatoria.';
@@ -165,15 +165,15 @@ function runClientValidation() {
     }
 
     if (isBlank(form.diagnostico) && isBlank(form.notas_clinicas)) {
-        errors.diagnostico = 'Complete al menos el diagnóstico o la observación clínica.';
-        errors.notas_clinicas = 'Complete al menos el diagnóstico o la observación clínica.';
+        errors.diagnostico = 'Completa el diagnóstico o las notas clínicas; al menos uno es obligatorio.';
+        errors.notas_clinicas = 'Completa el diagnóstico o las notas clínicas; al menos uno es obligatorio.';
     }
 
     if (props.esPrimeraConsulta) {
         for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
             const key = `evaluacion_inicial.${campo}`;
             if (isBlank(form.evaluacion_inicial[campo])) {
-                errors[key] = `El campo ${FIELD_LABELS[key] || campo} es obligatorio en la primera consulta.`;
+                errors[key] = `Completa ${FIELD_LABELS[key] || campo}; es obligatorio en la primera consulta.`;
             }
         }
     }
@@ -252,7 +252,7 @@ const submit = async () => {
     if (Object.keys(clientErrors).length > 0) {
         form.clearErrors();
         form.setError(clientErrors);
-        clientBanner.value = 'No se pudo guardar. Complete los campos obligatorios resaltados.';
+        clientBanner.value = 'No se pudo guardar. Completa los campos obligatorios marcados.';
         await focusFirstError(clientErrors);
         return;
     }
@@ -262,7 +262,7 @@ const submit = async () => {
     form.post(`/expedientes/${props.expediente.id}/consultas`, {
         preserveScroll: true,
         onError: async (errors) => {
-            clientBanner.value = 'No se pudo guardar la consulta. Revise los siguientes campos:';
+            clientBanner.value = 'No se pudo guardar la consulta. Revisa los campos señalados:';
             await focusFirstError(errors);
         },
         onFinish: () => {
@@ -365,7 +365,7 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                     aria-live="polite"
                 >
                     <p class="text-[13px] font-semibold text-[var(--aurora-red)]">
-                        {{ clientBanner || 'No se pudo guardar la consulta. Revise los siguientes campos:' }}
+                        {{ clientBanner || 'No se pudo guardar la consulta. Revisa los campos señalados:' }}
                     </p>
                     <ul v-if="errorSummary.length" class="mt-2 space-y-1">
                         <li v-for="item in errorSummary" :key="item.key">
@@ -505,7 +505,7 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                         class="w-full sm:w-64 rounded-lg border bg-[var(--nord6)] px-3 py-2 text-[14px] text-[var(--nord0)] focus:border-[var(--nord8)] focus:ring-0"
                         :class="hasError('fecha_consulta') ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)]'"
                     />
-                    <p class="text-[11px] text-[var(--nord3)] mt-1">Fecha clínica de la atención (no puede ser futura).</p>
+                    <p class="text-[11px] text-[var(--nord3)] mt-1">Fecha de la atención clínica. No puede ser futura.</p>
                     <p v-if="hasError('fecha_consulta')" id="fecha_consulta-error" class="text-[var(--aurora-red)] text-[12px] mt-1">{{ errorMessage('fecha_consulta') }}</p>
                 </div>
 
@@ -545,7 +545,7 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                 </div>
 
                 <p id="dx-obs-hint" class="text-[12px] text-[var(--nord3)] -mt-2">
-                    Complete al menos el diagnóstico o la observación clínica <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio al menos uno)</span>
+                        Completa el diagnóstico o las notas clínicas; al menos uno es obligatorio <span class="text-[var(--aurora-red)]" aria-hidden="true">*</span><span class="sr-only">(obligatorio al menos uno)</span>
                 </p>
 
                 <div>
@@ -651,7 +651,7 @@ for (const campo of Object.values(ACCORDION_FIELDS).flat()) {
                         v-model="form.plan_atencion"
                         rows="3"
                         maxlength="1000"
-                        placeholder="Indique el plan de atención acordado en esta consulta (mín. 10 caracteres)"
+                        placeholder="Indica el plan de atención acordado en esta consulta (mínimo 10 caracteres)"
                         aria-required="true"
                         :aria-invalid="hasError('plan_atencion') ? 'true' : 'false'"
                         :aria-describedby="hasError('plan_atencion') ? 'plan_atencion-error' : undefined"

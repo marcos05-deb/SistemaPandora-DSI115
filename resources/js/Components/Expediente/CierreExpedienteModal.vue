@@ -80,7 +80,7 @@ const submit = () => {
                             </h3>
                             <div class="mt-2">
                                 <p class="text-sm text-[var(--nord3)]">
-                                    Esta acción es irreversible y clausurará el registro clínico activo. Por favor, justifique detalladamente el motivo.
+                                    El cierre es permanente. Las citas programadas para fechas futuras se cancelarán. Registra el resultado final y explica el motivo.
                                 </p>
                             </div>
 
@@ -96,7 +96,7 @@ const submit = () => {
                                         class="block w-full border text-[var(--nord0)] text-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-[var(--aurora-red)] focus:border-[var(--aurora-red)] transition-colors duration-200"
                                         :class="{'border-[var(--aurora-red)] bg-red-50': form.errors.resultado_final, 'border-[var(--nord4)] bg-[var(--surface)]': !form.errors.resultado_final}"
                                         :disabled="isSubmitting"
-                                        placeholder="Describa el resultado clínico final del proceso de atención..."
+                                        placeholder="Describe el resultado clínico final del proceso de atención..."
                                     ></textarea>
                                     <p v-if="form.errors.resultado_final" class="mt-1.5 text-xs text-[var(--aurora-red)]">
                                         {{ form.errors.resultado_final }}
@@ -113,7 +113,7 @@ const submit = () => {
                                         class="block w-full border text-[var(--nord0)] text-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-[var(--aurora-red)] focus:border-[var(--aurora-red)] transition-colors duration-200"
                                         :class="{'border-[var(--aurora-red)] bg-red-50': form.errors.motivo_cierre, 'border-[var(--nord4)] bg-[var(--surface)]': !form.errors.motivo_cierre}"
                                         :disabled="isSubmitting"
-                                        placeholder="Describa la justificación (ej. alta médica, traslado, finalización de tratamiento)..."
+                                        placeholder="Describe el motivo (por ejemplo, alta médica, traslado o finalización del tratamiento)..."
                                     ></textarea>
                                     <p v-if="form.errors.motivo_cierre" class="mt-1.5 text-xs text-[var(--aurora-red)]">
                                         {{ form.errors.motivo_cierre }}
@@ -130,7 +130,7 @@ const submit = () => {
                                         >
                                     </div>
                                     <label for="confirmacion_irreversible" class="ml-2 text-sm font-medium text-[var(--nord0)]">
-                                        Entiendo que el cierre de este expediente es permanente e irreversible <span class="text-[var(--aurora-red)]">*</span>
+                                        Entiendo que el cierre de este expediente es permanente <span class="text-[var(--aurora-red)]">*</span>
                                     </label>
                                 </div>
                                 <p v-if="form.errors.confirmacion_irreversible" class="mt-1.5 text-xs text-[var(--aurora-red)]">

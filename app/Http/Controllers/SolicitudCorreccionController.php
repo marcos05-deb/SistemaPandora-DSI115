@@ -25,7 +25,7 @@ class SolicitudCorreccionController extends Controller
         );
 
         return redirect()->back()
-            ->with('message', 'Solicitud enviada. El administrador debe autorizar antes de poder corregir de nuevo.')
+            ->with('message', 'Solicitud enviada. Administración debe aprobarla antes de que puedas volver a corregir estos datos.')
             ->with('variant', 'success');
     }
 
@@ -42,7 +42,7 @@ class SolicitudCorreccionController extends Controller
         );
 
         return redirect()->back()
-            ->with('message', 'Solicitud enviada. El administrador debe autorizar antes de poder actualizar el expediente de nuevo.')
+            ->with('message', 'Solicitud enviada. Administración debe aprobarla antes de que puedas volver a actualizar este expediente.')
             ->with('variant', 'success');
     }
 }

@@ -71,8 +71,8 @@ const submit = () => {
                 <div class="bg-[var(--surface-header)] px-6 py-4 border-b border-[var(--nord4)]">
                     <h3 class="text-[16px] font-semibold text-[var(--nord0)]">Actualizar expediente clínico</h3>
                     <p class="text-[12px] text-[var(--nord3)] mt-1">
-                        La primera actualización es libre. Las siguientes requieren permiso del administrador (un solo uso).
-                        La versión anterior queda en auditoría; el admin solo ve nombres de campo, no valores.
+                        La primera actualización no requiere autorización. Para las siguientes, necesitas que administración apruebe una solicitud; la aprobación habilita una sola actualización de los campos autorizados.
+                        Los cambios anteriores quedan registrados. Administración solo ve qué campos cambiaron, no sus valores.
                     </p>
                     <p v-if="restringido" class="text-[11px] text-[var(--aurora-orange)] mt-2">
                         Campos autorizados: {{ camposAutorizados.join(', ') }}
@@ -94,7 +94,7 @@ const submit = () => {
                     </div>
                     <div>
                         <label class="block text-[13px] font-semibold text-[var(--nord0)] mb-1.5">Motivo del cambio <span class="text-[var(--aurora-red)]">*</span></label>
-                        <textarea v-model="form.motivo_cambio" rows="2" required class="w-full rounded-lg border px-3 py-2 text-[14px] text-[var(--nord0)]" :class="form.errors.motivo_cambio ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)] bg-[var(--nord6)]'" :disabled="isSubmitting" placeholder="Explique por qué se actualiza el expediente..."></textarea>
+                        <textarea v-model="form.motivo_cambio" rows="2" required class="w-full rounded-lg border px-3 py-2 text-[14px] text-[var(--nord0)]" :class="form.errors.motivo_cambio ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)] bg-[var(--nord6)]'" :disabled="isSubmitting" placeholder="Explica por qué actualizas el expediente..."></textarea>
                         <p v-if="form.errors.motivo_cambio" class="text-[12px] text-[var(--aurora-red)] mt-1">{{ form.errors.motivo_cambio }}</p>
                         <p v-if="form.errors.estado" class="text-[12px] text-[var(--aurora-red)] mt-1">{{ form.errors.estado }}</p>
                     </div>

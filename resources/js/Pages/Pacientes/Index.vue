@@ -80,7 +80,7 @@ loadHistory();
                 <div class="flex items-center gap-3">
                     <Link v-if="canSeeUuidSearch" href="/busqueda-segura"
                         class="text-[12px] font-medium text-[var(--frost4)] hover:text-[var(--nord10)] transition-colors flex items-center gap-1">
-                        UUID
+                        Buscar expediente por código
                         <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </Link>
                     <Link v-if="canCreatePatient" href="/pacientes/create"
@@ -110,7 +110,7 @@ loadHistory();
                         </div>
                     </div>
                     <p class="text-[13px] text-[var(--nord3)] leading-relaxed max-w-sm mx-auto">
-                        Ingrese el carnet estudiantil para localizar el expediente.
+                        Ingresa el carnet estudiantil para localizar el expediente.
                     </p>
                     <!-- Badge de privacidad -->
                     <div class="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full text-[10px] font-semibold"
@@ -249,7 +249,7 @@ loadHistory();
 
         <p class="mt-5 text-[11px] text-[var(--nord3)] text-center flex items-center justify-center gap-1.5">
             <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            Datos anonimizados · Solo personal autorizado puede acceder al expediente completo
+            Datos anonimizados · Solo el personal autorizado puede consultar el expediente completo
         </p>
     </div>
 </template>

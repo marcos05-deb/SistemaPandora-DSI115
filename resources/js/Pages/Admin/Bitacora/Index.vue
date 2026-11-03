@@ -195,8 +195,8 @@ function formatDate(value) {
                         <p v-if="form.errors.accion" class="mt-1 text-sm text-[var(--aurora-red)]">{{ form.errors.accion }}</p>
                     </div>
                     <div>
-                        <label for="bitacora-registro" class="mb-1.5 block text-sm font-medium text-[var(--nord1)]">Registro afectado (id)</label>
-                        <input id="bitacora-registro" v-model="form.registro" type="text" maxlength="64" placeholder="UUID u id" class="min-h-11 w-full rounded-lg border border-[var(--nord4)] bg-white px-3 text-sm text-[var(--nord0)]" />
+                        <label for="bitacora-registro" class="mb-1.5 block text-sm font-medium text-[var(--nord1)]">Registro afectado</label>
+                        <input id="bitacora-registro" v-model="form.registro" type="text" maxlength="64" placeholder="Código o número del registro" class="min-h-11 w-full rounded-lg border border-[var(--nord4)] bg-white px-3 text-sm text-[var(--nord0)]" />
                     </div>
                     <div>
                         <label for="bitacora-tipo" class="mb-1.5 block text-sm font-medium text-[var(--nord1)]">Tipo de objeto</label>

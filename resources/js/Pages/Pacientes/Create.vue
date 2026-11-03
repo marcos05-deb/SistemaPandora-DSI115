@@ -304,14 +304,14 @@ function submit() {
 
                         <div class="md:col-span-2">
                             <label for="field-motivo_consulta" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Motivo de Consulta <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Describe brevemente el problema, síntoma o situación por la cual el estudiante busca ayuda" /></label>
-                            <textarea id="field-motivo_consulta" v-model="form.motivo_consulta" rows="3" placeholder="Describa el motivo por el cual el estudiante acude a consulta" class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all resize-none" :class="form.errors.motivo_consulta ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required />
+                            <textarea id="field-motivo_consulta" v-model="form.motivo_consulta" rows="3" placeholder="Describe el motivo por el que el estudiante busca atención" class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all resize-none" :class="form.errors.motivo_consulta ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required />
                             <p v-if="form.errors.motivo_consulta" class="form-field-error text-[11px] text-[var(--aurora-red)] mt-1 flex items-center gap-1"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{{ form.errors.motivo_consulta }}</p>
                         </div>
 
                         <div>
                             <label for="field-carrera_id" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Carrera <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Selecciona la facultad y carrera que el estudiante cursa actualmente" /></label>
                             <select id="field-carrera_id" v-model="form.carrera_id" class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all" :class="form.errors.carrera_id ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required>
-                                <option value="" disabled>Seleccione una carrera</option>
+                                <option value="" disabled>Selecciona una carrera</option>
                                 <optgroup v-for="f in facultades" :key="f.id" :label="f.nombre">
                                     <option v-for="c in f.carreras" :key="c.id" :value="c.id">{{ c.nombre }}</option>
                                 </optgroup>
@@ -320,10 +320,10 @@ function submit() {
                         </div>
 
                         <div>
-                            <label for="field-fecha_nacimiento" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha Nacimiento <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Fecha real de nacimiento. No puede ser una fecha futura" /></label>
+                            <label for="field-fecha_nacimiento" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha de nacimiento <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Fecha real de nacimiento. No puede ser una fecha futura" /></label>
                             <VueDatePicker v-model="form.fecha_nacimiento" :format="'dd/MM/yyyy'" model-type="yyyy-MM-dd" :enable-time-picker="false" auto-apply :min-date="FECHA_NACIMIENTO_MINIMA" :max-date="hoyDate" required>
                                 <template #dp-input="{ value }">
-                                    <input id="field-fecha_nacimiento" type="text" :value="value" readonly class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all cursor-pointer" :class="form.errors.fecha_nacimiento ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" placeholder="Seleccionar fecha" />
+                                    <input id="field-fecha_nacimiento" type="text" :value="value" readonly class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all cursor-pointer" :class="form.errors.fecha_nacimiento ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" placeholder="Selecciona una fecha" />
                                 </template>
                             </VueDatePicker>
                             <p v-if="form.errors.fecha_nacimiento" class="form-field-error text-[11px] text-[var(--aurora-red)] mt-1 flex items-center gap-1"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{{ form.errors.fecha_nacimiento }}</p>
@@ -332,7 +332,7 @@ function submit() {
                         <div>
                             <label for="field-sexo" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Sexo <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Sexo biológico según documento de identidad oficial" /></label>
                             <select id="field-sexo" v-model="form.sexo" class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all" :class="form.errors.sexo ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required>
-                                <option value="" disabled>Seleccionar</option>
+                                <option value="" disabled>Selecciona una opción</option>
                                 <option value="M">Masculino</option>
                                 <option value="F">Femenino</option>
                                 <option value="Otro">Otro</option>
@@ -341,9 +341,9 @@ function submit() {
                         </div>
 
                         <div>
-                            <label for="field-estado_civil" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Estado Civil <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Estado civil actual del estudiante al momento del registro" /></label>
+                            <label for="field-estado_civil" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Estado civil <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Estado civil actual del estudiante al momento del registro" /></label>
                             <select id="field-estado_civil" v-model="form.estado_civil" class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all" :class="form.errors.estado_civil ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required>
-                                <option value="" disabled>Seleccionar</option>
+                                <option value="" disabled>Selecciona una opción</option>
                                 <option value="Soltero">Soltero</option>
                                 <option value="Casado">Casado</option>
                                 <option value="Divorciado">Divorciado</option>
@@ -359,22 +359,22 @@ function submit() {
                         </div>
 
                         <div>
-                            <label for="field-fecha_primera_consulta" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha Primera Consulta <FieldTooltip text="Fecha en la que el estudiante acudió a consulta por primera vez. No puede ser futura ni anterior al nacimiento" /></label>
+                            <label for="field-fecha_primera_consulta" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha de la primera consulta <FieldTooltip text="Fecha en la que el estudiante acudió a consulta por primera vez. No puede ser futura ni anterior al nacimiento" /></label>
                             <VueDatePicker v-model="form.fecha_primera_consulta" :format="'dd/MM/yyyy'" model-type="yyyy-MM-dd" :enable-time-picker="false" auto-apply :min-date="minPrimeraConsulta" :max-date="hoyDate">
                                 <template #dp-input="{ value }">
-                                    <input id="field-fecha_primera_consulta" type="text" :value="value" readonly class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all cursor-pointer" :class="form.errors.fecha_primera_consulta ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" placeholder="Seleccionar fecha" />
+                                    <input id="field-fecha_primera_consulta" type="text" :value="value" readonly class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all cursor-pointer" :class="form.errors.fecha_primera_consulta ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" placeholder="Selecciona una fecha" />
                                 </template>
                             </VueDatePicker>
                             <p v-if="form.errors.fecha_primera_consulta" class="form-field-error text-[11px] text-[var(--aurora-red)] mt-1 flex items-center gap-1"><svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{{ form.errors.fecha_primera_consulta }}</p>
                         </div>
 
                         <div>
-                            <label for="field-referido_por" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Referido Por <FieldTooltip text="Nombre de la persona, médico o institución que refirió al estudiante a consulta" /></label>
+                            <label for="field-referido_por" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Referido por <FieldTooltip text="Nombre de la persona, médico o institución que refirió al estudiante a consulta" /></label>
                             <input id="field-referido_por" v-model="form.referido_por" type="text" maxlength="255" placeholder="Ej: Dr. Carlos Méndez - Clínica Universitaria" class="w-full bg-[var(--surface)] border border-[var(--nord4)] rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[var(--frost3)]/20 outline-none transition-all" />
                         </div>
 
                         <div>
-                            <label for="field-llevado_por" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Acompañado Por <FieldTooltip text="Persona (familiar, amigo, tutor) que acompañó al estudiante a su primera consulta" /></label>
+                            <label for="field-llevado_por" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Acompañado por <FieldTooltip text="Persona (familiar, amigo, tutor) que acompañó al estudiante a su primera consulta" /></label>
                             <input id="field-llevado_por" v-model="form.llevado_por" type="text" maxlength="255" placeholder="Ej: Familiar o amigo que acompañó al estudiante" class="w-full bg-[var(--surface)] border border-[var(--nord4)] rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:border-[var(--frost3)] focus:ring-2 focus:ring-[var(--frost3)]/20 outline-none transition-all" />
                         </div>
                     </div>
@@ -457,7 +457,7 @@ function submit() {
                             </div>
 
                             <div class="md:col-span-2">
-                                <label for="field-responsable_direccion" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Dirección Completa <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Dirección de residencia del responsable legal. Puede ser la misma del estudiante" /></label>
+                                <label for="field-responsable_direccion" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Dirección del responsable <span class="field-required" title="Campo obligatorio">*</span> <FieldTooltip text="Dirección de residencia del responsable legal. Puede ser la misma del estudiante" /></label>
                                 <textarea id="field-responsable_direccion" v-model="form.responsable_direccion" rows="2" maxlength="500" placeholder="Ej: Misma dirección del estudiante o una diferente" class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] focus:ring-2 outline-none transition-all resize-none" :class="form.errors.responsable_direccion ? 'border-[var(--aurora-red)] focus:ring-[var(--aurora-red)]/20' : 'border-[var(--nord4)] focus:border-[var(--frost3)] focus:ring-[var(--frost3)]/20'" required />
                             </div>
                         </div>

@@ -145,7 +145,7 @@ function confirmAndSave() {
                         <label for="field-fecha_nacimiento" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Fecha de nacimiento <span class="text-[var(--aurora-red)]">*</span></label>
                         <VueDatePicker v-model="form.fecha_nacimiento" :format="'dd/MM/yyyy'" model-type="yyyy-MM-dd" :enable-time-picker="false" auto-apply :min-date="FECHA_NACIMIENTO_MINIMA" :max-date="maxFechaNacimiento">
                             <template #dp-input="{ value }">
-                                <input id="field-fecha_nacimiento" type="text" :value="value" readonly class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] outline-none border-[var(--nord4)] cursor-pointer" placeholder="Seleccionar fecha" />
+                                <input id="field-fecha_nacimiento" type="text" :value="value" readonly class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] outline-none border-[var(--nord4)] cursor-pointer" placeholder="Selecciona una fecha" />
                             </template>
                         </VueDatePicker>
                         <p v-if="form.errors.fecha_nacimiento" class="text-[11px] text-[var(--aurora-red)] mt-1">{{ form.errors.fecha_nacimiento }}</p>
@@ -174,7 +174,7 @@ function confirmAndSave() {
                     <div>
                         <label for="field-carrera_id" class="block text-[13px] font-medium text-[var(--nord3)] mb-1">Carrera <span class="text-[var(--aurora-red)]">*</span></label>
                         <select id="field-carrera_id" v-model="form.carrera_id" class="w-full bg-[var(--surface)] border rounded-lg px-3 py-2 text-[13px] text-[var(--nord0)] outline-none border-[var(--nord4)]">
-                            <option value="" disabled>Seleccione una carrera</option>
+                            <option value="" disabled>Selecciona una carrera</option>
                             <optgroup v-for="f in facultades" :key="f.id" :label="f.nombre">
                                 <option v-for="c in f.carreras" :key="c.id" :value="c.id">{{ c.nombre }}</option>
                             </optgroup>

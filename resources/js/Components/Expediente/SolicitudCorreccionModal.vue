@@ -24,8 +24,8 @@ const titulo = computed(() =>
 
 const descripcion = computed(() =>
     props.tipo === 'clinico'
-        ? 'Este expediente ya usó su actualización libre. Indique qué campos necesita modificar y el motivo. El administrador autorizará un único cambio.'
-        : 'Este paciente ya usó su corrección libre. Indique qué campos necesita corregir y el motivo. El administrador autorizará un único cambio.'
+        ? 'Ya utilizaste la actualización inicial de este expediente. Indica qué campos necesitas cambiar y por qué. Administración revisará tu solicitud; si la aprueba, podrás actualizar una vez los campos autorizados.'
+        : 'Ya utilizaste la corrección inicial de los datos del paciente. Indica qué campos necesitas corregir y por qué. Administración revisará tu solicitud; si la aprueba, podrás corregir una vez los campos autorizados.'
 );
 
 watch(() => props.show, (open) => {
@@ -91,7 +91,7 @@ function close() {
                             required
                             class="w-full rounded-lg border px-3 py-2 text-[14px]"
                             :class="form.errors.motivo ? 'border-[var(--aurora-red)]' : 'border-[var(--nord4)] bg-[var(--nord6)]'"
-                            placeholder="Explique por qué necesita corregir de nuevo..."
+                            placeholder="Explica por qué necesitas hacer esta corrección..."
                         />
                         <p v-if="form.errors.motivo" class="text-[12px] text-[var(--aurora-red)] mt-1">{{ form.errors.motivo }}</p>
                     </div>

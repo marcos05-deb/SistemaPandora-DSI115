@@ -274,7 +274,7 @@ const statusLabels = {
         <!-- Vista semanal agrupada -->
         <div v-if="form.vista === 'semanal'" class="space-y-4">
             <div v-if="!citasPorDia || citasPorDia.length === 0" class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] p-10 text-center">
-                <p class="text-[14px] font-medium text-[var(--nord0)]">No hay citas en esta semana</p>
+                <p class="text-[14px] font-medium text-[var(--nord0)]">No hay citas para esta semana</p>
                 <p class="text-[12px] text-[var(--nord3)] mt-1">Usa la navegación para cambiar de semana</p>
             </div>
             <div v-for="dia in citasPorDia" :key="dia.fecha" class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden">
@@ -326,7 +326,7 @@ const statusLabels = {
                             <Link v-if="cita.paciente?.carnet" :href="`/pacientes/${cita.paciente?.carnet}`"
                                 class="inline-flex items-center px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white"
                                 style="background: linear-gradient(135deg, var(--frost4), var(--nord9));">
-                                Ver Exp.
+                                Ver expediente
                             </Link>
                         </div>
                     </div>
@@ -434,9 +434,9 @@ const statusLabels = {
                                     <Link v-if="cita.paciente?.carnet" :href="`/pacientes/${cita.paciente?.carnet}`"
                                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white font-semibold shadow-sm"
                                         style="background: linear-gradient(135deg, var(--frost4), var(--nord9));">
-                                        Ver Exp.
+                                        Ver expediente
                                     </Link>
-                                    <span v-else class="text-[var(--nord3)] italic text-[12px]">Sin acceso</span>
+                                    <span v-else class="text-[var(--nord3)] italic text-[12px]">Sin acceso al expediente</span>
                                 </div>
                             </td>
                         </tr>
@@ -446,7 +446,7 @@ const statusLabels = {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                                 <p class="text-[14px] font-medium text-[var(--nord0)]">No hay citas encontradas</p>
-                                <p class="text-[12px] mt-1">Intente ajustar los filtros de búsqueda</p>
+                                <p class="text-[12px] mt-1">Prueba con otros filtros de búsqueda.</p>
                             </td>
                         </tr>
                     </tbody>

@@ -29,7 +29,7 @@ class SecureSearchController extends Controller
         $validated = $request->validate([
             'code' => ['required', 'string', 'regex:/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i'],
         ], [
-            'code.regex' => 'El formato del codigo UUID no es valido.',
+            'code.regex' => 'El código del expediente no tiene un formato válido.',
         ]);
 
         $user = auth()->user();
@@ -46,7 +46,7 @@ class SecureSearchController extends Controller
             });
         } elseif (! $user->hasRole('area_coordinator') && ! $user->hasRole('sysadmin')) {
             return redirect()->route('busqueda-segura')->withErrors([
-                'code' => 'No tienes permisos para realizar busquedas.',
+                'code' => 'No tienes permiso para buscar expedientes.',
             ]);
         }
 
@@ -54,7 +54,7 @@ class SecureSearchController extends Controller
 
         if (! $paciente) {
             return redirect()->route('busqueda-segura')->withErrors([
-                'code' => 'No se encontraron registros para el codigo ingresado.',
+                'code' => 'No se encontró un expediente con ese código.',
             ]);
         }
 

@@ -150,7 +150,7 @@ class PacienteController extends Controller
         $correccion->marcarRevisado($request->user());
 
         return redirect()->back()
-            ->with('message', 'Aviso marcado como revisado. El registro de auditoría se conserva intacto.')
+            ->with('message', 'Aviso marcado como revisado. El registro de auditoría no se modificó.')
             ->with('variant', 'success');
     }
 
@@ -162,7 +162,7 @@ class PacienteController extends Controller
         $service->aprobar($solicitud, $request->user(), $request->validated('nota_admin'));
 
         return redirect()->back()
-            ->with('message', 'Permiso aprobado. El solicitante puede realizar una corrección en los campos autorizados.')
+            ->with('message', 'Solicitud aprobada. La persona solicitante puede hacer una sola actualización en los campos autorizados.')
             ->with('variant', 'success');
     }
 

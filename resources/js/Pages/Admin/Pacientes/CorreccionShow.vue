@@ -53,7 +53,7 @@ function marcarRevisado() {
                 <p class="text-[12px] text-[var(--nord3)] mt-0.5 font-mono">{{ correccion.id }}</p>
             </div>
             <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px]">
-                <div><span class="text-[var(--nord3)]">Paciente (UUID)</span><p class="font-mono text-[12px] mt-0.5">{{ correccion.paciente_id }}</p></div>
+                <div><span class="text-[var(--nord3)]">Código anónimo del paciente</span><p class="font-mono text-[12px] mt-0.5">{{ correccion.paciente_id }}</p></div>
                 <div><span class="text-[var(--nord3)]">Tipo / nivel</span><p class="mt-0.5">{{ correccion.tipo_evento }} · {{ correccion.nivel_evento }}</p></div>
                 <div><span class="text-[var(--nord3)]">Responsable</span><p class="mt-0.5">{{ correccion.responsable }} ({{ correccion.rol_usuario }})</p></div>
                 <div><span class="text-[var(--nord3)]">Fecha</span><p class="mt-0.5">{{ formatDate(correccion.created_at) }}</p></div>
@@ -65,7 +65,7 @@ function marcarRevisado() {
                     </ul>
                 </div>
                 <p class="md:col-span-2 text-[11px] text-[var(--nord3)]">
-                    Por privacidad, el administrador solo ve qué campos se modificaron y quién lo hizo.
+                    Por privacidad, solo se muestran los campos modificados y quién hizo el cambio.
                     No se exponen carnet, nombre ni ningún valor de dato personal o clínico.
                 </p>
             </div>

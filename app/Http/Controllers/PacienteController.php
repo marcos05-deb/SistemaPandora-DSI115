@@ -154,7 +154,7 @@ class PacienteController extends Controller
         });
 
         return redirect()->route('dashboard')
-            ->with('message', 'Paciente registrado exitosamente. Toda la información ha sido cifrada.')
+            ->with('message', 'Paciente registrado correctamente.')
             ->with('variant', 'success');
     }
 

@@ -75,8 +75,8 @@ class ExpedienteController extends Controller
         });
 
         $mensaje = $citasCanceladas > 0
-            ? "Expediente cerrado exitosamente. Se cancelaron {$citasCanceladas} cita(s) futura(s)."
-            : 'Expediente cerrado exitosamente.';
+            ? "Expediente cerrado. Citas futuras canceladas: {$citasCanceladas}."
+            : 'Expediente cerrado.';
 
         return redirect()->back()
             ->with('message', $mensaje)
