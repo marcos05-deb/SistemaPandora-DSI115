@@ -225,7 +225,6 @@ const donutSegments = computed(() => {
 
 <template>
     <div v-if="visible" class="space-y-6">
-        <p v-if="overview.privacidad_protegida" role="status" class="rounded-lg border border-[var(--nord4)] bg-[var(--surface-subtle)] px-4 py-3 text-sm text-[var(--nord1)]">Por privacidad, se ocultan los grupos con menos de {{ $page.props.privacidad?.min_celda }} casos y los totales que permitirían deducirlos.</p>
         <section
             aria-labelledby="dashboard-alertas-title"
             class="bg-white rounded-2xl shadow-sm border border-[var(--nord4)] overflow-hidden animate-fade-in"

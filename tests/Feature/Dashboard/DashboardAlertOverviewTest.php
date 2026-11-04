@@ -106,7 +106,7 @@ it('oculta el resumen de alertas al referente psicosocial', function (): void {
         );
 });
 
-it('protege conteos pequeños y omite alertas individuales del admin', function (): void {
+it('muestra los conteos al admin y omite las alertas individuales', function (): void {
     $admin = Especialista::factory()->withRole('sysadmin')->create();
 
     $rubrica = Rubrica::query()->where('codigo', Rubrica::CODIGO_RIESGO_PREVENTIVO)->firstOrFail();
@@ -160,11 +160,10 @@ it('protege conteos pequeños y omite alertas individuales del admin', function 
             ->where('alertOverview.visible', true)
             ->where('alertOverview.reveal_carnets', false)
             ->where('alertOverview.scope', 'institucional')
-            ->where('alertOverview.total', null)
-            ->where('alertOverview.abiertas', null)
-            ->where('alertOverview.privacidad_protegida', true)
-            ->where('alertOverview.por_estado.0.count', null)
-            ->where('alertOverview.por_senal.0.count', null)
+            ->where('alertOverview.total', 1)
+            ->where('alertOverview.abiertas', 1)
+            ->where('alertOverview.por_estado.0.count', 1)
+            ->where('alertOverview.por_senal.1.count', 1)
             ->has('alertOverview.urgentes', 0)
             ->has('alertOverview.tendencia_suicida')
         );
@@ -178,7 +177,7 @@ it('protege conteos pequeños y omite alertas individuales del admin', function 
         ->and(json_encode($audit->new_values))->not->toContain($paciente->codigo);
 });
 
-it('protege las dos jerarquías y el total de una cohorte sensible pequeña', function (): void {
+it('expone las dos jerarquías y el total de una cohorte pequeña', function (): void {
     $patient = Paciente::factory()->create([
         'creado_por_profesional_id' => $this->coordinator->profesional->id,
         'etiquetas_motivo' => ['Ideas Suicidas'],
@@ -191,12 +190,12 @@ it('protege las dos jerarquías y el total de una cohorte sensible pequeña', fu
     $this->actingAs($this->coordinator);
     $overview = app(DashboardAlertOverviewService::class)->forUser($this->coordinator);
 
-    expect($overview['tendencia_suicida']['total_alumnos'])->toBeNull()
-        ->and($overview['tendencia_suicida']['por_facultad'])->not->toBeEmpty()
-        ->and($overview['tendencia_suicida']['por_carrera'])->not->toBeEmpty();
-    foreach ([$overview['tendencia_suicida']['por_facultad'], $overview['tendencia_suicida']['por_carrera'], $overview['por_etiqueta']] as $rows) {
-        expect(collect($rows)->every(fn (array $row): bool => $row['count'] === null))->toBeTrue();
+    expect($overview['tendencia_suicida']['total_alumnos'])->toBe(1);
+    foreach ([$overview['tendencia_suicida']['por_facultad'], $overview['tendencia_suicida']['por_carrera']] as $rows) {
+        expect($rows)->not->toBeEmpty()
+            ->and(collect($rows)->every(fn (array $row): bool => $row['count'] === 1))->toBeTrue();
     }
+    expect(collect($overview['por_etiqueta'])->firstWhere('key', 'Ideas Suicidas')['count'])->toBe(1);
 
     expect(Audit::query()->where('user_id', $this->coordinator->id)->where('tags', 'listing_access')
         ->where('auditable_type', AlertaPreventiva::class)->where('event', 'accessed')->exists())->toBeTrue();
