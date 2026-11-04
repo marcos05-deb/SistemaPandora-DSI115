@@ -322,7 +322,8 @@ class RubricaDemoSeeder extends Seeder
         Profesional $profesional,
         Carbon $vigenteDesde,
         string $justificacion,
-        float $umbralAusencias = 2.00
+        // Umbral 1: la primera ausencia registrada dispara la alerta (la columna no admite 0 ni NULL).
+        float $umbralAusencias = 1.00
     ): RubricaVersion {
         $version = $rubrica->versiones()->create([
             'numero_version' => ((int) $rubrica->versiones()->max('numero_version')) + 1,
@@ -448,7 +449,7 @@ class RubricaDemoSeeder extends Seeder
             ['ausencia_cita' => [[
                 'clave_indicador' => null,
                 'valor' => 2.00,
-                'umbral' => 2.00,
+                'umbral' => 1.00,
                 'modo_calculo' => 'frecuencia',
                 'ventana_dias' => 30,
                 'ponderacion' => 1.00,
@@ -457,7 +458,7 @@ class RubricaDemoSeeder extends Seeder
             $segundaAusencia->id,
             now()
         );
-        $this->crearAlertaDemo($ausenciaEvaluation, 'ausencia_cita', '2', 2.00, 'activa', $psychologySpecialist);
+        $this->crearAlertaDemo($ausenciaEvaluation, 'ausencia_cita', '2', 1.00, 'activa', $psychologySpecialist);
 
         $demoConsulta = Consulta::query()->with('expediente')->find(self::DEMO_CONSULTA_SENALES_ID);
         $expedienteSinAusencias = $demoConsulta?->expediente

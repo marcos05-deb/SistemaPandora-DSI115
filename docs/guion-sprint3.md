@@ -24,7 +24,7 @@ Convenciones: [Integrante 1] = PAN-5, [Integrante 2] = PAN-6, [Integrante 3] = P
 Qué crea, según lo acordado (verificar en ensayo el detalle exacto):
 - Roles, áreas (Psicología, Medicina General, Fisioterapia, Nutrición, Trabajo Social) y catálogos de facultades y carreras.
 - Las 6 cuentas demo (tabla A.4), con la contraseña tomada de `SPRINT3_DEMO_PASSWORD`.
-- Una versión vigente y validada de la rúbrica: ausencias umbral 2 en 30 días, crisis psicológica umbral 1 en 90 días, tendencia suicida umbral 1.
+- Una versión vigente y validada de la rúbrica: ausencias umbral 1 en 30 días (basta una inasistencia), crisis psicológica umbral 1 en 90 días, tendencia suicida umbral 1.
 - Volumen para analítica: al menos 6 pacientes en Psicología y algunos en otras áreas.
 - Un paciente de Psicología sin alerta, con 2 citas pasadas pendientes de asistencia, para la alerta en vivo de HU-16. Su carnet se imprime en los logs del despliegue.
 - Pacientes de respaldo: uno con alerta activa y otro con alerta cerrada.
@@ -114,7 +114,7 @@ Orden recomendado:
 3. **Fecha de validación**: hoy o una fecha pasada (no puede ser futura).
 4. **Referencia documental de validación**: texto obligatorio, por ejemplo "Acta de validación del comité clínico, 2026" (dato ficticio solo si el equipo lo acepta como demostración).
 5. **Justificación del cambio**: solo aparece y es obligatoria si ya existe una versión anterior.
-6. Señales (el formulario ya trae estos valores): **Ausencia a cita** (Frecuencia, ventana 30 días, ponderación 1, umbral 2); **Crisis psicológica** (Frecuencia, ventana 90 días, ponderación 1, umbral 1); **Tendencia suicida** (indicador `ideas_suicidas`, Puntaje, ponderación 1, umbral 1). Las tres señales son obligatorias.
+6. Señales (el formulario ya trae estos valores): **Ausencia a cita** (Frecuencia, ventana 30 días, ponderación 1, umbral 1); **Crisis psicológica** (Frecuencia, ventana 90 días, ponderación 1, umbral 1); **Tendencia suicida** (indicador `ideas_suicidas`, Puntaje, ponderación 1, umbral 1). Las tres señales son obligatorias.
 7. **Guardar versión**. Esperar a que pase la hora de vigencia, refrescar `/rubricas` y confirmar la etiqueta **Vigente**. Sin versión vigente no se generan alertas (HU16-E07).
 Hacerlo el día anterior con vigencia de minutos, o con unas horas de margen.
 
@@ -186,7 +186,7 @@ Si el tiempo total es menor, recortar: en PAN-5 el paso 1.3 (crear versión); en
 - **Rol activo:** Coordinador de área (ventana A).
 - **Pantalla/URL:** menú lateral **Rúbrica de riesgo** → `/rubricas`, título "Rúbrica institucional de riesgo".
 - **Acción exacta:** mostrar la lista de versiones y señalar las etiquetas **Vigente**, **Programada** (si existe) e **Histórica**. Pulsar **Ver versión** en la vigente (`/rubricas/versiones/{id}`).
-- **Qué decir:** "La universidad necesita criterios uniformes para decidir cuándo un estudiante está en riesgo. Esta rúbrica define tres señales: ausencias a citas, crisis psicológicas y tendencia suicida, cada una con su umbral. Aquí vemos la versión vigente: ausencias con umbral 2 en 30 días, crisis con umbral 1 en 90 días y tendencia suicida con umbral 1."
+- **Qué decir:** "La universidad necesita criterios uniformes para decidir cuándo un estudiante está en riesgo. Esta rúbrica define tres señales: ausencias a citas, crisis psicológicas y tendencia suicida, cada una con su umbral. Aquí vemos la versión vigente: ausencias con umbral 1 en 30 días, crisis con umbral 1 en 90 días y tendencia suicida con umbral 1."
 - **Qué debe verse:** secciones "Vigencia y validación" (con fecha de validación y referencia documental) y "Señales y umbrales" con las tres señales.
 - **Criterio que se demuestra:** HU-15 CA-1 (señales) y CA-2 (variables, ponderaciones y umbrales por versión).
 - **Si algo falla:** si no hay versión vigente, no continuar con la alerta en vivo; mostrar el video o aplicar la ruta R2 de la Parte A.
@@ -203,7 +203,7 @@ Si el tiempo total es menor, recortar: en PAN-5 el paso 1.3 (crear versión); en
 ### Paso 1.3 — Nueva versión sin sobrescribir la anterior (HU-15)
 - **Rol activo:** Coordinador de área.
 - **Pantalla/URL:** el mismo formulario `/rubricas/versiones/crear`.
-- **Acción exacta:** completar **Vigente desde** con mañana a las 08:00 (debe ser posterior a la última versión), **Fecha de validación** = hoy, **Referencia documental de validación** = "Acta comité clínico (demostración)", **Justificación del cambio** = "Ajuste de umbral de ausencias para el próximo ciclo". En la señal **Ausencia a cita** cambiar **Umbral** de 2 a 3. Pulsar **Guardar versión**. Volver a `/rubricas`.
+- **Acción exacta:** completar **Vigente desde** con mañana a las 08:00 (debe ser posterior a la última versión), **Fecha de validación** = hoy, **Referencia documental de validación** = "Acta comité clínico (demostración)", **Justificación del cambio** = "Ajuste de umbral de ausencias para el próximo ciclo". En la señal **Ausencia a cita** cambiar **Umbral** de 1 a 2. Pulsar **Guardar versión**. Volver a `/rubricas`.
 - **Qué decir:** "Si el comité decide cambiar un umbral, no se edita la versión anterior: se crea una versión nueva, con su responsable y su fecha de vigencia. La versión vigente hoy no se modifica, y cada alerta futura guardará con qué versión se evaluó."
 - **Qué debe verse:** la nueva versión con etiqueta **Programada**; la anterior sigue **Vigente** con sus valores.
 - **Criterio que se demuestra:** HU-15 CA-3 (toda modificación crea una versión sin sobrescribir).
@@ -212,9 +212,9 @@ Si el tiempo total es menor, recortar: en PAN-5 el paso 1.3 (crear versión); en
 ### Paso 1.4 — Disparar la alerta en vivo (HU-16, ausencias)
 - **Rol activo:** Especialista, Psicología (ventana B).
 - **Pantalla/URL:** menú **Pacientes** → buscar el carnet del paciente en vivo → ficha (`/pacientes/{carnet}`), sección de citas pendientes.
-- **Acción exacta:** en la primera cita pendiente pulsar **Ausente**; refrescar y comprobar que no hay alerta. En la segunda cita pendiente pulsar **Ausente**.
-- **Qué decir:** "Esta cita ya pasó y el estudiante no asistió; la primera ausencia no activa nada porque el umbral es 2. Registro la segunda. En ese momento el sistema recalcula la evaluación con la rúbrica vigente: dos ausencias en 30 días alcanzan el umbral y se genera la alerta, sin que nadie tenga que revisarlo a mano."
-- **Qué debe verse:** mensaje de confirmación de asistencia registrada tras cada clic; tras la segunda, la alerta existe (se comprueba en el paso siguiente).
+- **Acción exacta:** en la primera cita pendiente pulsar **Ausente**. Al registrarse la inasistencia se genera la alerta (umbral 1).
+- **Qué decir:** "Esta cita ya pasó y el estudiante no asistió. Al registrar la inasistencia, el sistema recalcula la evaluación con la rúbrica vigente: la primera ausencia alcanza el umbral y se genera la alerta, sin que nadie tenga que revisarlo a mano."
+- **Qué debe verse:** mensaje de confirmación de asistencia registrada y la alerta creada (se comprueba en el paso siguiente).
 - **Criterio que se demuestra:** HU-16 CA-1 (recálculo al registrar ausencia) y CA-2 (alerta al alcanzar el umbral).
 - **Si algo falla:** (a) si no aparece **Ausente**, la hora de la cita aún no ha pasado o falta el permiso (verificar en ensayo). (b) Ruta alterna de crisis: **Registrar Consulta Clínica** en un expediente de Psicología sin alerta de crisis, marcar **Crisis psicológica = Sí** (obligatorio) y **Guardar Consulta**; con umbral 1 genera alerta al instante. (c) Alerta de respaldo ya sembrada en `/alertas`.
 

@@ -223,7 +223,7 @@ class Sprint3DemoSeeder extends Seeder
         ]);
 
         foreach ([
-            ['tipo_senal' => 'ausencia_cita', 'clave_indicador' => null, 'modo_calculo' => 'frecuencia', 'ventana_dias' => 30, 'ponderacion' => 1.00, 'umbral' => 2.00],
+            ['tipo_senal' => 'ausencia_cita', 'clave_indicador' => null, 'modo_calculo' => 'frecuencia', 'ventana_dias' => 30, 'ponderacion' => 1.00, 'umbral' => 1.00],
             ['tipo_senal' => 'crisis_psicologica', 'clave_indicador' => null, 'modo_calculo' => 'frecuencia', 'ventana_dias' => 90, 'ponderacion' => 1.00, 'umbral' => 1.00],
             ['tipo_senal' => 'tendencia_suicida', 'clave_indicador' => 'ideas_suicidas', 'modo_calculo' => 'puntaje', 'ventana_dias' => null, 'ponderacion' => 1.00, 'umbral' => 1.00],
         ] as $variable) {
