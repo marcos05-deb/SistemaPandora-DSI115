@@ -15,7 +15,7 @@ const props = defineProps({
 const hasPreviousVersion = Boolean(props.latestVersion);
 const nextVersionNumber = computed(() => Number(props.latestVersion?.numero_version || 0) + 1);
 const variableDefaults = [
-    { tipo_senal: 'ausencia_cita', clave_indicador: null, modo_calculo: 'frecuencia', ventana_dias: 30, ponderacion: 1, umbral: 2 },
+    { tipo_senal: 'ausencia_cita', clave_indicador: null, modo_calculo: 'frecuencia', ventana_dias: 30, ponderacion: 1, umbral: 1 },
     { tipo_senal: 'crisis_psicologica', clave_indicador: null, modo_calculo: 'frecuencia', ventana_dias: 90, ponderacion: 1, umbral: 1 },
     { tipo_senal: 'tendencia_suicida', clave_indicador: 'ideas_suicidas', modo_calculo: 'puntaje', ventana_dias: null, ponderacion: 1, umbral: 1 },
 ];
