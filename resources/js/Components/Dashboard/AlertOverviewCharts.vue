@@ -46,17 +46,6 @@ const ETIQUETA_PALETTE = [
     'var(--nord7)',
 ];
 
-const FACULTAD_BAR_PALETTE = [
-    { front: '#BF616A', top: '#D08770', side: '#9A4B53' },
-    { front: '#5E81AC', top: '#81A1C1', side: '#49688F' },
-    { front: '#A3BE8C', top: '#B8CFA3', side: '#839C70' },
-    { front: '#B48EAD', top: '#C8A8C2', side: '#937391' },
-    { front: '#D08770', top: '#E0A48C', side: '#B06E58' },
-    { front: '#EBCB8B', top: '#F3DBA9', side: '#C9AB6F' },
-    { front: '#88C0D0', top: '#A3D0DC', side: '#6C9EAC' },
-    { front: '#81A1C1', top: '#9CB5CF', side: '#6685A3' },
-];
-
 function formatDate(dateStr) {
     return formatLocalDate(dateStr, { year: 'numeric', month: 'short', day: 'numeric' }, 'es-SV', '-');
 }
@@ -94,6 +83,15 @@ const maxCarreraCount = computed(() => {
     return Math.max(1, ...counts, 0);
 });
 
+const facultadesConDatos = computed(() =>
+    (tendencia.value.por_facultad || []).filter((row) => row.count !== null)
+);
+
+const maxFacultadCount = computed(() => {
+    const counts = facultadesConDatos.value.map((row) => row.count);
+    return Math.max(1, ...counts, 0);
+});
+
 const shortFacultadLabel = (label) => {
     const cleaned = (label || '')
         .replace(/^Facultad Multidisciplinaria (de |del |de la )?/i, '')
@@ -101,93 +99,6 @@ const shortFacultadLabel = (label) => {
         .trim();
     return cleaned || label || '—';
 };
-
-const niceAxisMax = (value) => {
-    const n = Math.max(1, Number(value) || 1);
-    if (n <= 4) return 4;
-    if (n <= 5) return 5;
-    if (n <= 8) return 8;
-    if (n <= 10) return 10;
-    const exp = 10 ** Math.floor(Math.log10(n));
-    const norm = n / exp;
-    const nice = norm <= 1.5 ? 1.5 : norm <= 2 ? 2 : norm <= 3 ? 3 : norm <= 5 ? 5 : 10;
-    return Math.ceil(nice * exp);
-};
-
-const facultad3dChart = computed(() => {
-    const rows = (tendencia.value.por_facultad || []).filter((row) => row.count !== null);
-    const plotLeft = 36;
-    const plotRight = 16;
-    const plotTop = 28;
-    const plotBottom = 52;
-    const depth = 14;
-    const chartW = 420;
-    const chartH = 260;
-    const plotW = chartW - plotLeft - plotRight - depth;
-    const plotH = chartH - plotTop - plotBottom - depth;
-    const baselineY = plotTop + plotH;
-    const maxCount = Math.max(0, ...rows.map((r) => r.count));
-    const axisMax = niceAxisMax(maxCount);
-    const tickCount = 4;
-    const ticks = Array.from({ length: tickCount + 1 }, (_, i) => {
-        const value = Math.round((axisMax / tickCount) * i);
-        const y = baselineY - (value / axisMax) * plotH;
-        return { value, y };
-    });
-
-    const n = rows.length;
-    const barW = n <= 2 ? 52 : n <= 4 ? 44 : Math.min(40, Math.max(22, plotW / (n * 1.7)));
-    const gap = n <= 2 ? 48 : n <= 4 ? 28 : Math.max(12, (plotW - n * barW) / (n + 1));
-    const groupW = n * barW + Math.max(0, n - 1) * gap;
-    const startX = plotLeft + Math.max(0, (plotW - groupW) / 2);
-
-    const bars = rows.map((row, index) => {
-        const colors = FACULTAD_BAR_PALETTE[index % FACULTAD_BAR_PALETTE.length];
-        const h = Math.max(row.count > 0 ? 8 : 0, (row.count / axisMax) * plotH);
-        const x = startX + index * (barW + gap);
-        const y = baselineY - h;
-        const short = shortFacultadLabel(row.label);
-        const labelLines = short.length > 14
-            ? [short.slice(0, 12).trim() + '…']
-            : short.match(/.{1,12}(\s|$)/g)?.map((s) => s.trim()).filter(Boolean).slice(0, 2) || [short];
-
-        return {
-            id: row.id,
-            label: row.label,
-            short,
-            labelLines,
-            count: row.count,
-            colors,
-            front: `${x},${y} ${x + barW},${y} ${x + barW},${baselineY} ${x},${baselineY}`,
-            top: `${x},${y} ${x + depth},${y - depth} ${x + barW + depth},${y - depth} ${x + barW},${y}`,
-            side: `${x + barW},${y} ${x + barW + depth},${y - depth} ${x + barW + depth},${baselineY - depth} ${x + barW},${baselineY}`,
-            valueX: x + barW / 2,
-            valueY: y - depth - 6,
-            labelX: x + barW / 2 + depth / 3,
-        };
-    });
-
-    const floor = {
-        front: `${plotLeft - 4},${baselineY} ${plotLeft + plotW + 8},${baselineY} ${plotLeft + plotW + 8 + depth},${baselineY + 10} ${plotLeft - 4 + depth},${baselineY + 10}`,
-        top: `${plotLeft - 4},${baselineY} ${plotLeft - 4 + depth},${baselineY - depth} ${plotLeft + plotW + 8 + depth},${baselineY - depth} ${plotLeft + plotW + 8},${baselineY}`,
-    };
-
-    return {
-        chartW,
-        chartH,
-        plotLeft,
-        plotRight,
-        plotTop,
-        baselineY,
-        plotW,
-        depth,
-        axisMax,
-        ticks,
-        bars,
-        floor,
-        gridRight: plotLeft + plotW + depth,
-    };
-});
 
 const donutSegments = computed(() => {
     const rows = props.overview?.por_estado || [];
@@ -404,107 +315,22 @@ const donutSegments = computed(() => {
                         <span class="text-[11px] text-[var(--nord3)]">Conteo agregado</span>
                     </div>
 
-                    <div
-                        v-if="facultad3dChart.bars.length"
-                        class="rounded-2xl border border-[var(--nord4)] bg-[var(--surface-subtle)] p-3 sm:p-4"
-                    >
-                        <div class="flex flex-col gap-4 sm:flex-row sm:items-stretch">
-                            <div class="min-w-0 flex-1">
-                                <svg
-                                    :viewBox="`0 0 ${facultad3dChart.chartW} ${facultad3dChart.chartH}`"
-                                    class="mx-auto h-auto w-full max-w-lg"
-                                    role="img"
-                                    :aria-label="`Barras 3D: ${tendencia.total_alumnos} alumnos con tendencia suicida por facultad`"
-                                >
-                                    <rect
-                                        :x="facultad3dChart.plotLeft - 8"
-                                        :y="facultad3dChart.plotTop - 12"
-                                        :width="facultad3dChart.plotW + facultad3dChart.depth + 20"
-                                        :height="facultad3dChart.baselineY - facultad3dChart.plotTop + facultad3dChart.depth + 28"
-                                        rx="10"
-                                        fill="var(--surface)"
-                                        opacity="0.9"
-                                    />
-                                    <g v-for="tick in facultad3dChart.ticks" :key="`tick-${tick.value}`">
-                                        <line
-                                            :x1="facultad3dChart.plotLeft"
-                                            :y1="tick.y"
-                                            :x2="facultad3dChart.gridRight"
-                                            :y2="tick.y"
-                                            stroke="var(--nord4)"
-                                            stroke-width="1"
-                                            stroke-dasharray="3 4"
-                                        />
-                                        <text
-                                            :x="facultad3dChart.plotLeft - 8"
-                                            :y="tick.y + 3"
-                                            text-anchor="end"
-                                            class="fill-[var(--nord3)]"
-                                            style="font-size: 10px;"
-                                        >{{ tick.value }}</text>
-                                    </g>
-                                    <polygon :points="facultad3dChart.floor.top" fill="var(--nord5)" opacity="0.85" />
-                                    <polygon :points="facultad3dChart.floor.front" fill="var(--nord4)" opacity="0.55" />
-                                    <g v-for="bar in facultad3dChart.bars" :key="bar.id">
-                                        <polygon :points="bar.side" :fill="bar.colors.side">
-                                            <title>{{ bar.label }}: {{ bar.count }}</title>
-                                        </polygon>
-                                        <polygon :points="bar.front" :fill="bar.colors.front">
-                                            <title>{{ bar.label }}: {{ bar.count }}</title>
-                                        </polygon>
-                                        <polygon :points="bar.top" :fill="bar.colors.top">
-                                            <title>{{ bar.label }}: {{ bar.count }}</title>
-                                        </polygon>
-                                        <text
-                                            :x="bar.valueX"
-                                            :y="bar.valueY"
-                                            text-anchor="middle"
-                                            class="fill-[var(--nord0)] font-semibold"
-                                            style="font-size: 11px;"
-                                        >{{ bar.count }}</text>
-                                        <text
-                                            :x="bar.labelX"
-                                            :y="facultad3dChart.baselineY + 18"
-                                            text-anchor="middle"
-                                            class="fill-[var(--nord3)]"
-                                            style="font-size: 9px;"
-                                        >
-                                            <tspan
-                                                v-for="(line, li) in bar.labelLines"
-                                                :key="li"
-                                                :x="bar.labelX"
-                                                :dy="li === 0 ? 0 : 11"
-                                            >{{ line }}</tspan>
-                                        </text>
-                                    </g>
-                                </svg>
+                    <ul v-if="facultadesConDatos.length" class="max-h-[22rem] space-y-3 overflow-y-auto pr-1" role="list">
+                        <li v-for="row in facultadesConDatos" :key="row.id" class="rounded-xl px-1 py-2.5">
+                            <div class="mb-2 flex items-start justify-between gap-3">
+                                <p class="min-w-0 text-sm font-medium leading-snug text-[var(--nord0)]">{{ shortFacultadLabel(row.label) }}</p>
+                                <span class="shrink-0 text-sm font-bold tabular-nums text-[var(--nord0)]">{{ row.count }}</span>
                             </div>
-
-                            <ul
-                                class="flex flex-row flex-wrap gap-x-4 gap-y-2 sm:w-44 sm:flex-col sm:flex-nowrap sm:justify-center sm:border-l sm:border-[var(--nord4)] sm:pl-4"
-                                role="list"
-                                aria-label="Leyenda por facultad"
-                            >
-                                <li
-                                    v-for="bar in facultad3dChart.bars"
-                                    :key="`leg-${bar.id}`"
-                                    class="flex min-w-0 items-start gap-2"
-                                >
-                                    <span
-                                        class="mt-0.5 h-3 w-3 shrink-0 rounded-sm border border-black/10"
-                                        :style="{ background: bar.colors.front }"
-                                        aria-hidden="true"
-                                    />
-                                    <span class="min-w-0">
-                                        <span class="block text-[12px] font-medium leading-snug text-[var(--nord0)]">{{ bar.short }}</span>
-                                        <span class="block text-[11px] tabular-nums text-[var(--nord3)]">{{ bar.count }} alumnos</span>
-                                    </span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+                            <div class="h-1.5 overflow-hidden rounded-full bg-[var(--nord5)]">
+                                <div
+                                    class="h-full rounded-full bg-[var(--aurora-red)] transition-all duration-700 ease-out"
+                                    :style="{ width: `${Math.max(4, (row.count / maxFacultadCount) * 100)}%` }"
+                                />
+                            </div>
+                        </li>
+                    </ul>
                     <p v-else class="rounded-xl border border-dashed border-[var(--nord4)] px-4 py-10 text-center text-sm text-[var(--nord3)]">
-                        <ProtectedValue v-if="tendencia.total_alumnos === null" /><template v-else>Sin casos de tendencia suicida.</template>
+                        Sin casos de tendencia suicida.
                     </p>
                 </div>
 
