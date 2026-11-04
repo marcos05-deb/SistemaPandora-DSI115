@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Support\PrivacyThreshold;
 use App\Http\Requests\StorePacienteRequest;
 use App\Models\AlertaPreventiva;
 use App\Models\Area;
@@ -18,7 +17,7 @@ use Illuminate\Support\Facades\Gate;
 
 /**
  * Resumen agregado del panel (alertas + tipología + tendencia).
- * Sysadmin: agregados protegidos, sin alertas individuales.
+ * Sysadmin: agregados institucionales sin alertas individuales ni identificadores.
  * Coordinador/especialista: carnet solo en la lista de alertas urgentes.
  */
 final class DashboardAlertOverviewService
@@ -30,17 +29,16 @@ final class DashboardAlertOverviewService
      *     visible: bool,
      *     reveal_carnets: bool,
      *     scope: 'institucional'|'area'|null,
-     *     total: int|null,
-     *     abiertas: int|null,
-     *     privacidad_protegida?: bool,
-     *     por_estado: list<array{key: string, label: string, count: int|null}>,
-     *     por_senal: list<array{key: string, label: string, count: int|null}>,
+     *     total: int,
+     *     abiertas: int,
+     *     por_estado: list<array{key: string, label: string, count: int}>,
+     *     por_senal: list<array{key: string, label: string, count: int}>,
      *     urgentes: list<array{id: string, senal: string, senal_label: string, estado: string, estado_label: string, generada_en: string|null, paciente_carnet?: string|null}>,
-     *     por_etiqueta: list<array{key: string, label: string, count: int|null}>,
+     *     por_etiqueta: list<array{key: string, label: string, count: int}>,
      *     tendencia_suicida: array{
-     *         total_alumnos: int|null,
-     *         por_facultad: list<array{id: int, label: string, count: int|null}>,
-     *         por_carrera: list<array{id: int, label: string, facultad_id: int, facultad_label: string, count: int|null}>
+     *         total_alumnos: int,
+     *         por_facultad: list<array{id: int, label: string, count: int}>,
+     *         por_carrera: list<array{id: int, label: string, facultad_id: int, facultad_label: string, count: int}>
      *     }
      * }
      */
@@ -56,7 +54,6 @@ final class DashboardAlertOverviewService
             'visible' => false,
             'reveal_carnets' => false,
             'scope' => null,
-            'privacidad_protegida' => false,
             'total' => 0,
             'abiertas' => 0,
             'por_estado' => [],
@@ -157,22 +154,6 @@ final class DashboardAlertOverviewService
 
         $etiquetas = $this->aggregateEtiquetas($areaIds);
         $tendencia = $this->aggregateTendenciaSuicida($areaIds);
-        $protectedAlerts = ! $revealCarnets && $this->hasSmallCounts(array_merge($porEstado, $porSenal));
-        if ($protectedAlerts) {
-            $porEstado = $this->hideCounts($porEstado);
-            $porSenal = $this->hideCounts($porSenal);
-        }
-        $protectedTags = $this->hasSmallCounts($etiquetas);
-        if ($protectedTags) {
-            $etiquetas = $this->hideCounts($etiquetas);
-        }
-        $protectedTrend = $this->hasSmallCounts(array_merge($tendencia['por_facultad'], $tendencia['por_carrera']));
-        if ($protectedTrend) {
-            // Hide both hierarchies and their total to prevent reconstruction by difference.
-            $tendencia['por_facultad'] = $this->hideCounts($tendencia['por_facultad']);
-            $tendencia['por_carrera'] = $this->hideCounts($tendencia['por_carrera']);
-            $tendencia['total_alumnos'] = null;
-        }
 
         $filters = ['scope' => $scope, 'areas' => $areaIds];
         $this->auditor->recordAggregate($user, 'view_dashboard_overview', $filters);
@@ -184,34 +165,14 @@ final class DashboardAlertOverviewService
             'visible' => true,
             'reveal_carnets' => $revealCarnets,
             'scope' => $scope,
-            'total' => $protectedAlerts ? null : $total,
-            'abiertas' => $protectedAlerts ? null : $abiertas,
-            'privacidad_protegida' => $protectedAlerts || $protectedTags || $protectedTrend,
+            'total' => $total,
+            'abiertas' => $abiertas,
             'por_estado' => $porEstado,
             'por_senal' => $porSenal,
             'urgentes' => $urgentes,
             'por_etiqueta' => $etiquetas,
             'tendencia_suicida' => $tendencia,
         ];
-    }
-
-    /** @param list<array<string, mixed>> $rows */
-    private function hasSmallCounts(array $rows): bool
-    {
-        $minimum = PrivacyThreshold::minCell();
-
-        return collect($rows)->contains(static fn (array $row): bool => $row['count'] > 0 && $row['count'] < $minimum);
-    }
-
-    /**
-     * Suppress the whole related breakdown rather than expose complementary totals.
-     *
-     * @param  list<array<string, mixed>>  $rows
-     * @return list<array<string, mixed>>
-     */
-    private function hideCounts(array $rows): array
-    {
-        return array_map(static fn (array $row): array => array_merge($row, ['count' => null]), $rows);
     }
 
     /**
